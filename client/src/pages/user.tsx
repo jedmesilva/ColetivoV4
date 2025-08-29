@@ -1,7 +1,11 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Bell, Menu, Settings, Copy, ArrowDownToLine, ArrowUpFromLine, ArrowUp, User, CreditCard, Heart, Users, History } from "lucide-react";
+import BottomNavigation from "@/components/bottom-navigation";
 
 export default function UserProfile() {
+  const [, setLocation] = useLocation();
+  
   const handleCopyKey = () => {
     navigator.clipboard.writeText('Lucas@ColetivoBank.app');
     // Aqui você poderia adicionar um toast de confirmação
@@ -334,6 +338,13 @@ export default function UserProfile() {
           </div>
         </div>
       </div>
+
+      {/* Bottom Navigation */}
+      <BottomNavigation 
+        onNavigateHome={() => setLocation('/')}
+        onOpenContribution={() => console.log('Open contribution modal')}
+        onOpenProfile={() => setLocation('/user')}
+      />
     </div>
   );
 }
