@@ -14,7 +14,7 @@ export default function BottomNavigation({
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50">
       <div 
-        className="mx-3 mb-3 rounded-3xl px-6 py-4 backdrop-blur-strong border shadow-xl border-dark-light"
+        className="mx-4 mb-4 rounded-3xl px-6 py-4 backdrop-blur-strong border shadow-xl border-dark-light"
         style={{ backgroundColor: 'rgba(255, 253, 250, 0.95)' }}
         data-testid="bottom-navigation"
       >
