@@ -3,9 +3,31 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { updateContributionCache } from "@/lib/contribution-cache";
 import { Fund } from "@shared/schema";
+import { useEffect, useState } from "react";
 
 export default function ContributeSelectFund() {
   const [, setLocation] = useLocation();
+  const [previousPath, setPreviousPath] = useState('/');
+
+  // Capturar de onde o usuário veio
+  useEffect(() => {
+    const referrer = document.referrer;
+    const currentOrigin = window.location.origin;
+    
+    // Se veio de dentro do app, pegar o path do referrer
+    if (referrer && referrer.startsWith(currentOrigin)) {
+      const referrerPath = referrer.replace(currentOrigin, '');
+      if (referrerPath && referrerPath !== '/contribute/select-fund') {
+        setPreviousPath(referrerPath);
+      }
+    }
+    
+    // Alternativa: usar session storage para rastrear navegação
+    const lastPath = sessionStorage.getItem('lastPath');
+    if (lastPath && lastPath !== '/contribute/select-fund') {
+      setPreviousPath(lastPath);
+    }
+  }, []);
 
   // Buscar fundos disponíveis
   const { data: funds = [] } = useQuery<Fund[]>({ 
@@ -72,7 +94,14 @@ export default function ContributeSelectFund() {
           {/* Navigation Header */}
           <div className="flex justify-between items-center p-4 pt-12">
             <button 
-              onClick={() => setLocation('/')}
+              onClick={() => {
+                // Voltar para a página anterior ou home se não souber
+                if (previousPath) {
+                  setLocation(previousPath);
+                } else {
+                  window.history.back();
+                }
+              }}
               className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 bg-bege-transparent"
               aria-label="Voltar"
               data-testid="button-back"

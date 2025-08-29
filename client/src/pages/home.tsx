@@ -234,7 +234,11 @@ export default function Home() {
       {/* Bottom Navigation */}
       <BottomNavigation 
         onNavigateHome={() => setLocation('/')}
-        onOpenContribution={() => setLocation('/contribute/select-fund')}
+        onOpenContribution={() => {
+          // Salvar a página atual antes de navegar
+          sessionStorage.setItem('lastPath', '/');
+          setLocation('/contribute/select-fund');
+        }}
         onOpenProfile={() => setLocation('/user')}
       />
     </div>

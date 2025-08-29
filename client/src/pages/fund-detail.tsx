@@ -249,6 +249,8 @@ export default function FundDetail() {
               {/* Botão Contribuir */}
               <button 
                 onClick={() => {
+                  // Salvar a página atual antes de navegar
+                  sessionStorage.setItem('lastPath', `/fund/${fund.id}`);
                   // Pré-selecionar o fundo atual para contribuição
                   updateContributionCache({
                     fundId: fund.id,

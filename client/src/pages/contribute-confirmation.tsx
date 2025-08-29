@@ -14,13 +14,11 @@ export default function ContributeConfirmation() {
   const processContributionMutation = useMutation({
     mutationFn: processContribution,
     onSuccess: (data) => {
-      console.log('Contribuição processada com sucesso:', data);
       setDadosContribuicao(data);
       setStatusContribuicao('concluida');
       queryClient.invalidateQueries({ queryKey: ['/api/funds'] });
     },
     onError: (error) => {
-      console.error('Erro ao processar contribuição:', error);
       setStatusContribuicao('erro');
     }
   });
@@ -92,10 +90,6 @@ export default function ContributeConfirmation() {
 
   const configStatus = obterConfigStatus();
   const IconeStatus = configStatus.icone!;
-  
-  console.log('Status atual:', statusContribuicao);
-  console.log('Config status:', configStatus);
-  console.log('Dados contribuição:', dadosContribuicao);
 
   const handleAbrirComprovante = () => {
     console.log('Abrindo comprovante da transação:', dadosContribuicao?.idTransacao);

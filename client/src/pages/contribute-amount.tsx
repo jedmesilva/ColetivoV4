@@ -189,7 +189,19 @@ export default function ContributeAmount() {
           <div className="flex justify-between items-center p-4 pt-12">
             <div className="flex items-center gap-4">
               <button 
-                onClick={() => setLocation('/contribute/select-fund')}
+                onClick={() => {
+                  // Se o fundo já estava pré-selecionado, voltar para página anterior
+                  const cached = getContributionCache();
+                  const lastPath = sessionStorage.getItem('lastPath');
+                  
+                  if (cached?.fundId && lastPath && lastPath !== '/') {
+                    // Veio direto da tela de detalhes do fundo
+                    setLocation(lastPath);
+                  } else {
+                    // Veio da seleção de fundo
+                    setLocation('/contribute/select-fund');
+                  }
+                }}
                 className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 bg-bege-transparent"
                 aria-label="Voltar"
                 data-testid="button-back"
