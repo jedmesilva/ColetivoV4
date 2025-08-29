@@ -167,3 +167,88 @@
 .backdrop-blur-strong {
   backdrop-filter: blur(20px);
 }
+
+/* CSS para o input limpo */
+.input-limpo {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(48, 48, 48, 0.1);
+  font-size: 1.125rem;
+  background-color: rgba(255, 229, 189, 0.1);
+  color: #303030;
+  outline: none;
+  box-shadow: none;
+}
+
+.input-limpo:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: rgba(48, 48, 48, 0.1);
+}
+
+.input-limpo::placeholder {
+  color: rgba(48, 48, 48, 0.5);
+}
+
+.input-limpo:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.input-limpo:active,
+.input-limpo:hover {
+  outline: none;
+  box-shadow: none;
+}
+
+/* CSS para o botão com gradiente */
+.botao-gradiente {
+  width: 100%;
+  border-radius: 1.5rem;
+  padding: 1rem;
+  color: white;
+  font-weight: 600;
+  font-size: 1.125rem;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ffc22f, #fa7653, #fd6b61);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.botao-gradiente:hover {
+  transform: scale(1.02);
+}
+
+.botao-gradiente:active {
+  transform: scale(0.98);
+}
+
+.botao-gradiente:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(48, 48, 48, 0.2);
+}
+
+.botao-gradiente:disabled:hover {
+  transform: scale(1);
+}
+
+/* Container fixo na parte inferior */
+.botao-container-fixo {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.75rem 1.5rem;
+  background-color: #fffdfa;
+}
+
+.botao-container-fixo .botao-wrapper {
+  max-width: 28rem;
+  margin: 0 auto;
+}
