@@ -432,11 +432,9 @@ export default function FundDetail() {
               data-testid="button-home-nav"
             >
               <Home className="w-6 h-6 text-dark" />
-              {activeNav === 'home' && (
-                <span className="text-sm font-medium whitespace-nowrap text-dark">
-                  Início
-                </span>
-              )}
+              <span className="text-sm font-medium whitespace-nowrap text-dark">
+                Início
+              </span>
             </button>
 
             {/* Centro - Botão Chat */}
