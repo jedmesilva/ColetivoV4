@@ -95,7 +95,7 @@ export default function FundDetail() {
               <button 
                 className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 bg-bege-transparent"
                 aria-label="Voltar"
-                onClick={() => window.history.back()}
+                onClick={() => setLocation('/')}
                 data-testid="button-back"
               >
                 <ArrowLeft className="w-6 h-6 text-creme" />
