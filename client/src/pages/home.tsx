@@ -234,7 +234,7 @@ export default function Home() {
       {/* Bottom Navigation */}
       <BottomNavigation 
         onNavigateHome={() => setLocation('/')}
-        onOpenContribution={() => console.log('Open contribution modal')}
+        onOpenContribution={() => setLocation('/contribute/select-fund')}
         onOpenProfile={() => setLocation('/user')}
       />
     </div>

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { Bell, Menu, Eye, ArrowLeft, ArrowUp, ArrowDown, Users, CreditCard, Calendar, Heart, Home, User, MessageCircle } from "lucide-react";
 import { Fund } from "@shared/schema";
+import { updateContributionCache } from "@/lib/contribution-cache";
 
 export default function FundDetail() {
   const [, params] = useRoute("/fund/:id");
@@ -247,6 +248,15 @@ export default function FundDetail() {
             <div className="grid grid-cols-3 gap-4">
               {/* Botão Contribuir */}
               <button 
+                onClick={() => {
+                  // Pré-selecionar o fundo atual para contribuição
+                  updateContributionCache({
+                    fundId: fund.id,
+                    fundName: fund.name,
+                    fundEmoji: fund.emoji
+                  });
+                  setLocation('/contribute/amount');
+                }}
                 className="rounded-3xl p-6 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] gradient-primary text-creme"
                 data-testid="button-contribute"
               >
