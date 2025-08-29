@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/home";
 import FundDetail from "@/pages/fund-detail";
 import FundSettings from "@/pages/fund-settings";
+import FundChat from "@/pages/fund-chat";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -14,6 +15,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/fund/:id" component={FundDetail} />
       <Route path="/fund/:id/settings" component={FundSettings} />
+      <Route path="/fund/:id/chat" component={FundChat} />
       <Route component={NotFound} />
     </Switch>
   );

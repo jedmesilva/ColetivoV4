@@ -443,7 +443,10 @@ export default function FundDetail() {
             <button 
               className="rounded-2xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 bg-bege-transparent"
               aria-label="Chat"
-              onClick={() => setActiveNav(activeNav === 'chat' ? null : 'chat')}
+              onClick={() => {
+                setActiveNav(activeNav === 'chat' ? null : 'chat');
+                setLocation(`/fund/${fundId}/chat`);
+              }}
               data-testid="button-chat-nav"
             >
               <MessageCircle className="w-6 h-6 text-dark" />
