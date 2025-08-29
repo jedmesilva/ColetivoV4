@@ -8,6 +8,7 @@ export default function FundSettings() {
   const [, params] = useRoute("/fund/:id/settings");
   const fundId = params?.id;
   const [activeNav, setActiveNav] = useState<string | null>(null);
+  const [, setLocation] = useLocation();
   
   const { data: fund, isLoading } = useQuery<Fund>({
     queryKey: ['/api/funds', fundId],
@@ -181,6 +182,7 @@ export default function FundSettings() {
               <button 
                 className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] w-full bg-creme border-dark-light"
                 data-testid="button-reciprocation-percentage"
+                onClick={() => setLocation(`/fund/${fundId}/reciprocation-rate`)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">

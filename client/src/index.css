@@ -148,6 +148,10 @@
   background-color: rgba(255, 229, 189, 0.3);
 }
 
+.bg-bege-light {
+  background-color: rgba(255, 229, 189, 0.1);
+}
+
 .text-dark {
   color: #303030;
 }
