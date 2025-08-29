@@ -4,9 +4,10 @@ import { Fund } from "@shared/schema";
 interface FundCardProps {
   fund: Fund;
   onToggleBalance?: () => void;
+  onClick?: () => void;
 }
 
-export default function FundCard({ fund, onToggleBalance }: FundCardProps) {
+export default function FundCard({ fund, onToggleBalance, onClick }: FundCardProps) {
   const formatCurrency = (value: string) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -27,8 +28,9 @@ export default function FundCard({ fund, onToggleBalance }: FundCardProps) {
 
   return (
     <div 
-      className="w-full rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
+      className="w-full rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light cursor-pointer"
       data-testid={`fund-card-${fund.id}`}
+      onClick={onClick}
     >
       <div className="flex items-start mb-6">
         <div className="w-12 h-12 rounded-xl mr-4 flex items-center justify-center gradient-primary">
@@ -47,7 +49,10 @@ export default function FundCard({ fund, onToggleBalance }: FundCardProps) {
         <button 
           className="rounded-xl p-2 transition-all duration-200 hover:scale-105 active:scale-95 bg-bege-transparent" 
           aria-label="Mostrar/ocultar saldo"
-          onClick={onToggleBalance}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleBalance?.();
+          }}
           data-testid={`button-toggle-balance-${fund.id}`}
         >
           <Eye className="w-5 h-5 text-dark" />

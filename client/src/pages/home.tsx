@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Bell, Eye, Menu, TrendingUp, Wallet, CreditCard, Plus } from "lucide-react";
 import { Fund } from "@shared/schema";
 import FundCard from "@/components/fund-card";
@@ -7,6 +8,7 @@ import BottomNavigation from "@/components/bottom-navigation";
 
 export default function Home() {
   const [balanceVisible, setBalanceVisible] = useState(true);
+  const [, setLocation] = useLocation();
   
   const { data: funds = [], isLoading } = useQuery<Fund[]>({
     queryKey: ['/api/funds'],
@@ -220,6 +222,7 @@ export default function Home() {
                     // Implement individual fund balance toggle
                     console.log(`Toggle balance for fund ${fund.id}`);
                   }}
+                  onClick={() => setLocation(`/fund/${fund.id}`)}
                 />
               ))
             )}
@@ -229,7 +232,7 @@ export default function Home() {
 
       {/* Bottom Navigation */}
       <BottomNavigation 
-        onNavigateHome={() => console.log('Navigate home')}
+        onNavigateHome={() => setLocation('/')}
         onOpenContribution={() => console.log('Open contribution modal')}
         onOpenProfile={() => console.log('Open profile')}
       />
