@@ -77,7 +77,7 @@ export default function Home() {
         {/* Conteúdo do Header */}
         <div className="relative z-10">
           {/* Navigation Header */}
-          <div className="flex justify-between items-center p-6 pt-12">
+          <div className="flex justify-between items-center p-4 pt-12">
             <button 
               className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 bg-bege-transparent"
               aria-label="Menu"
@@ -95,7 +95,7 @@ export default function Home() {
           </div>
 
           {/* Welcome Section */}
-          <div className="px-6 mb-8">
+          <div className="px-4 mb-8">
             <h1 className="text-3xl font-bold mb-2 text-creme" data-testid="text-greeting">
               Olá, Lucas!
             </h1>
@@ -103,7 +103,7 @@ export default function Home() {
           </div>
 
           {/* Balance Card - Dentro do Header */}
-          <div className="mx-6 pb-8">
+          <div className="mx-4 pb-8">
             <div className="backdrop-blur-custom rounded-3xl p-6 border bg-creme border-dark-light">
               <div className="flex justify-between items-start mb-6">
                 <div>
@@ -189,7 +189,7 @@ export default function Home() {
 
       {/* Content Section - Fundo Branco */}
       <div className="rounded-t-3xl min-h-96 pt-6 pb-24 bg-creme">
-        <div className="px-6">
+        <div className="px-4">
           <div className="flex justify-between items-start mb-6">
             <div>
               <h2 className="text-2xl font-bold mb-2 text-dark">Fundos coletivo</h2>
