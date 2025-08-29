@@ -2,16 +2,17 @@ import { ArrowLeft, Settings, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { updateContributionCache } from "@/lib/contribution-cache";
+import { Fund } from "@shared/schema";
 
 export default function ContributeSelectFund() {
   const [, setLocation] = useLocation();
 
   // Buscar fundos disponíveis
-  const { data: funds = [] } = useQuery({ 
+  const { data: funds = [] } = useQuery<Fund[]>({ 
     queryKey: ['/api/funds']
   });
 
-  const handleSelecionarFundo = (fund: any) => {
+  const handleSelecionarFundo = (fund: Fund) => {
     // Salvar fundo selecionado no cache
     updateContributionCache({
       fundId: fund.id,
@@ -114,7 +115,7 @@ export default function ContributeSelectFund() {
                 <p className="text-sm text-dark opacity-60">Crie seu primeiro fundo coletivo para começar a contribuir!</p>
               </div>
             ) : (
-              funds.map((fund: any) => (
+              funds.map((fund: Fund) => (
                 <button
                   key={fund.id}
                   onClick={() => handleSelecionarFundo(fund)}
