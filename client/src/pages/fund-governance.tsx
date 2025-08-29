@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Users, Shield, Vote, Info } from 'lucide-react';
+import { Check, Users, Shield, Vote, Info, ArrowLeft } from 'lucide-react';
 import { Fund } from "@shared/schema";
 
 interface QuorumSliderProps {
@@ -166,8 +166,20 @@ export default function FundGovernance() {
 
         {/* Conteúdo do Header */}
         <div className="relative z-10">
+          {/* Navigation Header */}
+          <div className="flex justify-between items-center p-4 pt-12">
+            <button 
+              onClick={() => setLocation(`/fund/${fundId}/settings`)}
+              className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 bg-bege-transparent"
+              aria-label="Voltar"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="w-6 h-6 text-creme" />
+            </button>
+          </div>
+
           {/* Título da Página */}
-          <div className="px-4 pt-16 pb-8">
+          <div className="px-4 pt-0 pb-8">
             <h1 className="text-3xl font-bold mb-2 text-creme" data-testid="fund-governance-title">Definir governança</h1>
             <p className="text-lg opacity-90 text-creme">
               Configure as regras de votação e aprovação do fundo
