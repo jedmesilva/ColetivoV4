@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { Users, Cog, Percent, Target, ChevronRight, Settings, Edit } from "lucide-react";
+import { Users, Cog, Percent, Target, ChevronRight, Settings, Edit, ArrowLeft } from "lucide-react";
 import { Fund } from "@shared/schema";
 
 export default function FundSettings() {
@@ -82,8 +82,21 @@ export default function FundSettings() {
 
         {/* Conteúdo do Header */}
         <div className="relative z-10">
+          {/* Navigation Header */}
+          <div className="flex justify-between items-center p-6 pt-12">
+            <button 
+              onClick={() => setLocation(`/fund/${fundId}`)}
+              className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95"
+              style={{ backgroundColor: 'rgba(255, 229, 189, 0.3)' }}
+              aria-label="Voltar"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="w-6 h-6" style={{ color: '#fffdfa' }} />
+            </button>
+          </div>
+
           {/* Settings Header Section */}
-          <div className="px-4 pt-6 pb-4">
+          <div className="px-4 pt-0 pb-4">
             <div className="flex items-center gap-3">
               {/* Ícone das definições */}
               <div 
