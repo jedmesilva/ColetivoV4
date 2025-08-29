@@ -275,6 +275,7 @@ export default function FundMembers() {
             </button>
             
             <button 
+              onClick={() => setLocation(`/fund/${fundId}/member-settings`)}
               className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95"
               style={{ backgroundColor: 'rgba(255, 229, 189, 0.3)' }}
               aria-label="Configurações"

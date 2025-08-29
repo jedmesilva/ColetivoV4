@@ -11,6 +11,7 @@ import FundContributionRate from "@/pages/fund-contribution-rate";
 import FundGovernance from "@/pages/fund-governance";
 import FundChat from "@/pages/fund-chat";
 import FundMembers from "@/pages/fund-members";
+import FundMemberSettings from "@/pages/fund-member-settings";
 import UserProfile from "@/pages/user";
 import NotFound from "@/pages/not-found";
 
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/fund/:id/governance" component={FundGovernance} />
       <Route path="/fund/:id/chat" component={FundChat} />
       <Route path="/fund/:id/members" component={FundMembers} />
+      <Route path="/fund/:id/member-settings" component={FundMemberSettings} />
       <Route path="/user" component={UserProfile} />
       <Route component={NotFound} />
     </Switch>
