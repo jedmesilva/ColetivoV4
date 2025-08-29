@@ -19,10 +19,6 @@ import CreateFundMembers from "@/pages/create-fund-members";
 import ContributeSelectFund from "@/pages/contribute-select-fund";
 import ContributeAmount from "@/pages/contribute-amount";
 import ContributeConfirmation from "@/pages/contribute-confirmation";
-import SolicitarValor from "@/pages/solicitar-valor";
-import SolicitarMotivo from "@/pages/solicitar-motivo";
-import SolicitarPlano from "@/pages/solicitar-plano";
-import SolicitarConfirmacao from "@/pages/solicitar-confirmacao";
 import UserProfile from "@/pages/user";
 import NotFound from "@/pages/not-found";
 
@@ -45,11 +41,6 @@ function Router() {
       <Route path="/contribute/select-fund" component={ContributeSelectFund} />
       <Route path="/contribute/amount" component={ContributeAmount} />
       <Route path="/contribute/confirmation" component={ContributeConfirmation} />
-      <Route path="/solicitar/select-fund" component={ContributeSelectFund} />
-      <Route path="/solicitar/valor" component={SolicitarValor} />
-      <Route path="/solicitar/motivo" component={SolicitarMotivo} />
-      <Route path="/solicitar/plano" component={SolicitarPlano} />
-      <Route path="/solicitar/confirmacao" component={SolicitarConfirmacao} />
       <Route path="/user" component={UserProfile} />
       <Route component={NotFound} />
     </Switch>

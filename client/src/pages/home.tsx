@@ -239,11 +239,6 @@ export default function Home() {
           sessionStorage.setItem('lastPath', '/');
           setLocation('/contribute/select-fund');
         }}
-        onOpenSolicitation={() => {
-          // Salvar a página atual antes de navegar
-          sessionStorage.setItem('lastPath', '/');
-          setLocation('/solicitar/select-fund');
-        }}
         onOpenProfile={() => setLocation('/user')}
       />
     </div>
