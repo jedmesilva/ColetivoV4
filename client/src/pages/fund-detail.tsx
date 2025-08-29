@@ -428,10 +428,7 @@ export default function FundDetail() {
             <button 
               className="rounded-2xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 bg-bege-transparent"
               aria-label="Início"
-              onClick={() => {
-                setActiveNav(activeNav === 'home' ? null : 'home');
-                setLocation('/');
-              }}
+              onClick={() => setActiveNav(activeNav === 'home' ? null : 'home')}
               data-testid="button-home-nav"
             >
               <Home className="w-6 h-6 text-dark" />
@@ -461,7 +458,10 @@ export default function FundDetail() {
             <button 
               className="rounded-2xl p-1 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 gradient-primary"
               aria-label="Perfil do usuário"
-              onClick={() => setActiveNav(activeNav === 'profile' ? null : 'profile')}
+              onClick={() => {
+                setActiveNav(activeNav === 'profile' ? null : 'profile');
+                setLocation(`/fund/${fundId}/settings`);
+              }}
               data-testid="button-profile-nav"
             >
               <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-creme">
