@@ -263,7 +263,7 @@ export default function FundMembers() {
         {/* Conteúdo do Header */}
         <div className="relative z-10">
           {/* Navigation Header */}
-          <div className="flex justify-between items-center p-6 pt-12">
+          <div className="flex justify-between items-center p-4 pt-12">
             <button 
               onClick={() => setLocation(`/fund/${fundId}/settings`)}
               className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95"
@@ -286,7 +286,7 @@ export default function FundMembers() {
           </div>
 
           {/* Título da Página */}
-          <div className="px-6 pb-8">
+          <div className="px-4 pb-8">
             <h1 className="text-3xl font-bold mb-2" style={{ color: '#fffdfa' }} data-testid="page-title">
               Gestão de membros
             </h1>
@@ -299,7 +299,7 @@ export default function FundMembers() {
 
       {/* Content Section - Fundo Branco */}
       <div className="rounded-t-3xl min-h-96 pt-8 pb-32" style={{ backgroundColor: '#fffdfa' }}>
-        <div className="px-6 max-w-md mx-auto">
+        <div className="px-4">
           
           {/* Campo de Busca */}
           <div className="mb-8">

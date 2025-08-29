@@ -83,7 +83,7 @@ export default function FundSettings() {
         {/* Conteúdo do Header */}
         <div className="relative z-10">
           {/* Navigation Header */}
-          <div className="flex justify-between items-center p-6 pt-12">
+          <div className="flex justify-between items-center p-4 pt-12">
             <button 
               onClick={() => setLocation(`/fund/${fundId}`)}
               className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95"
