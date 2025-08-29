@@ -4,6 +4,7 @@ import { useRoute, useLocation } from "wouter";
 import { Bell, Menu, Eye, ArrowLeft, ArrowUp, ArrowDown, Users, CreditCard, Calendar, Heart, Home, User, MessageCircle } from "lucide-react";
 import { Fund } from "@shared/schema";
 import { updateContributionCache } from "@/lib/contribution-cache";
+import { updateSolicitationCache } from "@/lib/solicitation-cache";
 
 export default function FundDetail() {
   const [, params] = useRoute("/fund/:id");
@@ -275,14 +276,25 @@ export default function FundDetail() {
 
               {/* Botão Solicitar */}
               <button 
-                className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-creme border-dark-light"
+                onClick={() => {
+                  // Salvar a página atual antes de navegar
+                  sessionStorage.setItem('lastPath', `/fund/${fund.id}`);
+                  // Pré-selecionar o fundo atual para solicitação
+                  updateSolicitationCache({
+                    fundId: fund.id,
+                    fundName: fund.name,
+                    fundEmoji: fund.emoji
+                  });
+                  setLocation('/solicitar/valor');
+                }}
+                className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-orange-500 text-creme"
                 data-testid="button-request"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-bege-transparent">
-                    <ArrowDown className="w-6 h-6 text-dark" />
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-orange-600">
+                    <ArrowDown className="w-6 h-6 text-creme" />
                   </div>
-                  <span className="text-sm font-medium text-dark">Solicitar</span>
+                  <span className="text-sm font-medium text-creme">Solicitar</span>
                 </div>
               </button>
 

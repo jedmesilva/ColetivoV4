@@ -2,12 +2,24 @@ import { ArrowLeft, Settings, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { updateContributionCache } from "@/lib/contribution-cache";
+import { updateSolicitationCache } from "@/lib/solicitation-cache";
 import { Fund } from "@shared/schema";
 import { useEffect, useState } from "react";
 
 export default function ContributeSelectFund() {
   const [, setLocation] = useLocation();
   const [previousPath, setPreviousPath] = useState('/');
+  const [fluxoAtual, setFluxoAtual] = useState<'contribuicao' | 'solicitacao'>('contribuicao');
+
+  // Detectar tipo de fluxo baseado na URL atual
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/solicitar/')) {
+      setFluxoAtual('solicitacao');
+    } else {
+      setFluxoAtual('contribuicao');
+    }
+  }, []);
 
   // Capturar de onde o usuário veio
   useEffect(() => {
@@ -35,15 +47,27 @@ export default function ContributeSelectFund() {
   });
 
   const handleSelecionarFundo = (fund: Fund) => {
-    // Salvar fundo selecionado no cache
-    updateContributionCache({
-      fundId: fund.id,
-      fundName: fund.name,
-      fundEmoji: fund.emoji
-    });
-    
-    // Navegar para definir valor
-    setLocation('/contribute/amount');
+    if (fluxoAtual === 'contribuicao') {
+      // Salvar fundo selecionado no cache de contribuição
+      updateContributionCache({
+        fundId: fund.id,
+        fundName: fund.name,
+        fundEmoji: fund.emoji
+      });
+      
+      // Navegar para próxima tela de contribuição
+      setLocation('/contribute/amount');
+    } else {
+      // Salvar fundo selecionado no cache de solicitação
+      updateSolicitationCache({
+        fundId: fund.id,
+        fundName: fund.name,
+        fundEmoji: fund.emoji
+      });
+      
+      // Navegar para próxima tela de solicitação
+      setLocation('/solicitar/valor');
+    }
   };
 
   return (
@@ -120,8 +144,15 @@ export default function ContributeSelectFund() {
 
           {/* Título da Página */}
           <div className="px-4 pb-8">
-            <h1 className="text-3xl font-bold mb-2 text-creme">Fazer contribuição</h1>
-            <p className="text-lg opacity-90 text-creme">Selecione um fundo para contribuir</p>
+            <h1 className="text-3xl font-bold mb-2 text-creme">
+              {fluxoAtual === 'contribuicao' ? 'Fazer contribuição' : 'Solicitar capital'}
+            </h1>
+            <p className="text-lg opacity-90 text-creme">
+              {fluxoAtual === 'contribuicao' 
+                ? 'Selecione um fundo para contribuir'
+                : 'Selecione um fundo para sua solicitação'
+              }
+            </p>
           </div>
         </div>
       </div>

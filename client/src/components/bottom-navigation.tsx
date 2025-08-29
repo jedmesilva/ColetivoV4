@@ -1,14 +1,16 @@
-import { Home, ArrowUp, User } from "lucide-react";
+import { Home, ArrowUp, ArrowDown, User } from "lucide-react";
 
 interface BottomNavigationProps {
   onNavigateHome?: () => void;
   onOpenContribution?: () => void;
+  onOpenSolicitation?: () => void;
   onOpenProfile?: () => void;
 }
 
 export default function BottomNavigation({ 
   onNavigateHome, 
   onOpenContribution, 
+  onOpenSolicitation,
   onOpenProfile 
 }: BottomNavigationProps) {
   return (
@@ -29,15 +31,28 @@ export default function BottomNavigation({
             <Home className="w-6 h-6 text-dark" />
           </button>
 
-          {/* Contribute Button */}
-          <button 
-            className="px-6 py-3 rounded-2xl flex items-center gap-2 font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg gradient-primary text-creme"
-            onClick={onOpenContribution}
-            data-testid="button-contribute"
-          >
-            <ArrowUp className="w-5 h-5" />
-            Contribuir
-          </button>
+          {/* Action Buttons Container */}
+          <div className="flex items-center gap-2">
+            {/* Contribute Button */}
+            <button 
+              className="px-4 py-3 rounded-2xl flex items-center gap-2 font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg gradient-primary text-creme"
+              onClick={onOpenContribution}
+              data-testid="button-contribute"
+            >
+              <ArrowUp className="w-4 h-4" />
+              Contribuir
+            </button>
+
+            {/* Solicitation Button */}
+            <button 
+              className="px-4 py-3 rounded-2xl flex items-center gap-2 font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg bg-orange-500 text-creme"
+              onClick={onOpenSolicitation}
+              data-testid="button-solicitation"
+            >
+              <ArrowDown className="w-4 h-4" />
+              Solicitar
+            </button>
+          </div>
 
           {/* Profile Button */}
           <button 
