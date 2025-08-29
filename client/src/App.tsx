@@ -12,6 +12,10 @@ import FundGovernance from "@/pages/fund-governance";
 import FundChat from "@/pages/fund-chat";
 import FundMembers from "@/pages/fund-members";
 import FundMemberSettings from "@/pages/fund-member-settings";
+import CreateFundName from "@/pages/create-fund-name";
+import CreateFundObjective from "@/pages/create-fund-objective";
+import CreateFundImage from "@/pages/create-fund-image";
+import CreateFundMembers from "@/pages/create-fund-members";
 import UserProfile from "@/pages/user";
 import NotFound from "@/pages/not-found";
 
@@ -27,6 +31,10 @@ function Router() {
       <Route path="/fund/:id/chat" component={FundChat} />
       <Route path="/fund/:id/members" component={FundMembers} />
       <Route path="/fund/:id/member-settings" component={FundMemberSettings} />
+      <Route path="/create-fund/name" component={CreateFundName} />
+      <Route path="/create-fund/objective" component={CreateFundObjective} />
+      <Route path="/create-fund/image" component={CreateFundImage} />
+      <Route path="/create-fund/members" component={CreateFundMembers} />
       <Route path="/user" component={UserProfile} />
       <Route component={NotFound} />
     </Switch>

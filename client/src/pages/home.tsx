@@ -198,6 +198,7 @@ export default function Home() {
               <div className="w-16 h-1 rounded-full gradient-bar"></div>
             </div>
             <button 
+              onClick={() => setLocation('/create-fund/name')}
               className="text-white px-6 py-3 rounded-2xl flex items-center gap-2 font-medium transition-all duration-200 hover:scale-105 active:scale-95 gradient-primary text-creme"
               data-testid="button-new-fund"
             >
