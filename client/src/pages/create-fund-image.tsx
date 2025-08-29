@@ -1,9 +1,7 @@
 import { ArrowLeft, Upload, Check } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { insertFundSchema } from "@shared/schema";
+import { getFundCache, updateFundCache } from "@/lib/fund-cache";
 
 // Componente para o card de upload
 interface UploadCardProps {
@@ -163,15 +161,26 @@ export default function CreateFundImage() {
   const [nomeFundo, setNomeFundo] = useState('');
   const [objetivo, setObjetivo] = useState('');
   const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
 
-  // Pegar os dados das URLs
+  // Carregar dados do cache
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const name = urlParams.get('name');
-    const obj = urlParams.get('objective');
-    if (name) setNomeFundo(decodeURIComponent(name));
-    if (obj) setObjetivo(decodeURIComponent(obj));
+    const cached = getFundCache();
+    if (cached) {
+      setNomeFundo(cached.name);
+      setObjetivo(cached.objective);
+      if (cached.emoji && cached.emoji !== '💰') {
+        // Encontrar qual emoji foi selecionado
+        const emojiSelecionado = emojisPredefinidos.find(e => e.emoji === cached.emoji);
+        if (emojiSelecionado) {
+          setSelectedIcon(emojiSelecionado.id);
+          setSelectedOption(emojiSelecionado.id);
+        }
+      }
+      if (cached.imageFile) {
+        setSelectedFile(cached.imageFile);
+        setSelectedOption('upload');
+      }
+    }
   }, []);
 
   // Emojis pré-definidos organizados por categoria
@@ -193,20 +202,6 @@ export default function CreateFundImage() {
     { id: 'dinheiro', name: 'Poupança', emoji: '💰' }
   ];
 
-  // Mutation para criar o fundo
-  const createFundMutation = useMutation({
-    mutationFn: async (fundData: any) => {
-      const response = await apiRequest('/api/funds', {
-        method: 'POST',
-        body: JSON.stringify(fundData),
-      });
-      return response;
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/funds'] });
-      setLocation(`/fund/${data.id}`);
-    },
-  });
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -228,20 +223,18 @@ export default function CreateFundImage() {
     setSelectedIcon('');
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (selectedFile || selectedIcon) {
       const selectedEmoji = selectedIcon ? emojisPredefinidos.find(e => e.id === selectedIcon)?.emoji : '💰';
       
-      const fundData = insertFundSchema.parse({
-        name: nomeFundo,
-        description: objetivo,
+      // Salvar no cache
+      updateFundCache({ 
         emoji: selectedEmoji || '💰',
-        balance: '0',
-        growthPercentage: '0',
-        memberCount: 1
+        imageFile: selectedFile || undefined
       });
-
-      createFundMutation.mutate(fundData);
+      
+      // Navegar para a próxima tela
+      setLocation('/create-fund/members');
     }
   };
 
@@ -289,7 +282,7 @@ export default function CreateFundImage() {
           {/* Navigation Header */}
           <div className="flex justify-between items-center p-4 pt-12">
             <button 
-              onClick={() => setLocation(`/create-fund/objective?name=${encodeURIComponent(nomeFundo)}`)}
+              onClick={() => setLocation('/create-fund/objective')}
               className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 bg-bege-transparent"
               aria-label="Voltar"
               data-testid="button-back"
@@ -366,18 +359,18 @@ export default function CreateFundImage() {
       <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-creme">
         <button 
           onClick={handleSubmit}
-          disabled={!podeAvancar || createFundMutation.isPending}
+          disabled={!podeAvancar}
           className="w-full rounded-3xl p-4 text-white font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           style={{ 
             background: podeAvancar 
               ? 'linear-gradient(135deg, #ffc22f, #fa7653, #fd6b61)' 
               : 'rgba(48, 48, 48, 0.2)'
           }}
-          data-testid="button-finish"
+          data-testid="button-continue"
         >
           <div className="flex items-center justify-center gap-2">
             <Check className="w-5 h-5" />
-            <span>{createFundMutation.isPending ? 'Criando...' : 'Finalizar'}</span>
+            <span>Continuar</span>
           </div>
         </button>
       </div>

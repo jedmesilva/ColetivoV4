@@ -1,6 +1,7 @@
 import { ArrowLeft, Target, Check, ShoppingCart, Plane, Home, Users, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { getFundCache, updateFundCache } from "@/lib/fund-cache";
 
 // Componente IconCard
 interface IconCardProps {
@@ -65,12 +66,19 @@ export default function CreateFundObjective() {
   const [nomeFundo, setNomeFundo] = useState('');
   const [, setLocation] = useLocation();
 
-  // Pegar o nome do fundo da URL
+  // Carregar dados do cache
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const name = urlParams.get('name');
-    if (name) {
-      setNomeFundo(decodeURIComponent(name));
+    const cached = getFundCache();
+    if (cached) {
+      setNomeFundo(cached.name);
+      if (cached.objective) {
+        setObjetivo(cached.objective);
+        // Tentar encontrar qual opção corresponde ao objetivo
+        const opcaoCorrespondente = objetivosPredefinidos.find(obj => obj.name === cached.objective);
+        if (opcaoCorrespondente) {
+          setObjetivoSelecionado(opcaoCorrespondente.id);
+        }
+      }
     }
   }, []);
 
@@ -101,8 +109,10 @@ export default function CreateFundObjective() {
 
   const handleSubmit = () => {
     if (objetivo.trim()) {
-      // Navegar para a próxima tela passando os dados
-      setLocation(`/create-fund/image?name=${encodeURIComponent(nomeFundo)}&objective=${encodeURIComponent(objetivo)}`);
+      // Salvar no cache
+      updateFundCache({ objective: objetivo.trim() });
+      // Navegar para a próxima tela
+      setLocation('/create-fund/image');
     }
   };
 

@@ -1,15 +1,26 @@
 import { ArrowLeft, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { getFundCache, updateFundCache } from "@/lib/fund-cache";
 
 export default function CreateFundName() {
   const [nomeFundo, setNomeFundo] = useState('');
   const [, setLocation] = useLocation();
 
+  // Carregar dados do cache se existirem
+  useEffect(() => {
+    const cached = getFundCache();
+    if (cached?.name) {
+      setNomeFundo(cached.name);
+    }
+  }, []);
+
   const handleSubmit = () => {
     if (nomeFundo.trim()) {
-      // Navegar para a próxima tela passando o nome do fundo
-      setLocation(`/create-fund/objective?name=${encodeURIComponent(nomeFundo)}`);
+      // Salvar no cache
+      updateFundCache({ name: nomeFundo.trim() });
+      // Navegar para a próxima tela
+      setLocation('/create-fund/objective');
     }
   };
 

@@ -1,6 +1,8 @@
 import { ArrowLeft, Users, Search, Plus, Link, Copy, Check, X, UserPlus } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
+import { getFundCache, updateFundCache, createFundFromCache } from "@/lib/fund-cache";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Membro {
   id: number;
@@ -166,12 +168,20 @@ export default function CreateFundMembers() {
   const [nomeFundo, setNomeFundo] = useState('');
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
 
-  // Pegar dados das URLs
+  // Carregar dados do cache
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const name = urlParams.get('name');
-    if (name) setNomeFundo(decodeURIComponent(name));
+    const cached = getFundCache();
+    if (cached) {
+      setNomeFundo(cached.name);
+      if (cached.members) {
+        // Separar admin dos outros membros
+        const admin = cached.members.find(m => m.isAdmin);
+        const otherMembers = cached.members.filter(m => !m.isAdmin);
+        setMembrosAdicionados(otherMembers);
+      }
+    }
   }, []);
 
   // Usuário atual (administrador)
@@ -229,12 +239,24 @@ export default function CreateFundMembers() {
   };
 
   const handleAdicionarMembro = (membro: Membro) => {
-    setMembrosAdicionados(prev => [...prev, membro]);
+    const novosMembros = [...membrosAdicionados, membro];
+    setMembrosAdicionados(novosMembros);
     setMembrosEncontrados(prev => prev.filter(m => m.id !== membro.id));
+    
+    // Atualizar cache
+    updateFundCache({ 
+      members: [usuarioAtual, ...novosMembros]
+    });
   };
 
   const handleRemoverMembro = (membroId: number) => {
-    setMembrosAdicionados(prev => prev.filter(m => m.id !== membroId));
+    const novosMembros = membrosAdicionados.filter(m => m.id !== membroId);
+    setMembrosAdicionados(novosMembros);
+    
+    // Atualizar cache
+    updateFundCache({ 
+      members: [usuarioAtual, ...novosMembros]
+    });
   };
 
   const gerarLinkConvite = async () => {
@@ -252,9 +274,27 @@ export default function CreateFundMembers() {
     }
   };
 
+  // Mutation para criar o fundo usando cache
+  const createFundMutation = useMutation({
+    mutationFn: createFundFromCache,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/funds'] });
+      setLocation(`/fund/${data.id}`);
+    },
+    onError: () => {
+      // Em caso de erro, apenas navegar para home
+      setLocation('/');
+    }
+  });
+
   const handleFinalizar = () => {
-    // Finalizar criação do fundo - navegar para o fundo criado
-    setLocation('/');
+    // Salvar membros no cache antes de criar
+    updateFundCache({ 
+      members: [usuarioAtual, ...membrosAdicionados]
+    });
+    
+    // Criar o fundo
+    createFundMutation.mutate();
   };
 
   // Todos os membros (admin + adicionados)
@@ -302,12 +342,7 @@ export default function CreateFundMembers() {
           {/* Navigation Header */}
           <div className="flex justify-between items-center p-4 pt-12">
             <button 
-              onClick={() => {
-                const urlParams = new URLSearchParams(window.location.search);
-                const name = urlParams.get('name');
-                const objective = urlParams.get('objective');
-                setLocation(`/create-fund/image?name=${encodeURIComponent(name || '')}&objective=${encodeURIComponent(objective || '')}`);
-              }}
+              onClick={() => setLocation('/create-fund/image')}
               className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 bg-bege-transparent"
               aria-label="Voltar"
               data-testid="button-back"
@@ -475,7 +510,8 @@ export default function CreateFundMembers() {
       <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-creme">
         <button 
           onClick={handleFinalizar}
-          className="w-full rounded-3xl p-4 text-white font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          disabled={createFundMutation.isPending}
+          className="w-full rounded-3xl p-4 text-white font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
           style={{ 
             background: 'linear-gradient(135deg, #ffc22f, #fa7653, #fd6b61)'
           }}
@@ -483,7 +519,12 @@ export default function CreateFundMembers() {
         >
           <div className="flex items-center justify-center gap-2">
             <Check className="w-5 h-5" />
-            <span>Finalizar ({todosMembros.length} membro{todosMembros.length !== 1 ? 's' : ''})</span>
+            <span>
+              {createFundMutation.isPending 
+                ? 'Criando fundo...' 
+                : `Finalizar (${todosMembros.length} membro${todosMembros.length !== 1 ? 's' : ''})`
+              }
+            </span>
           </div>
         </button>
       </div>
