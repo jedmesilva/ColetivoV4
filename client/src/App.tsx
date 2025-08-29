@@ -8,6 +8,7 @@ import FundDetail from "@/pages/fund-detail";
 import FundSettings from "@/pages/fund-settings";
 import FundReciprocatIonRate from "@/pages/fund-reciprocation-rate";
 import FundContributionRate from "@/pages/fund-contribution-rate";
+import FundGovernance from "@/pages/fund-governance";
 import FundChat from "@/pages/fund-chat";
 import UserProfile from "@/pages/user";
 import NotFound from "@/pages/not-found";
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/fund/:id/settings" component={FundSettings} />
       <Route path="/fund/:id/reciprocation-rate" component={FundReciprocatIonRate} />
       <Route path="/fund/:id/contribution-rate" component={FundContributionRate} />
+      <Route path="/fund/:id/governance" component={FundGovernance} />
       <Route path="/fund/:id/chat" component={FundChat} />
       <Route path="/user" component={UserProfile} />
       <Route component={NotFound} />
