@@ -8,6 +8,17 @@ import { updateRequestCache } from "@/lib/request-cache";
 export default function RequestSelectFund() {
   const [searchTerm, setSearchTerm] = useState('');
   const [, setLocation] = useLocation();
+  
+  // Função para voltar de forma inteligente
+  const handleGoBack = () => {
+    const lastPath = sessionStorage.getItem('lastPath');
+    if (lastPath) {
+      sessionStorage.removeItem('lastPath'); // Limpar após usar
+      setLocation(lastPath);
+    } else {
+      setLocation('/');
+    }
+  };
 
   // Buscar fundos disponíveis
   const { data: funds = [] } = useQuery<Fund[]>({ 
@@ -108,7 +119,7 @@ export default function RequestSelectFund() {
                 className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95"
                 style={{ backgroundColor: 'rgba(255, 229, 189, 0.3)' }}
                 aria-label="Voltar"
-                onClick={() => setLocation('/')}
+                onClick={handleGoBack}
               >
                 <ArrowLeft className="w-6 h-6" style={{ color: '#fffdfa' }} />
               </button>

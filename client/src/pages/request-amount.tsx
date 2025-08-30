@@ -236,7 +236,14 @@ export default function RequestAmount() {
                 className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95"
                 style={{ backgroundColor: 'rgba(255, 229, 189, 0.3)' }}
                 aria-label="Voltar"
-                onClick={() => setLocation('/request/select-fund')}
+                onClick={() => {
+                  const lastPath = sessionStorage.getItem('lastPath');
+                  if (lastPath) {
+                    setLocation(lastPath);
+                  } else {
+                    setLocation('/request/select-fund');
+                  }
+                }}
               >
                 <ArrowLeft className="w-6 h-6" style={{ color: '#fffdfa' }} />
               </button>

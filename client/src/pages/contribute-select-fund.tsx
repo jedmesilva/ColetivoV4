@@ -7,27 +7,17 @@ import { useEffect, useState } from "react";
 
 export default function ContributeSelectFund() {
   const [, setLocation] = useLocation();
-  const [previousPath, setPreviousPath] = useState('/');
-
-  // Capturar de onde o usuário veio
-  useEffect(() => {
-    const referrer = document.referrer;
-    const currentOrigin = window.location.origin;
-    
-    // Se veio de dentro do app, pegar o path do referrer
-    if (referrer && referrer.startsWith(currentOrigin)) {
-      const referrerPath = referrer.replace(currentOrigin, '');
-      if (referrerPath && referrerPath !== '/contribute/select-fund') {
-        setPreviousPath(referrerPath);
-      }
-    }
-    
-    // Alternativa: usar session storage para rastrear navegação
+  
+  // Função para voltar de forma inteligente
+  const handleGoBack = () => {
     const lastPath = sessionStorage.getItem('lastPath');
-    if (lastPath && lastPath !== '/contribute/select-fund') {
-      setPreviousPath(lastPath);
+    if (lastPath) {
+      sessionStorage.removeItem('lastPath'); // Limpar após usar
+      setLocation(lastPath);
+    } else {
+      setLocation('/');
     }
-  }, []);
+  };
 
   // Buscar fundos disponíveis
   const { data: funds = [] } = useQuery<Fund[]>({ 
@@ -94,14 +84,7 @@ export default function ContributeSelectFund() {
           {/* Navigation Header */}
           <div className="flex justify-between items-center p-4 pt-12">
             <button 
-              onClick={() => {
-                // Voltar para a página anterior ou home se não souber
-                if (previousPath) {
-                  setLocation(previousPath);
-                } else {
-                  window.history.back();
-                }
-              }}
+              onClick={handleGoBack}
               className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 bg-bege-transparent"
               aria-label="Voltar"
               data-testid="button-back"
