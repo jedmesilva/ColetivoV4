@@ -219,6 +219,11 @@ export default function UserProfile() {
 
               {/* Botão Contribuir */}
               <button 
+                onClick={() => {
+                  // Salvar a página atual antes de navegar
+                  sessionStorage.setItem('lastPath', '/user');
+                  setLocation('/contribute/select-fund');
+                }}
                 className="rounded-3xl p-6 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-creme gradient-primary"
                 data-testid="button-contribute"
               >
