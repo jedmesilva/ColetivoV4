@@ -1,403 +1,357 @@
+import { ArrowLeft, Check, Calendar, CreditCard, AlertCircle, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, Loader2, AlertCircle, Calendar, CreditCard } from "lucide-react";
-import { getRequestCache, processRequest, clearRequestCache } from "@/lib/request-cache";
+import { getRequestCache, clearRequestCache } from "@/lib/request-cache";
 
 export default function RequestConfirmation() {
-  const [statusSolicitacao, setStatusSolicitacao] = useState<'processando' | 'concluida' | 'erro'>('processando');
-  const [dadosSolicitacao, setDadosSolicitacao] = useState<any>(null);
-  const [jaProcessou, setJaProcessou] = useState(false);
+  const [processando, setProcessando] = useState(false);
   const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
 
-  // Mutation para processar solicitação
-  const processRequestMutation = useMutation({
-    mutationFn: processRequest,
-    onSuccess: (data) => {
-      setDadosSolicitacao(data);
-      setStatusSolicitacao('concluida');
-      queryClient.invalidateQueries({ queryKey: ['/api/funds'] });
-    },
-    onError: (error) => {
-      setStatusSolicitacao('erro');
-    }
-  });
+  // Dados vindos das telas anteriores
+  const [dadosCache, setDadosCache] = useState<any>(null);
 
-  // Processar solicitação ao carregar
   useEffect(() => {
-    if (jaProcessou) return; // Evitar processar múltiplas vezes
-    
     const cached = getRequestCache();
     if (!cached || !cached.fundId || !cached.valor || !cached.motivo || !cached.planoPagamento) {
       // Se não há dados, redirecionar para seleção de fundo
       setLocation('/request/select-fund');
       return;
     }
+    setDadosCache(cached);
+  }, [setLocation]);
 
-    // Processar solicitação automaticamente
-    setJaProcessou(true);
-    processRequestMutation.mutate();
-  }, [setLocation, jaProcessou, processRequestMutation]);
+  if (!dadosCache) {
+    return null; // Carregando ou redirecionando
+  }
 
-  const handleVoltarHome = () => {
-    clearRequestCache(); // Limpar cache ao sair
-    setLocation('/');
+  // Simular dados baseados no cache
+  const fundoSelecionado = {
+    id: dadosCache.fundId,
+    nome: dadosCache.fundName || 'Fundo selecionado',
+    descricao: 'Descrição do fundo',
+    emoji: dadosCache.fundEmoji || '💰'
   };
 
-  const handleVerDetalhes = () => {
-    if (dadosSolicitacao?.fundId) {
-      clearRequestCache(); // Limpar cache ao sair
-      setLocation(`/fund/${dadosSolicitacao.fundId}`);
-    }
+  const solicitacao = {
+    valorSolicitado: dadosCache.valor,
+    taxaRetribuicao: 25, // 25% - taxa de retribuição do fundo
+    dataLimite: '2025-12-31', // Data limite para retribuição
+    motivoSolicitacao: dadosCache.motivo
+  };
+
+  // Calcular valor total a retribuir
+  const valorTotalRetribuicao = solicitacao.valorSolicitado * (solicitacao.taxaRetribuicao / 100);
+
+  // Dados do plano de pagamento
+  const planoPagamento = dadosCache.planoPagamento || {
+    tipo: 'padrao',
+    numeroParcelas: 3,
+    intervaloParcelas: 'mensal',
+    dataInicio: '2025-09-01',
+    parcelas: [
+      {
+        numero: 1,
+        valor: 66.67,
+        data: '2025-09-01',
+        dataFormatada: '01/09/2025'
+      },
+      {
+        numero: 2,
+        valor: 66.67,
+        data: '2025-10-01',
+        dataFormatada: '01/10/2025'
+      },
+      {
+        numero: 3,
+        valor: 66.66,
+        data: '2025-11-01',
+        dataFormatada: '01/11/2025'
+      }
+    ]
+  };
+
+  const handleVoltar = () => {
+    setLocation('/request/payment-plan');
+  };
+
+  const handleSolicitarCapital = async () => {
+    setProcessando(true);
+    
+    // Simular processamento da solicitação
+    const dadosCompletos = {
+      fundo: fundoSelecionado,
+      valorSolicitado: solicitacao.valorSolicitado,
+      taxaRetribuicao: solicitacao.taxaRetribuicao,
+      valorTotalRetribuicao: valorTotalRetribuicao,
+      motivoSolicitacao: solicitacao.motivoSolicitacao,
+      planoPagamento: planoPagamento,
+      dataLimite: solicitacao.dataLimite,
+      dataSolicitacao: new Date().toISOString()
+    };
+
+    console.log('Solicitando capital com os dados:', dadosCompletos);
+    
+    // Simular delay de processamento
+    setTimeout(() => {
+      setProcessando(false);
+      clearRequestCache(); // Limpar cache após sucesso
+      alert('Solicitação enviada com sucesso! Você receberá uma notificação quando for aprovada.');
+      setLocation('/');
+    }, 2000);
+  };
+
+  const formatarDataLimite = (data: string) => {
+    return new Date(data).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#fffdfa' }}>
       {/* Header Section com Múltiplos Gradientes */}
       <div className="relative overflow-hidden">
-        {/* Gradientes múltiplos */}
-        <div 
-          className="absolute inset-0"
-          style={{ 
-            background: 'linear-gradient(135deg, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61)' 
-          }}
-        />
-        <div 
-          className="absolute inset-0 opacity-70"
-          style={{ 
-            background: 'linear-gradient(315deg, #fd6b61, #fa7653, #ffc22f, #ffe5bd, #fffdfa)' 
-          }}
-        />
-        <div 
-          className="absolute inset-0 opacity-60"
-          style={{ 
-            background: 'radial-gradient(circle at center, #ffc22f, #fa7653, #fd6b61, transparent)' 
-          }}
-        />
-        <div 
-          className="absolute inset-0 opacity-50"
-          style={{ 
-            background: 'linear-gradient(270deg, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61)' 
-          }}
-        />
-        <div 
-          className="absolute inset-0 opacity-40"
-          style={{ 
-            background: 'linear-gradient(180deg, #fd6b61, #fa7653, #ffc22f, #ffe5bd, #fffdfa)' 
-          }}
-        />
-        <div 
-          className="absolute inset-0 opacity-45"
-          style={{ 
-            background: 'radial-gradient(circle at top left, #ffe5bd, #ffc22f, #fa7653, transparent)' 
-          }}
-        />
-        <div 
-          className="absolute inset-0 opacity-35"
-          style={{ 
-            background: 'radial-gradient(circle at bottom right, #fd6b61, #fa7653, #ffc22f, transparent)' 
-          }}
-        />
-        <div 
-          className="absolute inset-0 opacity-30"
-          style={{ 
-            background: 'linear-gradient(45deg, #fa7653, #fd6b61, #ffc22f, #ffe5bd, #fffdfa)' 
-          }}
-        />
-        <div 
-          className="absolute inset-0 opacity-25"
-          style={{ 
-            background: 'conic-gradient(from 0deg at center, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61, #fffdfa)' 
-          }}
-        />
-        <div 
-          className="absolute inset-0"
-          style={{ 
-            background: 'linear-gradient(135deg, rgba(255, 253, 250, 0.1), rgba(255, 229, 189, 0.1), rgba(255, 194, 47, 0.1), rgba(250, 118, 83, 0.1), rgba(253, 107, 97, 0.1))',
-            mixBlendMode: 'overlay'
-          }}
-        />
+        {/* Gradiente Base */}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61)' }} />
+        {/* Gradiente Invertido - Diagonal Oposta */}
+        <div className="absolute inset-0 opacity-70" style={{ background: 'linear-gradient(315deg, #fd6b61, #fa7653, #ffc22f, #ffe5bd, #fffdfa)' }} />
+        {/* Gradiente Radial do Centro */}
+        <div className="absolute inset-0 opacity-60" style={{ background: 'radial-gradient(circle at center, #ffc22f, #fa7653, #fd6b61, transparent)' }} />
+        {/* Gradiente Horizontal Invertido */}
+        <div className="absolute inset-0 opacity-50" style={{ background: 'linear-gradient(270deg, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61)' }} />
+        {/* Gradiente Vertical */}
+        <div className="absolute inset-0 opacity-40" style={{ background: 'linear-gradient(180deg, #fd6b61, #fa7653, #ffc22f, #ffe5bd, #fffdfa)' }} />
+        {/* Gradiente Radial Superior Esquerdo */}
+        <div className="absolute inset-0 opacity-45" style={{ background: 'radial-gradient(circle at top left, #ffe5bd, #ffc22f, #fa7653, transparent)' }} />
+        {/* Gradiente Radial Inferior Direito */}
+        <div className="absolute inset-0 opacity-35" style={{ background: 'radial-gradient(circle at bottom right, #fd6b61, #fa7653, #ffc22f, transparent)' }} />
+        {/* Gradiente Diagonal 45 graus */}
+        <div className="absolute inset-0 opacity-30" style={{ background: 'linear-gradient(45deg, #fa7653, #fd6b61, #ffc22f, #ffe5bd, #fffdfa)' }} />
+        {/* Gradiente Cônico */}
+        <div className="absolute inset-0 opacity-25" style={{ background: 'conic-gradient(from 0deg at center, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61, #fffdfa)' }} />
+        {/* Camada de mistura para suavizar */}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(255, 253, 250, 0.1), rgba(255, 229, 189, 0.1), rgba(255, 194, 47, 0.1), rgba(250, 118, 83, 0.1), rgba(253, 107, 97, 0.1))', mixBlendMode: 'overlay' }} />
 
         {/* Conteúdo do Header */}
         <div className="relative z-10">
-          {/* Header vazio para dar espaço */}
-          <div className="h-16"></div>
-
-          {/* Ícone de Status */}
-          <div className="flex justify-center pt-8 pb-4">
-            <div 
-              className="w-20 h-20 rounded-full flex items-center justify-center"
-              style={{ 
-                backgroundColor: statusSolicitacao === 'processando' ? 'rgba(255, 229, 189, 0.3)' :
-                               statusSolicitacao === 'concluida' ? 'rgba(34, 197, 94, 0.2)' :
-                               'rgba(239, 68, 68, 0.2)'
-              }}
-            >
-              {statusSolicitacao === 'processando' && (
-                <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#fffdfa' }} />
-              )}
-              {statusSolicitacao === 'concluida' && (
-                <Check className="w-10 h-10" style={{ color: '#fffdfa' }} />
-              )}
-              {statusSolicitacao === 'erro' && (
-                <AlertCircle className="w-10 h-10" style={{ color: '#fffdfa' }} />
-              )}
+          {/* Navigation Header */}
+          <div className="flex items-center p-6 pt-12">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={handleVoltar}
+                className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95" 
+                style={{ backgroundColor: 'rgba(255, 229, 189, 0.3)' }}
+                aria-label="Voltar"
+              >
+                <ArrowLeft className="w-6 h-6" style={{ color: '#fffdfa' }} />
+              </button>
+              {/* Nome do Fundo */}
+              <span className="text-xl font-bold" style={{ color: '#fffdfa' }}>
+                {fundoSelecionado.nome}
+              </span>
             </div>
           </div>
 
           {/* Título da Página */}
-          <div className="px-6 pb-8 text-center">
-            <h1 className="text-3xl font-bold mb-2" style={{ color: '#fffdfa' }}>
-              {statusSolicitacao === 'processando' && 'Processando solicitação...'}
-              {statusSolicitacao === 'concluida' && 'Solicitação enviada!'}
-              {statusSolicitacao === 'erro' && 'Erro na solicitação'}
-            </h1>
+          <div className="px-6 pb-8">
+            <h1 className="text-3xl font-bold mb-2" style={{ color: '#fffdfa' }}>Confirmar solicitação</h1>
             <p className="text-lg opacity-90" style={{ color: '#fffdfa' }}>
-              {statusSolicitacao === 'processando' && 'Aguarde enquanto processamos sua solicitação'}
-              {statusSolicitacao === 'concluida' && 'Sua solicitação foi enviada com sucesso'}
-              {statusSolicitacao === 'erro' && 'Ocorreu um erro ao processar sua solicitação'}
+              Revise os detalhes da sua solicitação de capital
             </p>
           </div>
         </div>
       </div>
 
-      {/* Content Section - Fundo Branco */}
+      {/* Content Section */}
       <div className="rounded-t-3xl min-h-96 pt-8 pb-32" style={{ backgroundColor: '#fffdfa' }}>
-        <div className="px-6 max-w-md mx-auto">
-          
-          {/* Conteúdo baseado no status */}
-          {statusSolicitacao === 'processando' && (
-            <div className="text-center">
-              <div className="mb-8">
-                <div 
-                  className="rounded-2xl p-6 border"
-                  style={{ 
-                    backgroundColor: 'rgba(255, 229, 189, 0.1)', 
-                    borderColor: 'rgba(48, 48, 48, 0.1)',
-                    borderWidth: '1px'
-                  }}
-                >
-                  <p className="text-lg" style={{ color: '#303030' }}>
-                    Estamos processando sua solicitação de capital...
-                  </p>
-                  <p className="text-sm mt-2" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                    Isso pode levar alguns segundos.
-                  </p>
+        <div className="px-6 max-w-md mx-auto space-y-8">
+
+          {/* Resumo da Solicitação */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: '#303030' }}>
+              Detalhes da solicitação
+            </h2>
+            <div 
+              className="w-8 h-1 rounded-full mb-6"
+              style={{ background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)' }}
+            />
+            
+            <div
+              className="rounded-2xl p-5 space-y-4"
+              style={{ 
+                backgroundColor: 'rgba(255, 229, 189, 0.1)'
+              }}
+            >
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>Fundo:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{fundoSelecionado.emoji}</span>
+                  <span className="font-semibold" style={{ color: '#303030' }}>
+                    {fundoSelecionado.nome}
+                  </span>
                 </div>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>Valor solicitado:</span>
+                <span className="font-bold text-xl" style={{ color: '#303030' }}>
+                  {solicitacao.valorSolicitado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>Taxa de retribuição:</span>
+                <span className="font-semibold text-lg" style={{ color: '#303030' }}>
+                  {solicitacao.taxaRetribuicao}%
+                </span>
+              </div>
+              
+              <div 
+                className="w-full h-px"
+                style={{ backgroundColor: 'rgba(48, 48, 48, 0.1)' }}
+              />
+              
+              <div className="flex justify-between items-center">
+                <span className="font-semibold" style={{ color: '#303030' }}>Total a retribuir:</span>
+                <span className="font-bold text-xl" style={{ color: '#fd6b61' }}>
+                  {valorTotalRetribuicao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+              </div>
+
+              {solicitacao.dataLimite && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>Data limite:</span>
+                  <span className="font-semibold" style={{ color: '#303030' }}>
+                    {formatarDataLimite(solicitacao.dataLimite)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Motivo da Solicitação */}
+          {solicitacao.motivoSolicitacao && (
+            <div>
+              <h2 className="text-lg font-semibold mb-4" style={{ color: '#303030' }}>
+                Motivo da solicitação
+              </h2>
+              <div 
+                className="w-8 h-1 rounded-full mb-6"
+                style={{ background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)' }}
+              />
+              
+              <div
+                className="rounded-2xl p-4"
+                style={{ 
+                  backgroundColor: 'rgba(255, 229, 189, 0.1)'
+                }}
+              >
+                <p style={{ color: '#303030', lineHeight: '1.5' }}>
+                  {solicitacao.motivoSolicitacao}
+                </p>
               </div>
             </div>
           )}
 
-          {statusSolicitacao === 'concluida' && dadosSolicitacao && (
-            <div>
-              {/* Card de Sucesso */}
-              <div className="mb-8">
-                <div 
-                  className="rounded-2xl p-6 border"
+          {/* Plano de Retribuição */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: '#303030' }}>
+              Plano de retribuição
+            </h2>
+            <div 
+              className="w-8 h-1 rounded-full mb-6"
+              style={{ background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)' }}
+            />
+            
+            <div className="space-y-3">
+              {planoPagamento.parcelas.map((parcela: any) => (
+                <div
+                  key={parcela.numero}
+                  className="flex items-center justify-between p-4 rounded-2xl"
                   style={{ 
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)', 
-                    borderColor: 'rgba(34, 197, 94, 0.3)',
-                    borderWidth: '2px'
+                    backgroundColor: 'rgba(255, 229, 189, 0.1)'
                   }}
                 >
-                  <div className="text-center">
-                    <h2 className="text-xl font-bold mb-2" style={{ color: '#303030' }}>
-                      Solicitação #{dadosSolicitacao.idSolicitacao}
-                    </h2>
-                    <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                      Status: <span className="font-medium text-green-600">Pendente de aprovação</span>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: 'rgba(255, 194, 47, 0.2)' }}
+                    >
+                      <span className="text-sm font-bold" style={{ color: '#303030' }}>
+                        {parcela.numero}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-semibold" style={{ color: '#303030' }}>
+                        {parcela.numero}ª parcela
+                      </p>
+                      <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
+                        {parcela.dataFormatada}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-lg" style={{ color: '#303030' }}>
+                      {parcela.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </p>
                   </div>
                 </div>
-              </div>
+              ))}
+            </div>
+          </div>
 
-              {/* Detalhes da Solicitação */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-4" style={{ color: '#303030' }}>
-                  Detalhes da solicitação
-                </h3>
-                <div 
-                  className="w-8 h-1 rounded-full mb-6"
-                  style={{ background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)' }}
-                ></div>
-                
-                <div className="space-y-4">
-                  {/* Fundo */}
-                  <div 
-                    className="rounded-xl p-4 border"
-                    style={{ 
-                      backgroundColor: 'rgba(255, 229, 189, 0.1)', 
-                      borderColor: 'rgba(48, 48, 48, 0.1)'
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{dadosSolicitacao.fundEmoji}</span>
-                      <div>
-                        <p className="font-medium" style={{ color: '#303030' }}>
-                          {dadosSolicitacao.fundName}
-                        </p>
-                        <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                          Fundo selecionado
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Valor */}
-                  <div 
-                    className="rounded-xl p-4 border"
-                    style={{ 
-                      backgroundColor: 'rgba(255, 229, 189, 0.1)', 
-                      borderColor: 'rgba(48, 48, 48, 0.1)'
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <CreditCard className="w-6 h-6" style={{ color: 'rgba(48, 48, 48, 0.7)' }} />
-                      <div>
-                        <p className="font-bold text-lg" style={{ color: '#303030' }}>
-                          {dadosSolicitacao.valor.toLocaleString('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL'
-                          })}
-                        </p>
-                        <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                          Valor solicitado
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Data */}
-                  <div 
-                    className="rounded-xl p-4 border"
-                    style={{ 
-                      backgroundColor: 'rgba(255, 229, 189, 0.1)', 
-                      borderColor: 'rgba(48, 48, 48, 0.1)'
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-6 h-6" style={{ color: 'rgba(48, 48, 48, 0.7)' }} />
-                      <div>
-                        <p className="font-medium" style={{ color: '#303030' }}>
-                          {new Date(dadosSolicitacao.dataSolicitacao).toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                        <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                          Data da solicitação
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Próximos Passos */}
-              <div className="mb-8">
-                <div 
-                  className="rounded-2xl p-4 border"
-                  style={{ 
-                    backgroundColor: 'rgba(255, 229, 189, 0.1)', 
-                    borderColor: 'rgba(48, 48, 48, 0.1)',
-                    borderWidth: '1px'
-                  }}
-                >
-                  <h4 className="font-semibold mb-2" style={{ color: '#303030' }}>
-                    Próximos passos:
-                  </h4>
-                  <ul className="text-sm space-y-1" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                    <li>• Os administradores do fundo irão analisar sua solicitação</li>
-                    <li>• Você receberá uma notificação sobre o resultado</li>
-                    <li>• Se aprovada, o valor será disponibilizado conforme o plano de retribuição</li>
-                  </ul>
-                </div>
+          {/* Aviso Importante */}
+          <div
+            className="rounded-2xl p-4"
+            style={{ 
+              backgroundColor: 'rgba(255, 194, 47, 0.1)'
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#ffc22f' }} />
+              <div>
+                <p className="font-semibold mb-1" style={{ color: '#303030' }}>
+                  Compromisso de retribuição
+                </p>
+                <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.8)', lineHeight: '1.4' }}>
+                  Ao confirmar esta solicitação, você se compromete a retribuir o valor de{' '}
+                  <span className="font-semibold">
+                    {valorTotalRetribuicao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                  {' '}conforme o plano estabelecido.
+                </p>
               </div>
             </div>
-          )}
-
-          {statusSolicitacao === 'erro' && (
-            <div>
-              <div className="mb-8">
-                <div 
-                  className="rounded-2xl p-6 border"
-                  style={{ 
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-                    borderColor: 'rgba(239, 68, 68, 0.3)',
-                    borderWidth: '2px'
-                  }}
-                >
-                  <div className="text-center">
-                    <h2 className="text-xl font-bold mb-2" style={{ color: '#303030' }}>
-                      Erro no processamento
-                    </h2>
-                    <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                      Não foi possível processar sua solicitação. Tente novamente.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Botões de Ação - Fixos na Parte Inferior */}
-      <div className="fixed bottom-0 left-0 right-0 px-6 py-3" style={{ backgroundColor: '#fffdfa' }}>
+      {/* Botão de Solicitar - Fixo na Parte Inferior */}
+      <div className="fixed bottom-0 left-0 right-0 px-6 py-4" style={{ backgroundColor: '#fffdfa' }}>
         <div className="max-w-md mx-auto">
-          {statusSolicitacao === 'concluida' && (
-            <div className="space-y-3">
-              <button 
-                onClick={handleVerDetalhes}
-                className="w-full rounded-3xl p-4 text-white font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                style={{ 
-                  background: 'linear-gradient(135deg, #ffc22f, #fa7653, #fd6b61)'
-                }}
-              >
-                Ver detalhes do fundo
-              </button>
-              <button 
-                onClick={handleVoltarHome}
-                className="w-full rounded-3xl p-4 font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] border"
-                style={{ 
-                  backgroundColor: '#fffdfa',
-                  borderColor: 'rgba(48, 48, 48, 0.1)',
-                  color: '#303030'
-                }}
-              >
-                Voltar ao início
-              </button>
+          <button 
+            onClick={handleSolicitarCapital}
+            disabled={processando}
+            className="w-full rounded-3xl p-4 text-white font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
+            style={{ 
+              background: 'linear-gradient(135deg, #ffc22f, #fa7653, #fd6b61)'
+            }}
+          >
+            <div className="flex items-center justify-center gap-2">
+              {processando ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Processando...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-5 h-5" />
+                  <span>Solicitar capital</span>
+                </>
+              )}
             </div>
-          )}
-
-          {statusSolicitacao === 'erro' && (
-            <div className="space-y-3">
-              <button 
-                onClick={() => setLocation('/request/select-fund')}
-                className="w-full rounded-3xl p-4 text-white font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                style={{ 
-                  background: 'linear-gradient(135deg, #ffc22f, #fa7653, #fd6b61)'
-                }}
-              >
-                Tentar novamente
-              </button>
-              <button 
-                onClick={handleVoltarHome}
-                className="w-full rounded-3xl p-4 font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] border"
-                style={{ 
-                  backgroundColor: '#fffdfa',
-                  borderColor: 'rgba(48, 48, 48, 0.1)',
-                  color: '#303030'
-                }}
-              >
-                Voltar ao início
-              </button>
-            </div>
-          )}
+          </button>
         </div>
       </div>
     </div>
