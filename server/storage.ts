@@ -1,5 +1,7 @@
-import { type User, type InsertUser, type Fund, type InsertFund, type Contribution, type InsertContribution } from "@shared/schema";
+import { type User, type InsertUser, type Fund, type InsertFund, type Contribution, type InsertContribution, users, funds, contributions } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -169,4 +171,69 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async getFunds(): Promise<Fund[]> {
+    return await db.select().from(funds).orderBy(funds.createdAt);
+  }
+
+  async getFund(id: string): Promise<Fund | undefined> {
+    const [fund] = await db.select().from(funds).where(eq(funds.id, id));
+    return fund;
+  }
+
+  async createFund(insertFund: InsertFund, userId: string): Promise<Fund> {
+    const [fund] = await db.insert(funds).values({
+      ...insertFund,
+      createdBy: userId
+    }).returning();
+    return fund;
+  }
+
+  async updateFund(id: string, updates: Partial<Fund>): Promise<Fund | undefined> {
+    const [fund] = await db.update(funds)
+      .set(updates)
+      .where(eq(funds.id, id))
+      .returning();
+    return fund;
+  }
+
+  async getContributions(fundId: string): Promise<Contribution[]> {
+    return await db.select().from(contributions).where(eq(contributions.fundId, fundId));
+  }
+
+  async createContribution(insertContribution: InsertContribution, userId: string): Promise<Contribution> {
+    const [contribution] = await db.insert(contributions).values({
+      ...insertContribution,
+      userId
+    }).returning();
+    
+    // Update fund balance
+    const fund = await this.getFund(insertContribution.fundId);
+    if (fund) {
+      const newBalance = parseFloat(fund.balance) + parseFloat(insertContribution.amount);
+      await this.updateFund(fund.id, { balance: newBalance.toFixed(2) });
+    }
+    
+    return contribution;
+  }
+}
+
+// Use DatabaseStorage in production, MemStorage for development/testing
+export const storage = process.env.NODE_ENV === 'production' || process.env.DATABASE_URL 
+  ? new DatabaseStorage() 
+  : new MemStorage();
