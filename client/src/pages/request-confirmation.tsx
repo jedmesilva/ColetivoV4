@@ -98,15 +98,15 @@ export default function RequestConfirmation() {
       alert('Solicitação enviada com sucesso! Você receberá uma notificação quando for aprovada.');
       
       // Navegar de volta para onde o usuário estava
-      const previousRoute = sessionStorage.getItem('previousRoute');
-      if (previousRoute && previousRoute.includes('/fund/')) {
-        setLocation(previousRoute);
+      const lastPath = sessionStorage.getItem('lastPath');
+      if (lastPath && lastPath.includes('/fund/')) {
+        setLocation(lastPath);
       } else {
         setLocation('/');
       }
       
       // Limpar a rota anterior do sessionStorage
-      sessionStorage.removeItem('previousRoute');
+      sessionStorage.removeItem('lastPath');
     }, 2000);
   };
 
