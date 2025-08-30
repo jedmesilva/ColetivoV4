@@ -469,7 +469,7 @@ export default function RequestPaymentPlan() {
                     <h4 className="text-sm font-medium mb-3" style={{ color: '#303030' }}>
                       Parcelas calculadas:
                     </h4>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                    <div className="space-y-2">
                       {parcelasCalculadas.map((parcela, index) => (
                         <div 
                           key={index}
