@@ -2,6 +2,7 @@ import { ArrowLeft, Check, Calendar, CreditCard, Edit3, Plus, X, ChevronRight } 
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { getRequestCache, updateRequestCache } from "@/lib/request-cache";
+import CustomSelect from "@/components/ui/custom-select";
 
 interface PaymentPlan {
   tipo: 'automatico' | 'personalizado';
@@ -35,7 +36,14 @@ export default function RequestPaymentPlan() {
   const valorTotal = valorSolicitado * (taxaRetribuicao / 100); // 25% do valor solicitado
   
   // Opções de parcelas
-  const opcoesParcelas = ['1', '2', '3', '4', '6', '12'];
+  const opcoesParcelas = [
+    { value: '1', label: '1x' },
+    { value: '2', label: '2x' },
+    { value: '3', label: '3x' },
+    { value: '4', label: '4x' },
+    { value: '6', label: '6x' },
+    { value: '12', label: '12x' }
+  ];
   const opcoesIntervalo = [
     { value: 'diario', label: 'Diário' },
     { value: 'semanal', label: 'Semanal' },
@@ -438,36 +446,22 @@ export default function RequestPaymentPlan() {
                 </div>
 
                 {/* Número de Parcelas */}
-                <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: '#303030' }}>
-                    Número de parcelas
-                  </label>
-                  <select
-                    value={numeroParcelas}
-                    onChange={(e) => setNumeroParcelas(e.target.value)}
-                    className="select-limpo"
-                  >
-                    {opcoesParcelas.map(opcao => (
-                      <option key={opcao} value={opcao}>{opcao}x</option>
-                    ))}
-                  </select>
-                </div>
+                <CustomSelect
+                  label="Número de parcelas"
+                  options={opcoesParcelas}
+                  value={numeroParcelas}
+                  onChange={setNumeroParcelas}
+                  placeholder="Selecione o número de parcelas"
+                />
 
                 {/* Intervalo das Parcelas */}
-                <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: '#303030' }}>
-                    Intervalo das parcelas
-                  </label>
-                  <select
-                    value={intervaloParcelas}
-                    onChange={(e) => setIntervaloParcelas(e.target.value)}
-                    className="select-limpo"
-                  >
-                    {opcoesIntervalo.map(opcao => (
-                      <option key={opcao.value} value={opcao.value}>{opcao.label}</option>
-                    ))}
-                  </select>
-                </div>
+                <CustomSelect
+                  label="Intervalo das parcelas"
+                  options={opcoesIntervalo}
+                  value={intervaloParcelas}
+                  onChange={setIntervaloParcelas}
+                  placeholder="Selecione o intervalo"
+                />
 
                 {/* Preview das Parcelas */}
                 {parcelasCalculadas.length > 0 && (
