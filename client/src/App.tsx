@@ -16,6 +16,9 @@ import CreateFundName from "@/pages/create-fund-name";
 import CreateFundObjective from "@/pages/create-fund-objective";
 import CreateFundImage from "@/pages/create-fund-image";
 import CreateFundMembers from "@/pages/create-fund-members";
+import CriarConta from "@/pages/criar-conta";
+import CriarSenha from "@/pages/criar-senha";
+import CriarUsername from "@/pages/criar-username";
 import ContributeSelectFund from "@/pages/contribute-select-fund";
 import ContributeAmount from "@/pages/contribute-amount";
 import ContributeConfirmation from "@/pages/contribute-confirmation";
@@ -43,6 +46,9 @@ function Router() {
       <Route path="/create-fund/objective" component={CreateFundObjective} />
       <Route path="/create-fund/image" component={CreateFundImage} />
       <Route path="/create-fund/members" component={CreateFundMembers} />
+      <Route path="/criar-conta" component={CriarConta} />
+      <Route path="/criar-conta/senha" component={CriarSenha} />
+      <Route path="/criar-conta/username" component={CriarUsername} />
       <Route path="/contribute/select-fund" component={ContributeSelectFund} />
       <Route path="/contribute/amount" component={ContributeAmount} />
       <Route path="/contribute/confirmation" component={ContributeConfirmation} />
