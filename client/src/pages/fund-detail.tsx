@@ -4,6 +4,7 @@ import { useRoute, useLocation } from "wouter";
 import { Bell, Menu, Eye, ArrowLeft, ArrowUp, ArrowDown, Users, CreditCard, Calendar, Heart, Home, User, MessageCircle } from "lucide-react";
 import { Fund } from "@shared/schema";
 import { updateContributionCache } from "@/lib/contribution-cache";
+import { updateRequestCache } from "@/lib/request-cache";
 
 export default function FundDetail() {
   const [, params] = useRoute("/fund/:id");
@@ -275,6 +276,17 @@ export default function FundDetail() {
 
               {/* Botão Solicitar */}
               <button 
+                onClick={() => {
+                  // Salvar a página atual antes de navegar
+                  sessionStorage.setItem('lastPath', `/fund/${fund.id}`);
+                  // Pré-selecionar o fundo atual para solicitação
+                  updateRequestCache({
+                    fundId: fund.id,
+                    fundName: fund.name,
+                    fundEmoji: fund.emoji
+                  });
+                  setLocation('/request/amount');
+                }}
                 className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-creme border-dark-light"
                 data-testid="button-request"
               >
