@@ -96,7 +96,17 @@ export default function RequestConfirmation() {
       setProcessando(false);
       clearRequestCache(); // Limpar cache após sucesso
       alert('Solicitação enviada com sucesso! Você receberá uma notificação quando for aprovada.');
-      setLocation('/');
+      
+      // Navegar de volta para onde o usuário estava
+      const previousRoute = sessionStorage.getItem('previousRoute');
+      if (previousRoute && previousRoute.includes('/fund/')) {
+        setLocation(previousRoute);
+      } else {
+        setLocation('/');
+      }
+      
+      // Limpar a rota anterior do sessionStorage
+      sessionStorage.removeItem('previousRoute');
     }, 2000);
   };
 
