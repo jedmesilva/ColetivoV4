@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 export default function ContributeConfirmation() {
   const [statusContribuicao, setStatusContribuicao] = useState<'processando' | 'concluida' | 'erro'>('processando');
   const [dadosContribuicao, setDadosContribuicao] = useState<any>(null);
+  const [jaProcessou, setJaProcessou] = useState(false);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
@@ -25,6 +26,8 @@ export default function ContributeConfirmation() {
 
   // Processar contribuição ao carregar
   useEffect(() => {
+    if (jaProcessou) return; // Evitar processar múltiplas vezes
+    
     const cached = getContributionCache();
     if (!cached || !cached.fundId || !cached.valor) {
       // Se não há dados, redirecionar para seleção de fundo
@@ -33,8 +36,9 @@ export default function ContributeConfirmation() {
     }
 
     // Processar contribuição automaticamente
+    setJaProcessou(true);
     processContributionMutation.mutate();
-  }, [setLocation, processContributionMutation]);
+  }, [setLocation, jaProcessou, processContributionMutation]);
 
   const formatarData = (data: string) => {
     return new Date(data).toLocaleString('pt-BR', {

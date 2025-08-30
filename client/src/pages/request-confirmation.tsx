@@ -7,6 +7,7 @@ import { getRequestCache, processRequest, clearRequestCache } from "@/lib/reques
 export default function RequestConfirmation() {
   const [statusSolicitacao, setStatusSolicitacao] = useState<'processando' | 'concluida' | 'erro'>('processando');
   const [dadosSolicitacao, setDadosSolicitacao] = useState<any>(null);
+  const [jaProcessou, setJaProcessou] = useState(false);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
@@ -25,6 +26,8 @@ export default function RequestConfirmation() {
 
   // Processar solicitação ao carregar
   useEffect(() => {
+    if (jaProcessou) return; // Evitar processar múltiplas vezes
+    
     const cached = getRequestCache();
     if (!cached || !cached.fundId || !cached.valor || !cached.motivo || !cached.planoPagamento) {
       // Se não há dados, redirecionar para seleção de fundo
@@ -33,8 +36,9 @@ export default function RequestConfirmation() {
     }
 
     // Processar solicitação automaticamente
+    setJaProcessou(true);
     processRequestMutation.mutate();
-  }, [setLocation, processRequestMutation]);
+  }, [setLocation, jaProcessou, processRequestMutation]);
 
   const handleVoltarHome = () => {
     clearRequestCache(); // Limpar cache ao sair
