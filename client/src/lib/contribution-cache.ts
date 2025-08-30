@@ -50,8 +50,7 @@ export const processContribution = async (): Promise<any> => {
   // Simular delay de processamento
   await new Promise(resolve => setTimeout(resolve, 2000));
 
-  // Limpar cache após processamento
-  clearContributionCache();
+  // NÃO limpar cache aqui - será limpo quando o usuário sair da tela de confirmação
   
   return contribution;
 };

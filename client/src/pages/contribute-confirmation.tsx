@@ -1,7 +1,7 @@
 import { ArrowLeft, Check, X, Clock, FileText, RefreshCw, Home } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { getContributionCache, processContribution } from "@/lib/contribution-cache";
+import { getContributionCache, processContribution, clearContributionCache } from "@/lib/contribution-cache";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function ContributeConfirmation() {
@@ -97,10 +97,12 @@ export default function ContributeConfirmation() {
   };
 
   const handleTentarNovamente = () => {
+    clearContributionCache(); // Limpar cache ao reiniciar fluxo
     setLocation('/contribute/amount');
   };
 
   const handleVoltarInicio = () => {
+    clearContributionCache(); // Limpar cache ao sair
     setLocation('/');
   };
 

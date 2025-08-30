@@ -64,8 +64,7 @@ export const processRequest = async (): Promise<any> => {
   // Simular delay de processamento
   await new Promise(resolve => setTimeout(resolve, 2000));
 
-  // Limpar cache após processamento
-  clearRequestCache();
+  // NÃO limpar cache aqui - será limpo quando o usuário sair da tela de confirmação
   
   return request;
 };

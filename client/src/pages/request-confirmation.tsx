@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2, AlertCircle, Calendar, CreditCard } from "lucide-react";
-import { getRequestCache, processRequest } from "@/lib/request-cache";
+import { getRequestCache, processRequest, clearRequestCache } from "@/lib/request-cache";
 
 export default function RequestConfirmation() {
   const [statusSolicitacao, setStatusSolicitacao] = useState<'processando' | 'concluida' | 'erro'>('processando');
@@ -37,11 +37,13 @@ export default function RequestConfirmation() {
   }, [setLocation, processRequestMutation]);
 
   const handleVoltarHome = () => {
+    clearRequestCache(); // Limpar cache ao sair
     setLocation('/');
   };
 
   const handleVerDetalhes = () => {
     if (dadosSolicitacao?.fundId) {
+      clearRequestCache(); // Limpar cache ao sair
       setLocation(`/fund/${dadosSolicitacao.fundId}`);
     }
   };
