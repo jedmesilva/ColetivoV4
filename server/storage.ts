@@ -233,6 +233,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use MemStorage for now due to Supabase connection issues
-// Will switch to DatabaseStorage once connection is resolved
-export const storage = new MemStorage();
+// Use DatabaseStorage with Supabase connection
+export const storage = new DatabaseStorage();

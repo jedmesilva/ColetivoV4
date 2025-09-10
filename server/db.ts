@@ -15,13 +15,21 @@ const dbPassword = process.env.SUPABASE_DB_PASSWORD;
 const projectRefMatch = supabaseUrl.match(/@db\.([^.]+)\.supabase\.co/);
 const projectRef = projectRefMatch ? projectRefMatch[1] : 'gtatmggrruiwbbomdrtl';
 
-// Create proper PostgreSQL connection string with encoded password
-const dbUrl = `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`;
+// Try different connection endpoints - Supabase provides multiple endpoints
+const dbUrls = [
+  `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`,
+  `postgresql://postgres:${encodeURIComponent(dbPassword)}@aws-0-us-east-1.pooler.supabase.com:5432/postgres?host=${projectRef}`
+];
+
+const dbUrl = dbUrls[0]; // Try pooler first
 
 // Create postgres client with proper URL handling
 const client = postgres(dbUrl, {
   prepare: false,
   ssl: { rejectUnauthorized: false },
+  connect_timeout: 30,
+  idle_timeout: 20,
+  max_lifetime: 60 * 30,
   transform: {
     undefined: null,
   },
