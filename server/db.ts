@@ -2,13 +2,29 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "@shared/schema";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is required");
+// Check for required environment variables
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_DB_PASSWORD) {
+  throw new Error("SUPABASE_URL and SUPABASE_DB_PASSWORD environment variables are required");
 }
 
-// Create postgres client
-const client = postgres(process.env.DATABASE_URL, {
+// Use the provided connection string but replace the password with the encoded one
+const supabaseUrl = process.env.SUPABASE_URL;
+const dbPassword = process.env.SUPABASE_DB_PASSWORD;
+
+// Extract project reference from the existing connection string
+const projectRefMatch = supabaseUrl.match(/@db\.([^.]+)\.supabase\.co/);
+const projectRef = projectRefMatch ? projectRefMatch[1] : 'gtatmggrruiwbbomdrtl';
+
+// Create proper PostgreSQL connection string with encoded password
+const dbUrl = `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`;
+
+// Create postgres client with proper URL handling
+const client = postgres(dbUrl, {
   prepare: false,
+  ssl: { rejectUnauthorized: false },
+  transform: {
+    undefined: null,
+  },
 });
 
 // Create drizzle database instance

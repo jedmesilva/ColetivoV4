@@ -233,7 +233,6 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use DatabaseStorage in production, MemStorage for development/testing
-export const storage = process.env.NODE_ENV === 'production' || process.env.DATABASE_URL 
-  ? new DatabaseStorage() 
-  : new MemStorage();
+// Use MemStorage for now due to Supabase connection issues
+// Will switch to DatabaseStorage once connection is resolved
+export const storage = new MemStorage();
