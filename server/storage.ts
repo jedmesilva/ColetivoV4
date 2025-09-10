@@ -1,6 +1,6 @@
 import { type User, type InsertUser, type Fund, type InsertFund, type Contribution, type InsertContribution, users, funds, contributions } from "@shared/schema";
 import { randomUUID } from "crypto";
-import { db } from "./db";
+import { db, supabase } from "./db";
 import { eq } from "drizzle-orm";
 
 export interface IStorage {
@@ -171,56 +171,108 @@ export class MemStorage implements IStorage {
   }
 }
 
-export class DatabaseStorage implements IStorage {
+export class SupabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) return undefined;
+    return data as User;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single();
+    
+    if (error) return undefined;
+    return data as User;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+    const { data, error } = await supabase
+      .from('users')
+      .insert(insertUser)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as User;
   }
 
   async getFunds(): Promise<Fund[]> {
-    return await db.select().from(funds).orderBy(funds.createdAt);
+    const { data, error } = await supabase
+      .from('funds')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data as Fund[];
   }
 
   async getFund(id: string): Promise<Fund | undefined> {
-    const [fund] = await db.select().from(funds).where(eq(funds.id, id));
-    return fund;
+    const { data, error } = await supabase
+      .from('funds')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) return undefined;
+    return data as Fund;
   }
 
   async createFund(insertFund: InsertFund, userId: string): Promise<Fund> {
-    const [fund] = await db.insert(funds).values({
-      ...insertFund,
-      createdBy: userId
-    }).returning();
-    return fund;
+    const { data, error } = await supabase
+      .from('funds')
+      .insert({
+        ...insertFund,
+        created_by: userId
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as Fund;
   }
 
   async updateFund(id: string, updates: Partial<Fund>): Promise<Fund | undefined> {
-    const [fund] = await db.update(funds)
-      .set(updates)
-      .where(eq(funds.id, id))
-      .returning();
-    return fund;
+    const { data, error } = await supabase
+      .from('funds')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) return undefined;
+    return data as Fund;
   }
 
   async getContributions(fundId: string): Promise<Contribution[]> {
-    return await db.select().from(contributions).where(eq(contributions.fundId, fundId));
+    const { data, error } = await supabase
+      .from('contributions')
+      .select('*')
+      .eq('fund_id', fundId);
+    
+    if (error) throw error;
+    return data as Contribution[];
   }
 
   async createContribution(insertContribution: InsertContribution, userId: string): Promise<Contribution> {
-    const [contribution] = await db.insert(contributions).values({
-      ...insertContribution,
-      userId
-    }).returning();
+    const { data, error } = await supabase
+      .from('contributions')
+      .insert({
+        ...insertContribution,
+        user_id: userId
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
     
     // Update fund balance
     const fund = await this.getFund(insertContribution.fundId);
@@ -229,9 +281,9 @@ export class DatabaseStorage implements IStorage {
       await this.updateFund(fund.id, { balance: newBalance.toFixed(2) });
     }
     
-    return contribution;
+    return data as Contribution;
   }
 }
 
-// Use DatabaseStorage with Supabase connection
-export const storage = new DatabaseStorage();
+// Use SupabaseStorage via REST API
+export const storage = new SupabaseStorage();
