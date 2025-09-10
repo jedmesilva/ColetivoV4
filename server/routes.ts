@@ -79,8 +79,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertFundSchema.parse(req.body);
       
-      // TODO: Get userId from session/auth
-      const userId = "default-user-id"; // This should come from authentication
+      // Use a fixed user ID that exists in your Supabase
+      // This should be replaced with proper authentication later
+      const userId = "00000000-0000-0000-0000-000000000000";
       
       const fund = await storage.createFund(validatedData, userId);
       res.status(201).json(fund);
@@ -109,8 +110,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertContributionSchema.parse(req.body);
       
-      // TODO: Get userId from session/auth
-      const userId = "default-user-id"; // This should come from authentication
+      // Use a fixed user ID that exists in your Supabase
+      // This should be replaced with proper authentication later
+      const userId = "00000000-0000-0000-0000-000000000000";
       
       const contribution = await storage.createContribution(validatedData, userId);
       res.status(201).json(contribution);

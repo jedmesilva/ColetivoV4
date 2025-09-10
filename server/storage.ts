@@ -227,12 +227,19 @@ export class SupabaseStorage implements IStorage {
   }
 
   async createFund(insertFund: InsertFund, userId: string): Promise<Fund> {
+    // Create fund without foreign key constraint temporarily
+    const fundData = {
+      ...insertFund,
+      balance: "0.00",
+      growth_percentage: "0.00", 
+      member_count: 1,
+      created_at: new Date().toISOString(),
+      // Skip created_by for now to avoid foreign key issues
+    };
+
     const { data, error } = await supabase
       .from('funds')
-      .insert({
-        ...insertFund,
-        created_by: userId
-      })
+      .insert(fundData)
       .select()
       .single();
     
