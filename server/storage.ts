@@ -79,6 +79,59 @@ class SupabaseStorage implements IStorage {
   }
 
   async getAccountBalance(accountId: number): Promise<AccountBalance | undefined> {
+    console.log('getAccountBalance called for accountId:', accountId);
+
+    // Primeiro, tenta buscar da view account_balances se existir
+    console.log('Trying to fetch from account_balances view...');
+    const { data: viewData, error: viewError } = await supabase
+      .from('account_balances')
+      .select('id, account_balance') // Selecionar colunas relevantes da view
+      .eq('id', accountId) // Usar 'id' da view que corresponde ao accountId
+      .maybeSingle();
+
+    if (viewError) {
+      console.log('Error accessing account_balances view:', viewError);
+    } else if (viewData) {
+      console.log('Found data in account_balances view:', viewData);
+      
+      // Buscar dados da conta
+      const account = await this.getUser(accountId.toString());
+      if (!account) return undefined;
+
+      const accountBalance = parseFloat(viewData.account_balance || '0');
+
+      // Buscar total em fundos (contribuições ativas)
+      const { data: fundMemberships, error: memberError } = await supabase
+        .from('fund_members')
+        .select('total_contributed')
+        .eq('account_id', accountId)
+        .eq('status', 'active');
+
+      if (memberError) throw memberError;
+
+      let balanceInFunds = 0;
+      if (fundMemberships) {
+        balanceInFunds = fundMemberships.reduce((sum, membership) => {
+          return sum + parseFloat(membership.total_contributed || '0');
+        }, 0);
+      }
+
+      const freeBalance = accountBalance - balanceInFunds;
+
+      return {
+        accountId,
+        totalBalance: accountBalance,
+        freeBalance: Math.max(0, freeBalance), // Não permitir saldo livre negativo
+        balanceInFunds,
+        account
+      };
+    } else {
+      console.log('No data found in account_balances view for accountId:', accountId);
+    }
+
+    // Fallback: usar cálculo baseado em transações
+    console.log('Using transaction-based fallback calculation');
+
     // Buscar dados da conta
     const account = await this.getUser(accountId.toString());
     if (!account) return undefined;
@@ -463,5 +516,47 @@ class SupabaseStorage implements IStorage {
   }
 }
 
+// Method to ensure test account exists
+  async ensureTestAccount(): Promise<void> {
+    console.log('Ensuring test account with ID 13 exists...');
+    
+    // Check if account with ID 13 exists
+    const existingAccount = await this.getUser('13');
+    if (existingAccount) {
+      console.log('Test account already exists:', existingAccount);
+      return;
+    }
+
+    console.log('Creating test account with ID 13...');
+    
+    // Create test account to match the view data
+    const { data, error } = await supabase
+      .from('accounts')
+      .insert({
+        id: 13,
+        email: 'joao@teste.com',
+        password_hash: '$2b$10$dummy.hash.for.testing.purposes.only',
+        full_name: 'João Silva',
+        phone: '11999999999',
+        cpf: '12345678901',
+        birth_date: '1990-01-01',
+        is_active: true,
+        email_verified: true,
+        phone_verified: true
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating test account:', error);
+    } else {
+      console.log('Test account created successfully:', data);
+    }
+  }
+}
+
 // Export SUPABASE-ONLY storage instance - SECURITY ENFORCED
 export const storage = new SupabaseStorage();
+
+// Ensure test account exists on startup
+storage.ensureTestAccount().catch(console.error);

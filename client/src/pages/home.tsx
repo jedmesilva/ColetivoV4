@@ -35,9 +35,9 @@ export default function Home() {
     }).format(value);
   };
 
-  // Hook para buscar saldo da conta do usuário (ID temporário: 1)
+  // Hook para buscar saldo da conta do usuário (ID temporário: 13 - existe na view account_balances)
   const { data: accountBalance } = useQuery<{ balanceInFunds: number; freeBalance: number; totalBalance: number }>({
-    queryKey: ['/api/accounts/1/balance'],
+    queryKey: ['/api/accounts/13/balance'],
     enabled: true,
   });
 
@@ -153,7 +153,7 @@ export default function Home() {
               
               <div className="mb-6">
                 <h3 className="text-4xl font-bold mb-1 text-dark" data-testid="text-free-balance">
-                  {balanceVisible ? formatCurrency(accountBalance?.freeBalance || 0) : "••••••"}
+                  {balanceVisible ? formatCurrency(accountBalance?.totalBalance || 0) : "••••••"}
                 </h3>
                 <p className="text-sm text-dark">Saldo total disponível</p>
               </div>
