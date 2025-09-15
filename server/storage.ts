@@ -3,7 +3,7 @@
 // ONLY Supabase operations are allowed - NO OTHER databases permitted
 
 import { supabase } from "./db"; // ONLY SUPABASE CLIENT IMPORTED
-import { 
+import {
   type Account, type Fund, type Contribution, type FundMember, type AccountTransaction,
   type InsertAccount, type InsertFund, type InsertContribution, type InsertFundMember,
   // Manter compatibilidade
@@ -51,7 +51,7 @@ class SupabaseStorage implements IStorage {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) return undefined;
     return data as Account;
   }
@@ -62,7 +62,7 @@ class SupabaseStorage implements IStorage {
       .select('*')
       .eq('email', username) // usando email como username
       .single();
-    
+
     if (error) return undefined;
     return data as Account;
   }
@@ -73,7 +73,7 @@ class SupabaseStorage implements IStorage {
       .insert(insertUser)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data as Account;
   }
@@ -97,7 +97,7 @@ class SupabaseStorage implements IStorage {
     if (transactions) {
       for (const transaction of transactions) {
         const amount = parseFloat(transaction.amount || '0');
-        
+
         // Transações que aumentam o saldo
         if (['deposit', 'fund_withdrawal', 'transfer_in', 'refund'].includes(transaction.transaction_type)) {
           totalBalance += amount;
@@ -139,22 +139,22 @@ class SupabaseStorage implements IStorage {
   // Fund balance operations
   async getFundBalance(fundId: number): Promise<{ fundId: number; currentBalance: number }> {
     console.log('getFundBalance called for fundId:', fundId);
-    
+
     // Primeiro tenta buscar da view fund_balances se existir
     console.log('Trying to fetch from fund_balances view...');
     const { data: viewData, error: viewError } = await supabase
       .from('fund_balances')
-      .select('*') // Usar * temporariamente para ver todas as colunas
-      .eq('fund_id', fundId)
+      .select('id, fund_balance') // Selecionar colunas relevantes da view
+      .eq('id', fundId) // Usar 'id' da view que corresponde ao fundId
       .maybeSingle();
-    
+
     if (viewError) {
       console.log('Error accessing fund_balances view:', viewError);
     } else if (viewData) {
       console.log('Found data in fund_balances view:', viewData);
       return {
-        fundId: viewData.fund_id || viewData.id,
-        currentBalance: parseFloat(viewData.current_balance || viewData.balance || '0')
+        fundId: viewData.id, // A view usa 'id' para identificar o fundo
+        currentBalance: parseFloat(viewData.fund_balance || '0') // Usar 'fund_balance' da view
       };
     } else {
       console.log('No data found in fund_balances view for fundId:', fundId);
@@ -167,7 +167,7 @@ class SupabaseStorage implements IStorage {
         .select('id, current_balance')
         .eq('id', fundId)
         .single();
-      
+
       if (!fundError && fundData && fundData.current_balance !== undefined) {
         console.log('Found current_balance in funds table:', fundData);
         return {
@@ -181,7 +181,7 @@ class SupabaseStorage implements IStorage {
 
     // Fallback: calcular a partir das contribuições e retiradas
     console.log('Using contributions/capital_requests fallback calculation');
-    
+
     // Buscar contribuições (entradas)
     const { data: contributions, error: contributionError } = await supabase
       .from('contributions')
@@ -222,7 +222,7 @@ class SupabaseStorage implements IStorage {
     }
 
     const currentBalance = inflow - outflow;
-    
+
     console.log('Calculated balance for fund', fundId, ': inflow =', inflow, ', outflow =', outflow, ', balance =', currentBalance);
 
     return {
@@ -233,18 +233,56 @@ class SupabaseStorage implements IStorage {
 
   async getFundBalances(fundIds: number[]): Promise<{ balances: Array<{ fundId: number; currentBalance: number }> }> {
     console.log('getFundBalances called with fundIds:', fundIds);
-    
-    // Pular tentativa da view e usar diretamente o fallback JavaScript
-    console.log('Using JavaScript fallback for fund balances calculation');
 
-    // Fallback: calcular em JavaScript para cada fundo
-    const balances: Array<{ fundId: number; currentBalance: number }> = [];
-    
+    if (fundIds.length === 0) {
+      return { balances: [] };
+    }
+
+    // Converter fundIds para strings para buscar na view
+    const fundIdStrings = fundIds.map(id => id.toString());
+
+    // Buscar da view fund_balances usando a estrutura correta
+    console.log('Trying to fetch from fund_balances view...');
+    const { data: viewData, error: viewError } = await supabase
+      .from('fund_balances')
+      .select('id, fund_balance') // Selecionar 'id' e 'fund_balance' da view
+      .in('id', fundIdStrings); // Filtrar pela coluna 'id' que corresponde ao fundId
+
+    if (viewError) {
+      console.log('Error accessing fund_balances view:', viewError);
+      console.log('Using JavaScript fallback for fund balances calculation');
+
+      // Fallback para cálculo manual
+      const balances = [];
+      for (const fundId of fundIds) {
+        console.log('Processing fundId:', fundId);
+        const balance = await this.getFundBalance(fundId);
+        console.log('Received balance for fund', fundId, ':', balance);
+        balances.push(balance);
+      }
+
+      console.log('Final balances result:', balances);
+      return { balances };
+    }
+
+    if (viewData && viewData.length > 0) {
+      console.log('Found data in fund_balances view:', viewData);
+      const balances = viewData.map(item => ({
+        fundId: parseInt(item.id), // 'id' da view é o fundId
+        currentBalance: parseFloat(item.fund_balance) // 'fund_balance' da view é o saldo atual
+      }));
+      return { balances };
+    }
+
+    console.log('No data found in fund_balances view, using fallback');
+    console.log('Using JavaScript fallback for fund balances calculation');
+    // Se a view não retornar nada, usamos o fallback
+    const balances = [];
     for (const fundId of fundIds) {
       console.log('Processing fundId:', fundId);
-      const fundBalance = await this.getFundBalance(fundId);
-      console.log('Received balance for fund', fundId, ':', fundBalance);
-      balances.push(fundBalance);
+      const balance = await this.getFundBalance(fundId);
+      console.log('Received balance for fund', fundId, ':', balance);
+      balances.push(balance);
     }
 
     console.log('Final balances result:', balances);
@@ -257,9 +295,9 @@ class SupabaseStorage implements IStorage {
       .from('funds')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
-    
+
     // Mapear nomes dos campos do snake_case para camelCase
     return data.map(fund => ({
       ...fund,
@@ -288,9 +326,9 @@ class SupabaseStorage implements IStorage {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) return undefined;
-    
+
     // Mapear nomes dos campos do snake_case para camelCase
     const mapped = {
       ...data,
@@ -311,7 +349,7 @@ class SupabaseStorage implements IStorage {
       allowMemberProposals: data.allow_member_proposals,
       autoExecuteApproved: data.auto_execute_approved
     };
-    
+
     return mapped as Fund;
   }
 
@@ -340,7 +378,7 @@ class SupabaseStorage implements IStorage {
       .insert(fundData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data as Fund;
   }
@@ -352,7 +390,7 @@ class SupabaseStorage implements IStorage {
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) return undefined;
     return data as Fund;
   }
@@ -364,7 +402,7 @@ class SupabaseStorage implements IStorage {
       .select('*')
       .eq('fund_id', fundId)
       .eq('status', 'active');
-    
+
     if (error) throw error;
     return data as FundMember[];
   }
@@ -380,7 +418,7 @@ class SupabaseStorage implements IStorage {
       })
       .select()
       .single();
-    
+
     if (error) throw error;
     return data as FundMember;
   }
@@ -392,7 +430,7 @@ class SupabaseStorage implements IStorage {
       .select('*')
       .eq('fund_id', fundId)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data as Contribution[];
   }
@@ -410,7 +448,7 @@ class SupabaseStorage implements IStorage {
       })
       .select()
       .single();
-    
+
     if (error) throw error;
     return data as Contribution;
   }
@@ -420,7 +458,7 @@ class SupabaseStorage implements IStorage {
       .from('contributions')
       .delete()
       .eq('id', id);
-    
+
     return !error;
   }
 }
