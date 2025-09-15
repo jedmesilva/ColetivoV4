@@ -35,9 +35,9 @@ export default function Home() {
     }).format(value);
   };
 
-  // Hook para buscar saldo da conta do usuário (ID temporário: 13 - existe na view account_balances)
+  // Hook para buscar saldo da conta do usuário (ID temporário: usando conta demo)
   const { data: accountBalance } = useQuery<{ balanceInFunds: number; freeBalance: number; totalBalance: number }>({
-    queryKey: ['/api/accounts/13/balance'],
+    queryKey: ['/api/accounts/c8d45890-7f44-423e-b1fb-84f7f982a494/balance'],
     enabled: true,
   });
 

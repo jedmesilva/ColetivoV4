@@ -2,7 +2,6 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
-import { supabase } from "./db";
 import { insertFundSchema, insertContributionSchema, insertAccountSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
