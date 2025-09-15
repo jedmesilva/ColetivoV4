@@ -93,19 +93,35 @@ class SupabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertAccount): Promise<Account> {
-    // Hash the password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(insertUser.passwordHash, saltRounds);
-
-    const userData = {
+    // 1. Primeiro criar usuário no Supabase Auth (senha não hasheada)
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: insertUser.email,
-      password_hash: hashedPassword,
+      password: insertUser.passwordHash, // Supabase Auth fará o hash automaticamente
+      email_confirm: true, // Auto-confirmar email para simplicidade
+      user_metadata: {
+        full_name: insertUser.fullName,
+        phone: insertUser.phone,
+        cpf: insertUser.cpf,
+        birth_date: insertUser.birthDate
+      }
+    });
+
+    if (authError || !authData.user) {
+      console.error('Error creating auth user:', authError);
+      throw new Error(authError?.message || 'Failed to create user in auth system');
+    }
+
+    // 2. Depois criar o perfil na tabela accounts usando o ID do auth
+    const userData = {
+      id: authData.user.id, // Usar o ID do Supabase Auth
+      email: insertUser.email,
+      password_hash: 'managed_by_supabase_auth', // Placeholder, pois Supabase Auth gerencia
       full_name: insertUser.fullName,
       phone: insertUser.phone,
       cpf: insertUser.cpf,
       birth_date: insertUser.birthDate,
       is_active: true,
-      email_verified: false,
+      email_verified: authData.user.email_confirmed_at ? true : false,
       phone_verified: false
     };
 
@@ -115,7 +131,12 @@ class SupabaseStorage implements IStorage {
       .select()
       .single();
 
-    if (error || !data) throw new Error(error?.message || 'Failed to create user');
+    if (error || !data) {
+      // Se falhar ao criar perfil, tentar deletar o usuário auth
+      console.error('Error creating profile:', error);
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      throw new Error(error?.message || 'Failed to create user profile');
+    }
     
     // Map snake_case to camelCase
     return {
@@ -408,6 +429,109 @@ class SupabaseStorage implements IStorage {
       .eq('id', id);
 
     return !error;
+  }
+
+  // Fund balance operations
+  async getFundBalances(fundIds: string[]): Promise<{ balances: Array<{ fundId: string; currentBalance: number }> }> {
+    console.log('getFundBalances called with fundIds:', fundIds);
+
+    if (fundIds.length === 0) {
+      return { balances: [] };
+    }
+
+    // Get fund balances from Supabase - using fund_balances view if available
+    const { data: fundBalances, error } = await supabase
+      .from('fund_balances')
+      .select('id, fund_balance')
+      .in('id', fundIds);
+
+    if (error) {
+      console.log('Error accessing fund_balances view, using fallback calculation:', error);
+      
+      // Fallback: calculate manually for each fund
+      const balances = [];
+      for (const fundId of fundIds) {
+        const balance = await this.getFundBalance(fundId);
+        balances.push(balance);
+      }
+      return { balances };
+    }
+
+    // Map results from view
+    const balances = (fundBalances || []).map(item => ({
+      fundId: item.id,
+      currentBalance: parseFloat(item.fund_balance || '0')
+    }));
+
+    return { balances };
+  }
+
+  async getFundBalance(fundId: string): Promise<{ fundId: string; currentBalance: number }> {
+    console.log('getFundBalance called for fundId:', fundId);
+
+    // First try fund_balances view
+    const { data: viewData, error: viewError } = await supabase
+      .from('fund_balances')
+      .select('id, fund_balance')
+      .eq('id', fundId)
+      .single();
+
+    if (!viewError && viewData) {
+      return {
+        fundId: viewData.id,
+        currentBalance: parseFloat(viewData.fund_balance || '0')
+      };
+    }
+
+    // Fallback: calculate from contributions and capital requests
+    console.log('Using fallback calculation for fund balance');
+
+    // Get contributions (inflow)
+    const { data: contributions, error: contributionError } = await supabase
+      .from('contributions')
+      .select('amount')
+      .eq('fund_id', fundId)
+      .eq('status', 'completed');
+
+    if (contributionError) {
+      console.error('Error fetching contributions:', contributionError);
+      throw new Error(contributionError.message);
+    }
+
+    // Get capital requests (outflow)
+    const { data: withdrawals, error: withdrawalError } = await supabase
+      .from('capital_requests')
+      .select('amount')
+      .eq('fund_id', fundId)
+      .eq('status', 'completed');
+
+    if (withdrawalError) {
+      console.error('Error fetching capital requests:', withdrawalError);
+      throw new Error(withdrawalError.message);
+    }
+
+    // Calculate balance: contributions - withdrawals
+    let inflow = 0;
+    if (contributions) {
+      inflow = contributions.reduce((sum, contribution) => {
+        return sum + parseFloat(contribution.amount || '0');
+      }, 0);
+    }
+
+    let outflow = 0;
+    if (withdrawals) {
+      outflow = withdrawals.reduce((sum, withdrawal) => {
+        return sum + parseFloat(withdrawal.amount || '0');
+      }, 0);
+    }
+
+    const currentBalance = inflow - outflow;
+    console.log('Calculated balance for fund', fundId, ': inflow =', inflow, ', outflow =', outflow, ', balance =', currentBalance);
+
+    return {
+      fundId,
+      currentBalance
+    };
   }
 }
 

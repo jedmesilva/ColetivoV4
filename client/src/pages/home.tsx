@@ -35,9 +35,9 @@ export default function Home() {
     }).format(value);
   };
 
-  // Hook para buscar saldo da conta do usuário (ID temporário: usando conta demo)
+  // Hook para buscar saldo da conta do usuário (usando ID do usuário que existe no Supabase)
   const { data: accountBalance } = useQuery<{ balanceInFunds: number; freeBalance: number; totalBalance: number }>({
-    queryKey: ['/api/accounts/c8d45890-7f44-423e-b1fb-84f7f982a494/balance'],
+    queryKey: ['/api/accounts/94dbf90f-8be6-403d-b66b-ba53b0c4d8a1/balance'],
     enabled: true,
   });
 

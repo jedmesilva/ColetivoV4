@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
+import { supabase } from "./db";
 import { insertFundSchema, insertContributionSchema, insertAccountSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -63,12 +64,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "fundIds query parameter is required" });
       }
 
-      let parsedFundIds: number[];
+      let parsedFundIds: string[];
 
       if (typeof fundIds === 'string') {
-        parsedFundIds = fundIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+        parsedFundIds = fundIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
       } else if (Array.isArray(fundIds)) {
-        parsedFundIds = fundIds.map(id => parseInt(String(id))).filter(id => !isNaN(id));
+        parsedFundIds = fundIds.map(id => String(id).trim()).filter(id => id.length > 0);
       } else {
         return res.status(400).json({ message: "Invalid fundIds format" });
       }
@@ -84,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get single fund
   app.get("/api/funds/:id", async (req, res) => {
     try {
-      const fund = await storage.getFund(parseInt(req.params.id));
+      const fund = await storage.getFund(req.params.id);
       if (!fund) {
         return res.status(404).json({ message: "Fund not found" });
       }
@@ -115,8 +116,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get fund balance
   app.get("/api/funds/:id/balance", async (req, res) => {
     try {
-      const fundId = parseInt(req.params.id);
-      if (isNaN(fundId)) {
+      const fundId = req.params.id;
+      if (!fundId || fundId.trim() === '') {
         return res.status(400).json({ message: "Invalid fund ID" });
       }
 
@@ -151,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get contributions for a fund
   app.get("/api/funds/:id/contributions", async (req, res) => {
     try {
-      const contributions = await storage.getContributions(parseInt(req.params.id));
+      const contributions = await storage.getContributions(req.params.id);
       res.json(contributions);
     } catch (error) {
       console.error("Error fetching contributions:", error);
@@ -214,6 +215,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error during login:", error);
       res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Logout route
+  app.post("/api/logout", async (req, res) => {
+    try {
+      const { session_token } = req.body;
+      
+      if (session_token) {
+        // Tentar fazer logout usando o token de sessão
+        const { error } = await supabase.auth.admin.signOut(session_token);
+        
+        if (error) {
+          console.error("Error during logout:", error);
+          // Mesmo com erro, continuamos e retornamos sucesso para o frontend
+        }
+      }
+
+      res.status(200).json({ message: "Logout successful" });
+    } catch (error) {
+      console.error("Error during logout:", error);
+      // Retorna sucesso mesmo com erro para não atrapalhar o frontend
+      res.status(200).json({ message: "Logout successful" });
     }
   });
 
