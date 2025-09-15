@@ -91,8 +91,8 @@ export default function UserProfile() {
 
                 {/* Nome do usuário */}
                 <div>
-                  <h1 className="text-3xl font-bold text-creme" data-testid="user-name">{currentUser?.name ?? 'Carregando...'}</h1>
-                  <p className="text-lg opacity-90 text-creme" data-testid="user-handle">@{currentUser?.handle ?? 'carregando'}</p>
+                  <h1 className="text-3xl font-bold text-creme" data-testid="user-name">{currentUser?.fullName || currentUser?.full_name || 'Carregando...'}</h1>
+                  <p className="text-lg opacity-90 text-creme" data-testid="user-handle">@{currentUser?.email?.split('@')[0] || 'carregando'}</p>
                 </div>
               </div>
 
