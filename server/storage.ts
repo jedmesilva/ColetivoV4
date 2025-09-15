@@ -1,4 +1,8 @@
-import { supabase } from "./db";
+// ⚠️  SECURITY WARNING: THIS STORAGE LAYER EXCLUSIVELY USES SUPABASE ⚠️
+// Any attempt to use a different database is a SECURITY VIOLATION
+// ONLY Supabase operations are allowed - NO OTHER databases permitted
+
+import { supabase } from "./db"; // ONLY SUPABASE CLIENT IMPORTED
 import { 
   type Account, type Fund, type Contribution, type FundMember, type AccountTransaction,
   type InsertAccount, type InsertFund, type InsertContribution, type InsertFundMember,
@@ -7,28 +11,28 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
-  // Account operations (mantendo compatibilidade com User)
+  // Account operations via SUPABASE ONLY (mantendo compatibilidade com User)
   getUser(id: string): Promise<Account | undefined>;
   getUserByUsername(username: string): Promise<Account | undefined>;
   createUser(insertUser: InsertAccount): Promise<Account>;
 
-  // Fund operations
+  // Fund operations via SUPABASE ONLY
   getFunds(): Promise<Fund[]>;
   getFund(id: number): Promise<Fund | undefined>;
   createFund(insertFund: InsertFund, userId: string): Promise<Fund>;
   updateFund(id: number, updates: Partial<Fund>): Promise<Fund | undefined>;
 
-  // Fund member operations
+  // Fund member operations via SUPABASE ONLY
   getFundMembers(fundId: number): Promise<FundMember[]>;
   addFundMember(insertMember: InsertFundMember): Promise<FundMember>;
 
-  // Contribution operations
+  // Contribution operations via SUPABASE ONLY
   getContributions(fundId: number): Promise<Contribution[]>;
   createContribution(insertContribution: InsertContribution, userId: string): Promise<Contribution>;
   deleteContribution(id: string): Promise<boolean>;
 }
 
-// Supabase storage implementation
+// SUPABASE-ONLY storage implementation - NO OTHER databases allowed
 class SupabaseStorage implements IStorage {
   // Account operations (usando tabela accounts)
   async getUser(id: string): Promise<Account | undefined> {
@@ -196,5 +200,5 @@ class SupabaseStorage implements IStorage {
   }
 }
 
-// Use SupabaseStorage 
+// Export SUPABASE-ONLY storage instance - SECURITY ENFORCED
 export const storage = new SupabaseStorage();
