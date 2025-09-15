@@ -32,7 +32,7 @@ export const updateFundCache = (data: Partial<FundData>) => {
       }]
     };
   }
-  
+
   fundCache = { ...fundCache, ...data };
 };
 
@@ -40,34 +40,48 @@ export const clearFundCache = () => {
   fundCache = null;
 };
 
-export const createFundFromCache = async (): Promise<any> => {
-  if (!fundCache) {
-    throw new Error('Nenhum dado de fundo encontrado no cache');
+export async function createFundFromCache(): Promise<any> {
+  const cached = getFundCache();
+  if (!cached) {
+    throw new Error('No fund data cached');
   }
 
-  // Simular criação do fundo
-  const newFund = {
-    id: `fund-${Date.now()}`,
-    name: fundCache.name,
-    description: fundCache.objective,
-    emoji: fundCache.emoji,
-    balance: '0',
-    growthPercentage: '0',
-    memberCount: fundCache.members.length,
-    createdAt: new Date().toISOString(),
-    createdBy: 'current-user'
-  };
+  console.log('Creating fund from cache:', cached);
 
-  // Simular delay de API
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  // Criar o fundo
+  const fundResponse = await fetch('/api/funds', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: cached.name,
+      objective: cached.objective,
+      fundImageValue: cached.emoji,
+      contributionRate: '100.00',
+      retributionRate: '100.00',
+      isOpenForNewMembers: true,
+      requiresApprovalForNewMembers: false,
+    }),
+  });
 
-  // Adicionar ao localStorage temporariamente para simular persistência
-  const existingFunds = JSON.parse(localStorage.getItem('local-funds') || '[]');
-  existingFunds.push(newFund);
-  localStorage.setItem('local-funds', JSON.stringify(existingFunds));
+  if (!fundResponse.ok) {
+    const errorText = await fundResponse.text();
+    console.error('Failed to create fund:', errorText);
+    throw new Error(`Failed to create fund: ${errorText}`);
+  }
 
-  // Limpar cache após criação
+  const fund = await fundResponse.json();
+  console.log('Fund created successfully:', fund);
+
+  // TODO: Adicionar membros ao fundo se houver no cache
+  if (cached.members && cached.members.length > 1) {
+    // Por enquanto, apenas logamos os membros
+    console.log('Members to add to fund:', cached.members.filter(m => !m.isAdmin));
+  }
+
+  // Limpar cache após criação bem-sucedida
   clearFundCache();
-  
-  return newFund;
-};
+
+  return fund;
+}

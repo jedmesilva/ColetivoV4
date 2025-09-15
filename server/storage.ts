@@ -284,20 +284,23 @@ class SupabaseStorage implements IStorage {
   }
 
   async createFund(insertFund: InsertFund, userId: string): Promise<Fund> {
+    console.log('Creating fund with data:', insertFund);
+    console.log('User ID:', userId);
+
     const fundData = {
       name: insertFund.name,
       objective: insertFund.objective,
-      fund_image_type: 'emoji',
+      fund_image_type: 'emoji' as const,
       fund_image_value: insertFund.fundImageValue || '💰',
-      contribution_rate: insertFund.contributionRate || 100,
-      retribution_rate: insertFund.retributionRate || 100,
+      contribution_rate: insertFund.contributionRate || '100.00',
+      retribution_rate: insertFund.retributionRate || '100.00',
       is_open_for_new_members: insertFund.isOpenForNewMembers ?? true,
       requires_approval_for_new_members: insertFund.requiresApprovalForNewMembers ?? false,
       created_by: userId,
       is_active: true,
-      governance_type: 'quorum',
-      quorum_percentage: 60.00,
-      voting_restriction: 'all_members',
+      governance_type: 'quorum' as const,
+      quorum_percentage: '60.00',
+      voting_restriction: 'all_members' as const,
       proposal_expiry_hours: 168,
       allow_member_proposals: true,
       auto_execute_approved: true,
@@ -309,7 +312,31 @@ class SupabaseStorage implements IStorage {
       .select()
       .single();
 
-    if (error || !data) throw new Error(error?.message || 'Failed to create fund');
+    if (error) {
+      console.error('Error creating fund:', error);
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new Error('Failed to create fund - no data returned');
+    }
+
+    console.log('Fund created successfully:', data);
+
+    // Adicionar o criador como admin do fundo
+    try {
+      await this.addFundMember({
+        fundId: data.id,
+        accountId: userId,
+        role: 'admin'
+      });
+      console.log('Fund creator added as admin');
+    } catch (memberError) {
+      console.error('Error adding creator as fund member:', memberError);
+      // Não falhar a criação do fundo por isso
+    }
+
+    return data as Fund; fund');
 
     // Map snake_case to camelCase
     return {

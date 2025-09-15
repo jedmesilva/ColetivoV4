@@ -159,10 +159,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/funds", async (req, res) => {
     try {
       const validatedData = insertFundSchema.parse(req.body);
+      console.log('Validated fund data:', validatedData);
 
-      // Use a fixed user ID that exists in your Supabase
-      // This should be replaced with proper authentication later
-      const userId = "00000000-0000-0000-0000-000000000000";
+      // Use the logged in user ID - for now using Lucas's ID
+      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
 
       const fund = await storage.createFund(validatedData, userId);
       res.status(201).json(fund);
@@ -171,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof Error && error.name === 'ZodError') {
         return res.status(400).json({ message: "Invalid fund data", details: error });
       }
-      res.status(500).json({ message: "Failed to create fund" });
+      res.status(500).json({ message: "Failed to create fund", error: error.message });
     }
   });
 
