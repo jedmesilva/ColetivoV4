@@ -12,7 +12,7 @@ import {
 
 // Tipo para saldo das contas
 export interface AccountBalance {
-  accountId: number;
+  accountId: string; // Mudado para string para UUID
   totalBalance: number;
   freeBalance: number;
   balanceInFunds: number;
@@ -24,7 +24,7 @@ export interface IStorage {
   getUser(id: string): Promise<Account | undefined>;
   getUserByUsername(username: string): Promise<Account | undefined>;
   createUser(insertUser: InsertAccount): Promise<Account>;
-  getAccountBalance(accountId: number): Promise<AccountBalance | undefined>;
+  getAccountBalance(accountId: string): Promise<AccountBalance | undefined>;
 
   // Fund operations via SUPABASE ONLY
   getFunds(): Promise<Fund[]>;
@@ -121,7 +121,7 @@ class SupabaseStorage implements IStorage {
     return profileData as Account;
   }
 
-  async getAccountBalance(accountId: number): Promise<AccountBalance | undefined> {
+  async getAccountBalance(accountId: string): Promise<AccountBalance | undefined> {
     console.log('getAccountBalance called for accountId:', accountId);
 
     // Primeiro, tenta buscar da view account_balances se existir
@@ -136,9 +136,9 @@ class SupabaseStorage implements IStorage {
       console.log('Error accessing account_balances view:', viewError);
     } else if (viewData) {
       console.log('Found data in account_balances view:', viewData);
-      
+
       // Buscar dados da conta
-      const account = await this.getUser(accountId.toString());
+      const account = await this.getUser(accountId);
       if (!account) return undefined;
 
       const accountBalance = parseFloat(viewData.account_balance || '0');
@@ -176,7 +176,7 @@ class SupabaseStorage implements IStorage {
     console.log('Using transaction-based fallback calculation');
 
     // Buscar dados da conta
-    const account = await this.getUser(accountId.toString());
+    const account = await this.getUser(accountId);
     if (!account) return undefined;
 
     // Buscar transações da conta para calcular saldo total
@@ -561,7 +561,7 @@ class SupabaseStorage implements IStorage {
   // Method to ensure test account exists
   async ensureTestAccount(): Promise<void> {
     console.log('Ensuring test account with ID 13 exists...');
-    
+
     // Check if account with ID 13 exists
     const existingAccount = await this.getUser('13');
     if (existingAccount) {
@@ -570,12 +570,12 @@ class SupabaseStorage implements IStorage {
     }
 
     console.log('Creating test account with ID 13...');
-    
+
     // Create test account to match the view data
     const { data, error } = await supabase
       .from('accounts')
       .insert({
-        id: 13,
+        id: 13, // Assumindo que este ID será UUID no futuro
         email: 'joao@teste.com',
         password_hash: '$2b$10$dummy.hash.for.testing.purposes.only',
         full_name: 'João Silva',

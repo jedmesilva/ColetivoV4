@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, integer, timestamp, boolean, serial, bigserial, bigint, date, json, inet, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, integer, timestamp, boolean, serial, bigserial, bigint, date, json, inet, pgEnum, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -42,7 +42,7 @@ export const capitalRequestStatusEnum = pgEnum('capital_request_status_enum', [
 
 // Contas dos usuários (equivale aos users)
 export const accounts = pgTable("accounts", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
+  id: uuid("id").primaryKey(),
   email: varchar("email", { length: 255 }).unique().notNull(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   fullName: varchar("full_name", { length: 255 }).notNull(),
@@ -66,7 +66,7 @@ export const funds = pgTable("funds", {
   retributionRate: decimal("retribution_rate", { precision: 5, scale: 2 }).default("100.00"),
   isOpenForNewMembers: boolean("is_open_for_new_members").default(true),
   requiresApprovalForNewMembers: boolean("requires_approval_for_new_members").default(false),
-  createdBy: bigint("created_by", { mode: "number" }).references(() => accounts.id),
+  createdBy: uuid("created_by").references(() => accounts.id),
   fundImageType: fundImageTypeEnum("fund_image_type").default('emoji'),
   fundImageValue: varchar("fund_image_value", { length: 500 }).default('💰'),
   isActive: boolean("is_active").default(true),
@@ -83,7 +83,7 @@ export const funds = pgTable("funds", {
 // Transações das contas
 export const accountTransactions = pgTable("account_transactions", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
-  accountId: bigint("account_id", { mode: "number" }).references(() => accounts.id),
+  accountId: uuid("account_id").references(() => accounts.id),
   fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
   transactionType: transactionTypeEnum("transaction_type").notNull(),
   amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
@@ -99,7 +99,7 @@ export const accountTransactions = pgTable("account_transactions", {
 export const fundMembers = pgTable("fund_members", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
-  accountId: bigint("account_id", { mode: "number" }).references(() => accounts.id),
+  accountId: uuid("account_id").references(() => accounts.id),
   role: memberRoleEnum("role").default('member'),
   status: memberStatusEnum("status").default('active'),
   totalContributed: decimal("total_contributed", { precision: 15, scale: 2 }).default("0.00"),
@@ -114,7 +114,7 @@ export const fundMembers = pgTable("fund_members", {
 export const contributions = pgTable("contributions", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
-  accountId: bigint("account_id", { mode: "number" }).references(() => accounts.id),
+  accountId: uuid("account_id").references(() => accounts.id),
   amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
   description: text("description"),
   paymentMethod: paymentMethodEnum("payment_method"),
@@ -128,13 +128,13 @@ export const contributions = pgTable("contributions", {
 export const capitalRequests = pgTable("capital_requests", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
-  accountId: bigint("account_id", { mode: "number" }).references(() => accounts.id),
+  accountId: uuid("account_id").references(() => accounts.id),
   amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
   reason: text("reason").notNull(),
   urgencyLevel: urgencyLevelEnum("urgency_level").default('medium'),
   status: capitalRequestStatusEnum("status").default('pending'),
   approvedAt: timestamp("approved_at"),
-  approvedBy: bigint("approved_by", { mode: "number" }).references(() => accounts.id),
+  approvedBy: uuid("approved_by").references(() => accounts.id),
   disbursedAt: timestamp("disbursed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

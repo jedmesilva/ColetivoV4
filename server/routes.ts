@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
+import { supabase } from "./db";
 import { insertFundSchema, insertContributionSchema, insertAccountSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -98,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get account balance
   app.get("/api/accounts/:id/balance", async (req, res) => {
     try {
-      const accountId = parseInt(req.params.id);
+      const accountId = req.params.id;
       const accountBalance = await storage.getAccountBalance(accountId);
 
       if (!accountBalance) {
