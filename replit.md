@@ -19,20 +19,22 @@ Preferred communication style: Simple, everyday language.
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript running on Node.js
 - **API Design**: RESTful API endpoints following conventional patterns (/api/funds, /api/contributions)
-- **Database**: PostgreSQL with Drizzle ORM for type-safe database operations
-- **Storage**: Currently uses in-memory storage (MemStorage class) with interface pattern for easy database migration
+- **Database**: ⚠️ EXCLUSIVELY SUPABASE PostgreSQL - NO OTHER databases allowed for security
+- **Storage**: Supabase-only storage implementation with interface pattern - SECURITY ENFORCED
 - **Error Handling**: Centralized error middleware with structured JSON responses
 
-### Database Schema
-- **Users Table**: id, username, password, name
-- **Funds Table**: id, name, description, emoji, balance, growthPercentage, memberCount, createdAt, createdBy
-- **Contributions Table**: id, fundId, userId, amount, createdAt
+### Database Schema (SUPABASE ONLY)
+- **Accounts Table**: id, email, password, name (stored in Supabase PostgreSQL)
+- **Funds Table**: id, name, objective, contribution_rate, retribution_rate, etc. (stored in Supabase PostgreSQL)
+- **Contributions Table**: id, fund_id, account_id, amount, status (stored in Supabase PostgreSQL)
+- **Fund Members Table**: fund membership relationships (stored in Supabase PostgreSQL)
 - **Validation**: Zod schemas for runtime type checking and API validation
+- **⚠️ SECURITY**: ALL data MUST be stored in Supabase - NO other databases permitted
 
 ### Development Tools
 - **Build System**: Vite for fast development and optimized production builds
 - **Type Safety**: TypeScript across the entire codebase with shared types
-- **Database Migrations**: Drizzle Kit for schema management and migrations
+- **Database Migrations**: Drizzle Kit for SUPABASE schema management and migrations ONLY
 - **Code Quality**: ESM modules throughout, strict TypeScript configuration
 
 ### Key Features
@@ -43,9 +45,10 @@ Preferred communication style: Simple, everyday language.
 
 ## External Dependencies
 
-### Database & Storage
-- **Neon Database**: Serverless PostgreSQL database service (@neondatabase/serverless)
-- **Drizzle ORM**: Type-safe database toolkit for PostgreSQL operations
+### Database & Storage (SUPABASE ONLY - SECURITY ENFORCED)
+- **⚠️ SUPABASE**: EXCLUSIVELY used PostgreSQL database service - NO OTHER databases allowed
+- **Supabase Client**: Official Supabase JavaScript client (@supabase/supabase-js)
+- **Drizzle ORM**: Type-safe database toolkit for SUPABASE PostgreSQL operations ONLY
 
 ### UI & Styling
 - **Radix UI**: Comprehensive set of accessible React components (@radix-ui/react-*)
