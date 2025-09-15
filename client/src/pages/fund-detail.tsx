@@ -29,6 +29,18 @@ export default function FundDetail() {
     enabled: !!fundId,
   });
 
+  // Hook para buscar resumo do fundo (inclui número de membros)
+  const { data: fundSummary } = useQuery({
+    queryKey: ['/api/funds/summaries', fundId],
+    queryFn: async () => {
+      const response = await fetch(`/api/funds/summaries?fundIds=${fundId}`);
+      if (!response.ok) throw new Error('Failed to fetch fund summary');
+      const data = await response.json();
+      return data.summaries && data.summaries.length > 0 ? data.summaries[0] : { memberCount: 0, currentBalance: 0 };
+    },
+    enabled: !!fundId,
+  });
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -233,7 +245,7 @@ export default function FundDetail() {
                         <Users className="w-5 h-5 text-dark" />
                       </div>
                       <div className="flex-shrink-0">
-                        <h4 className="text-2xl font-bold text-dark">5</h4>
+                        <h4 className="text-2xl font-bold text-dark">{fundSummary?.memberCount || 0}</h4>
                         <p className="text-xs text-dark">MEMBROS</p>
                       </div>
                     </div>
