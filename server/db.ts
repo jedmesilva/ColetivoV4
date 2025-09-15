@@ -1,17 +1,19 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import * as schema from "@shared/schema";
+import { createClient } from "@supabase/supabase-js";
 
-// Replit database configuration
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is required - ensure the database is provisioned");
+// Supabase configuration - using your existing Supabase database
+if (!process.env.SUPABASE_URL) {
+  throw new Error("SUPABASE_URL is required");
 }
 
-// Create Postgres client for Replit database
-const client = postgres(process.env.DATABASE_URL, {
-  prepare: false,
-  transform: { undefined: null },
-});
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error("SUPABASE_SERVICE_ROLE_KEY is required");
+}
 
-// Export database connection
-export const db = drizzle(client, { schema });
+// Create Supabase client for backend operations (service role)
+export const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: { persistSession: false }
+  }
+);
