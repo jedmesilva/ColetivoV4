@@ -25,15 +25,22 @@ export default function FundDetail() {
     }).format(parseFloat(value));
   };
 
-  const formatDate = (date: Date | string) => {
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    if (isNaN(dateObj.getTime())) {
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) {
+      return 'Data não informada';
+    }
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) {
+        return 'Data inválida';
+      }
+      return new Intl.DateTimeFormat('pt-BR', {
+        month: 'short',
+        year: 'numeric'
+      }).format(dateObj);
+    } catch (error) {
       return 'Data inválida';
     }
-    return new Intl.DateTimeFormat('pt-BR', {
-      month: 'short',
-      year: 'numeric'
-    }).format(dateObj);
   };
 
   if (isLoading) {
@@ -128,7 +135,7 @@ export default function FundDetail() {
                 style={{ backgroundColor: 'rgba(255, 253, 250, 0.9)' }}
                 data-testid="fund-emoji-large"
               >
-                <span className="text-4xl">{fund.emoji}</span>
+                <span className="text-4xl">{fund.fundImageValue}</span>
               </div>
               
               {/* Nome e descrição do fundo */}
@@ -137,7 +144,7 @@ export default function FundDetail() {
                   {fund.name}
                 </h1>
                 <p className="text-lg opacity-90 text-creme" data-testid="fund-description">
-                  {fund.description}
+                  {fund.objective}
                 </p>
               </div>
             </div>
@@ -166,7 +173,7 @@ export default function FundDetail() {
               
               <div className="mb-6">
                 <h3 className="text-4xl font-bold text-dark" data-testid="fund-balance">
-                  {balanceVisible ? formatCurrency(fund.balance) : "••••••"}
+                  {balanceVisible ? formatCurrency("0.00") : "••••••"}
                 </h3>
               </div>
 
@@ -215,7 +222,7 @@ export default function FundDetail() {
                         <Users className="w-5 h-5 text-dark" />
                       </div>
                       <div className="flex-shrink-0">
-                        <h4 className="text-2xl font-bold text-dark">{fund.memberCount}</h4>
+                        <h4 className="text-2xl font-bold text-dark">5</h4>
                         <p className="text-xs text-dark">MEMBROS</p>
                       </div>
                     </div>
@@ -256,7 +263,7 @@ export default function FundDetail() {
                   updateContributionCache({
                     fundId: fund.id,
                     fundName: fund.name,
-                    fundEmoji: fund.emoji
+                    fundEmoji: fund.fundImageValue
                   });
                   setLocation('/contribute/amount');
                 }}
@@ -283,7 +290,7 @@ export default function FundDetail() {
                   updateRequestCache({
                     fundId: fund.id,
                     fundName: fund.name,
-                    fundEmoji: fund.emoji
+                    fundEmoji: fund.fundImageValue
                   });
                   setLocation('/request/amount');
                 }}

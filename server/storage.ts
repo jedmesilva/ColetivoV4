@@ -144,7 +144,27 @@ class SupabaseStorage implements IStorage {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data as Fund[];
+    
+    // Mapear nomes dos campos do snake_case para camelCase
+    return data.map(fund => ({
+      ...fund,
+      createdAt: fund.created_at,
+      updatedAt: fund.updated_at,
+      contributionRate: fund.contribution_rate,
+      retributionRate: fund.retribution_rate,
+      isOpenForNewMembers: fund.is_open_for_new_members,
+      requiresApprovalForNewMembers: fund.requires_approval_for_new_members,
+      createdBy: fund.created_by,
+      fundImageType: fund.fund_image_type,
+      fundImageValue: fund.fund_image_value,
+      isActive: fund.is_active,
+      governanceType: fund.governance_type,
+      quorumPercentage: fund.quorum_percentage,
+      votingRestriction: fund.voting_restriction,
+      proposalExpiryHours: fund.proposal_expiry_hours,
+      allowMemberProposals: fund.allow_member_proposals,
+      autoExecuteApproved: fund.auto_execute_approved
+    })) as Fund[];
   }
 
   async getFund(id: number): Promise<Fund | undefined> {
@@ -155,7 +175,29 @@ class SupabaseStorage implements IStorage {
       .single();
     
     if (error) return undefined;
-    return data as Fund;
+    
+    // Mapear nomes dos campos do snake_case para camelCase
+    const mapped = {
+      ...data,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      contributionRate: data.contribution_rate,
+      retributionRate: data.retribution_rate,
+      isOpenForNewMembers: data.is_open_for_new_members,
+      requiresApprovalForNewMembers: data.requires_approval_for_new_members,
+      createdBy: data.created_by,
+      fundImageType: data.fund_image_type,
+      fundImageValue: data.fund_image_value,
+      isActive: data.is_active,
+      governanceType: data.governance_type,
+      quorumPercentage: data.quorum_percentage,
+      votingRestriction: data.voting_restriction,
+      proposalExpiryHours: data.proposal_expiry_hours,
+      allowMemberProposals: data.allow_member_proposals,
+      autoExecuteApproved: data.auto_execute_approved
+    };
+    
+    return mapped as Fund;
   }
 
   async createFund(insertFund: InsertFund, userId: string): Promise<Fund> {
