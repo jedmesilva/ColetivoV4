@@ -52,7 +52,7 @@ class SupabaseStorage implements IStorage {
       .single();
 
     if (error || !data) return undefined;
-    
+
     // Map snake_case to camelCase
     return {
       ...data,
@@ -76,7 +76,7 @@ class SupabaseStorage implements IStorage {
       .single();
 
     if (error || !data) return undefined;
-    
+
     // Map snake_case to camelCase
     return {
       ...data,
@@ -137,7 +137,7 @@ class SupabaseStorage implements IStorage {
       await supabase.auth.admin.deleteUser(authData.user.id);
       throw new Error(error?.message || 'Failed to create user profile');
     }
-    
+
     // Map snake_case to camelCase
     return {
       ...data,
@@ -156,34 +156,15 @@ class SupabaseStorage implements IStorage {
   async getAccountBalance(accountId: string): Promise<AccountBalance | undefined> {
     console.log('getAccountBalance called for accountId:', accountId);
 
-    // Get account data
-    const account = await this.getUser(accountId);
-    if (!account) return undefined;
+    // Get account balance from the account_balances view
+    const { data: accountBalance, error: balanceError } = await supabase
+      .from('account_balances')
+      .select('*')
+      .eq('id', accountId)
+      .single();
 
-    // Get account transactions to calculate total balance
-    const { data: transactions, error: transactionError } = await supabase
-      .from('account_transactions')
-      .select('transaction_type, amount')
-      .eq('account_id', accountId)
-      .eq('status', 'completed');
-
-    if (transactionError) throw new Error(transactionError.message);
-
-    // Calculate total balance based on transactions
-    let totalBalance = 0;
-    if (transactions) {
-      for (const transaction of transactions) {
-        const amount = parseFloat(transaction.amount || '0');
-
-        // Transactions that increase balance
-        if (['deposit', 'fund_withdrawal', 'transfer_in', 'refund'].includes(transaction.transaction_type)) {
-          totalBalance += amount;
-        }
-        // Transactions that decrease balance
-        else if (['withdrawal', 'fund_contribution', 'transfer_out', 'fee'].includes(transaction.transaction_type)) {
-          totalBalance -= amount;
-        }
-      }
+    if (balanceError || !accountBalance) {
+      throw new Error(balanceError?.message || 'Account balance not found');
     }
 
     // Get total balance in funds (active contributions)
@@ -202,6 +183,7 @@ class SupabaseStorage implements IStorage {
       }
     }
 
+    const totalBalance = parseFloat(accountBalance.account_balance || '0');
     const freeBalance = totalBalance - balanceInFunds;
 
     return {
@@ -209,7 +191,12 @@ class SupabaseStorage implements IStorage {
       totalBalance,
       freeBalance: Math.max(0, freeBalance), // Don't allow negative free balance
       balanceInFunds,
-      account
+      account: {
+        id: accountBalance.id,
+        email: accountBalance.email,
+        fullName: accountBalance.full_name,
+        createdAt: accountBalance.created_at
+      }
     };
   }
 
@@ -323,7 +310,7 @@ class SupabaseStorage implements IStorage {
       .single();
 
     if (error || !data) throw new Error(error?.message || 'Failed to create fund');
-    
+
     // Map snake_case to camelCase
     return {
       id: data.id,
@@ -447,7 +434,7 @@ class SupabaseStorage implements IStorage {
 
     if (error) {
       console.log('Error accessing fund_balances view, using fallback calculation:', error);
-      
+
       // Fallback: calculate manually for each fund
       const balances = [];
       for (const fundId of fundIds) {
