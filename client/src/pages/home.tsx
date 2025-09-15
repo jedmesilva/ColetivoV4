@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Bell, Eye, Menu, TrendingUp, Wallet, CreditCard, Plus } from "lucide-react";
+import { Bell, Eye, Menu, TrendingUp, Wallet, CreditCard, Plus, User } from "lucide-react";
 import { Fund } from "@shared/schema";
 import FundCard from "@/components/fund-card";
 import BottomNavigation from "@/components/bottom-navigation";
@@ -9,7 +9,7 @@ import BottomNavigation from "@/components/bottom-navigation";
 export default function Home() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [, setLocation] = useLocation();
-  
+
   const { data: funds = [], isLoading } = useQuery<Fund[]>({
     queryKey: ['/api/funds'],
   });
@@ -19,7 +19,7 @@ export default function Home() {
     queryKey: ['/api/funds/balances'],
     queryFn: async () => {
       if (funds.length === 0) return { balances: [] };
-      
+
       const fundIds = funds.map(fund => fund.id).join(',');
       const response = await fetch(`/api/funds/balances?fundIds=${fundIds}`);
       if (!response.ok) throw new Error('Failed to fetch fund balances');
@@ -72,34 +72,34 @@ export default function Home() {
       <div className="relative overflow-hidden">
         {/* Gradiente Base */}
         <div className="absolute inset-0 gradient-base" />
-        
+
         {/* Gradiente Invertido - Diagonal Oposta */}
         <div className="absolute inset-0 opacity-70 gradient-overlay-1" />
-        
+
         {/* Gradiente Radial do Centro */}
         <div className="absolute inset-0 opacity-60 gradient-overlay-2" />
-        
+
         {/* Gradiente Horizontal Invertido */}
         <div className="absolute inset-0 opacity-50 gradient-overlay-3" />
-        
+
         {/* Gradiente Vertical */}
         <div className="absolute inset-0 opacity-40 gradient-overlay-4" />
-        
+
         {/* Gradiente Radial Superior Esquerdo */}
         <div className="absolute inset-0 opacity-45 gradient-overlay-5" />
-        
+
         {/* Gradiente Radial Inferior Direito */}
         <div className="absolute inset-0 opacity-35 gradient-overlay-6" />
-        
+
         {/* Gradiente Diagonal 45 graus */}
         <div className="absolute inset-0 opacity-30 gradient-overlay-7" />
-        
+
         {/* Gradiente Cônico */}
         <div className="absolute inset-0 opacity-25 gradient-overlay-8" />
-        
+
         {/* Camada para suavizar o centro */}
         <div className="absolute inset-0 gradient-center-soften" />
-        
+
         {/* Camada de mistura para suavizar */}
         <div className="absolute inset-0 gradient-blend-overlay" />
 
@@ -150,7 +150,7 @@ export default function Home() {
                   <Eye className="w-5 h-5 text-dark" />
                 </button>
               </div>
-              
+
               <div className="mb-6">
                 <h3 className="text-4xl font-bold mb-1 text-dark" data-testid="text-free-balance">
                   {balanceVisible ? formatCurrency(accountBalance?.totalBalance || 0) : "••••••"}

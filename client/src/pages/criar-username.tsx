@@ -76,10 +76,9 @@ export default function CriarUsernameScreen() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            name: nome,
+            fullName: nome,
             email: email,
-            password: senha,
-            username: username
+            passwordHash: senha,
           }),
         });
 

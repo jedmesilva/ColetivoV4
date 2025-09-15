@@ -21,22 +21,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/users", async (req, res) => {
     try {
       const validatedData = insertAccountSchema.parse(req.body);
-      
+
       // Check if email already exists (usando email como username)
       const existingUser = await storage.getUserByUsername(validatedData.email);
       if (existingUser) {
         return res.status(400).json({ message: "Email already exists" });
       }
-      
+
       // Hash password before storing
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(validatedData.passwordHash, saltRounds);
-      
+
       const user = await storage.createUser({
         ...validatedData,
         passwordHash: hashedPassword
       });
-      
+
       // Remove password from response for security
       const { passwordHash, ...userResponse } = user;
       res.status(201).json(userResponse);
@@ -64,13 +64,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/funds/balances", async (req, res) => {
     try {
       const { fundIds } = req.query;
-      
+
       if (!fundIds) {
         return res.status(400).json({ message: "fundIds query parameter is required" });
       }
-      
+
       let parsedFundIds: number[];
-      
+
       if (typeof fundIds === 'string') {
         parsedFundIds = fundIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
       } else if (Array.isArray(fundIds)) {
@@ -78,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         return res.status(400).json({ message: "Invalid fundIds format" });
       }
-      
+
       const fundBalances = await storage.getFundBalances(parsedFundIds);
       res.json(fundBalances);
     } catch (error) {
@@ -106,11 +106,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const accountId = parseInt(req.params.id);
       const accountBalance = await storage.getAccountBalance(accountId);
-      
+
       if (!accountBalance) {
         return res.status(404).json({ message: "Account not found" });
       }
-      
+
       res.json(accountBalance);
     } catch (error) {
       console.error("Error fetching account balance:", error);
@@ -125,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(fundId)) {
         return res.status(400).json({ message: "Invalid fund ID" });
       }
-      
+
       const fundBalance = await storage.getFundBalance(fundId);
       res.json(fundBalance);
     } catch (error) {
@@ -138,11 +138,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/funds", async (req, res) => {
     try {
       const validatedData = insertFundSchema.parse(req.body);
-      
+
       // Use a fixed user ID that exists in your Supabase
       // This should be replaced with proper authentication later
       const userId = "00000000-0000-0000-0000-000000000000";
-      
+
       const fund = await storage.createFund(validatedData, userId);
       res.status(201).json(fund);
     } catch (error) {
@@ -169,11 +169,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contributions", async (req, res) => {
     try {
       const validatedData = insertContributionSchema.parse(req.body);
-      
+
       // Use a fixed user ID that exists in your Supabase
       // This should be replaced with proper authentication later
       const userId = "00000000-0000-0000-0000-000000000000";
-      
+
       const contribution = await storage.createContribution(validatedData, userId);
       res.status(201).json(contribution);
     } catch (error) {
@@ -182,6 +182,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid contribution data", details: error });
       }
       res.status(500).json({ message: "Failed to create contribution" });
+    }
+  });
+
+  // Login route
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const user = await storage.getUserByUsername(email); // Assuming email is used as username for login
+
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // For simplicity, returning user info without sensitive data
+      const { passwordHash, ...userResponse } = user;
+      res.status(200).json(userResponse);
+    } catch (error) {
+      console.error("Error during login:", error);
+      res.status(500).json({ message: "Login failed" });
     }
   });
 
