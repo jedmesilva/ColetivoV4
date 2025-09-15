@@ -1,55 +1,217 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, integer, timestamp, boolean, serial, bigserial, bigint, date, json, inet, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  name: text("name").notNull(),
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+export const transactionTypeEnum = pgEnum('transaction_type_enum', [
+  'deposit', 'withdrawal', 'fund_contribution', 'fund_withdrawal', 
+  'transfer_in', 'transfer_out', 'fee', 'refund'
+]);
+
+export const referenceTypeEnum = pgEnum('reference_type_enum', [
+  'contribution', 'capital_request', 'retribution', 'transfer', 'manual'
+]);
+
+export const transactionStatusEnum = pgEnum('transaction_status_enum', [
+  'pending', 'completed', 'failed', 'cancelled'
+]);
+
+export const fundImageTypeEnum = pgEnum('fund_image_type_enum', ['emoji', 'url']);
+export const governanceTypeEnum = pgEnum('governance_type_enum', ['quorum', 'unanimous']);
+export const votingRestrictionEnum = pgEnum('voting_restriction_enum', ['all_members', 'admins_only']);
+
+export const memberRoleEnum = pgEnum('member_role_enum', ['admin', 'member']);
+export const memberStatusEnum = pgEnum('member_status_enum', ['active', 'pending', 'blocked', 'left', 'removed']);
+
+export const paymentMethodEnum = pgEnum('payment_method_enum', [
+  'pix', 'ted', 'debit_card', 'credit_card', 'account_balance'
+]);
+
+export const urgencyLevelEnum = pgEnum('urgency_level_enum', ['low', 'medium', 'high', 'urgent']);
+export const capitalRequestStatusEnum = pgEnum('capital_request_status_enum', [
+  'pending', 'approved', 'rejected', 'completed', 'cancelled'
+]);
+
+// ============================================================================
+// TABELAS PRINCIPAIS
+// ============================================================================
+
+// Contas dos usuários (equivale aos users)
+export const accounts = pgTable("accounts", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 20 }),
+  cpf: varchar("cpf", { length: 11 }).unique(),
+  birthDate: date("birth_date"),
+  profilePictureUrl: varchar("profile_picture_url", { length: 500 }),
+  isActive: boolean("is_active").default(true),
+  emailVerified: boolean("email_verified").default(false),
+  phoneVerified: boolean("phone_verified").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Fundos coletivos
 export const funds = pgTable("funds", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  emoji: text("emoji").notNull(),
-  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0"),
-  growthPercentage: decimal("growth_percentage", { precision: 5, scale: 2 }).notNull().default("0"),
-  memberCount: integer("member_count").notNull().default(1),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  createdBy: varchar("created_by").notNull().references(() => users.id),
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  objective: text("objective"),
+  contributionRate: decimal("contribution_rate", { precision: 5, scale: 2 }).default("100.00"),
+  retributionRate: decimal("retribution_rate", { precision: 5, scale: 2 }).default("100.00"),
+  isOpenForNewMembers: boolean("is_open_for_new_members").default(true),
+  requiresApprovalForNewMembers: boolean("requires_approval_for_new_members").default(false),
+  createdBy: bigint("created_by", { mode: "number" }).references(() => accounts.id),
+  fundImageType: fundImageTypeEnum("fund_image_type").default('emoji'),
+  fundImageValue: varchar("fund_image_value", { length: 500 }).default('💰'),
+  isActive: boolean("is_active").default(true),
+  governanceType: governanceTypeEnum("governance_type").default('quorum'),
+  quorumPercentage: decimal("quorum_percentage", { precision: 5, scale: 2 }).default("60.00"),
+  votingRestriction: votingRestrictionEnum("voting_restriction").default('all_members'),
+  proposalExpiryHours: integer("proposal_expiry_hours").default(168),
+  allowMemberProposals: boolean("allow_member_proposals").default(true),
+  autoExecuteApproved: boolean("auto_execute_approved").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Transações das contas
+export const accountTransactions = pgTable("account_transactions", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  accountId: bigint("account_id", { mode: "number" }).references(() => accounts.id),
+  fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
+  transactionType: transactionTypeEnum("transaction_type").notNull(),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  description: text("description"),
+  referenceType: referenceTypeEnum("reference_type").notNull(),
+  referenceId: bigint("reference_id", { mode: "number" }),
+  status: transactionStatusEnum("status").default('completed'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  processedAt: timestamp("processed_at").defaultNow(),
+});
+
+// Membros dos fundos
+export const fundMembers = pgTable("fund_members", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
+  accountId: bigint("account_id", { mode: "number" }).references(() => accounts.id),
+  role: memberRoleEnum("role").default('member'),
+  status: memberStatusEnum("status").default('active'),
+  totalContributed: decimal("total_contributed", { precision: 15, scale: 2 }).default("0.00"),
+  totalReceived: decimal("total_received", { precision: 15, scale: 2 }).default("0.00"),
+  totalReturned: decimal("total_returned", { precision: 15, scale: 2 }).default("0.00"),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  removedAt: timestamp("removed_at"),
+  removedReason: text("removed_reason"),
+});
+
+// Contribuições
 export const contributions = pgTable("contributions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  fundId: varchar("fund_id").notNull().references(() => funds.id),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
+  accountId: bigint("account_id", { mode: "number" }).references(() => accounts.id),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  description: text("description"),
+  paymentMethod: paymentMethodEnum("payment_method"),
+  status: transactionStatusEnum("status").default('pending'),
+  transactionId: varchar("transaction_id", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  processedAt: timestamp("processed_at"),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  name: true,
+// Solicitações de capital
+export const capitalRequests = pgTable("capital_requests", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
+  accountId: bigint("account_id", { mode: "number" }).references(() => accounts.id),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  reason: text("reason").notNull(),
+  urgencyLevel: urgencyLevelEnum("urgency_level").default('medium'),
+  status: capitalRequestStatusEnum("status").default('pending'),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: bigint("approved_by", { mode: "number" }).references(() => accounts.id),
+  disbursedAt: timestamp("disbursed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ============================================================================
+// SCHEMAS DE INSERÇÃO E TIPOS
+// ============================================================================
+
+// Schemas para accounts (equivale ao insertUserSchema anterior)
+export const insertAccountSchema = createInsertSchema(accounts).pick({
+  email: true,
+  passwordHash: true,
+  fullName: true,
+  phone: true,
+  cpf: true,
+  birthDate: true,
+});
+
+// Schemas para funds (atualizado para nova estrutura)
 export const insertFundSchema = createInsertSchema(funds).pick({
   name: true,
-  description: true,
-  emoji: true,
+  objective: true,
+  fundImageValue: true,
+  contributionRate: true,
+  retributionRate: true,
+  isOpenForNewMembers: true,
+  requiresApprovalForNewMembers: true,
 });
 
+// Schemas para contributions (atualizado)
 export const insertContributionSchema = createInsertSchema(contributions).pick({
   fundId: true,
   amount: true,
+  description: true,
+  paymentMethod: true,
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+// Schemas para fund_members
+export const insertFundMemberSchema = createInsertSchema(fundMembers).pick({
+  fundId: true,
+  accountId: true,
+  role: true,
+});
+
+// Schemas para capital_requests  
+export const insertCapitalRequestSchema = createInsertSchema(capitalRequests).pick({
+  fundId: true,
+  amount: true,
+  reason: true,
+  urgencyLevel: true,
+});
+
+// ============================================================================
+// TIPOS TYPESCRIPT
+// ============================================================================
+
+export type InsertAccount = z.infer<typeof insertAccountSchema>;
+export type Account = typeof accounts.$inferSelect;
+
 export type InsertFund = z.infer<typeof insertFundSchema>;
 export type Fund = typeof funds.$inferSelect;
+
 export type InsertContribution = z.infer<typeof insertContributionSchema>;
 export type Contribution = typeof contributions.$inferSelect;
+
+export type InsertFundMember = z.infer<typeof insertFundMemberSchema>;
+export type FundMember = typeof fundMembers.$inferSelect;
+
+export type InsertCapitalRequest = z.infer<typeof insertCapitalRequestSchema>;
+export type CapitalRequest = typeof capitalRequests.$inferSelect;
+
+export type AccountTransaction = typeof accountTransactions.$inferSelect;
+
+// ============================================================================
+// TIPOS DE COMPATIBILIDADE (para manter a API existente)
+// ============================================================================
+
+// Manter compatibilidade com código existente
+export type InsertUser = InsertAccount;
+export type User = Account;

@@ -1,210 +1,70 @@
-import { type User, type InsertUser, type Fund, type InsertFund, type Contribution, type InsertContribution, users, funds, contributions } from "@shared/schema";
-import { randomUUID } from "crypto";
-import { db, supabase } from "./db";
-import { eq } from "drizzle-orm";
+import { supabase } from "./db";
+import { 
+  type Account, type Fund, type Contribution, type FundMember, type AccountTransaction,
+  type InsertAccount, type InsertFund, type InsertContribution, type InsertFundMember,
+  // Manter compatibilidade
+  type User, type InsertUser
+} from "@shared/schema";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  
+  // Account operations (mantendo compatibilidade com User)
+  getUser(id: string): Promise<Account | undefined>;
+  getUserByUsername(username: string): Promise<Account | undefined>;
+  createUser(insertUser: InsertAccount): Promise<Account>;
+
+  // Fund operations
   getFunds(): Promise<Fund[]>;
-  getFund(id: string): Promise<Fund | undefined>;
-  createFund(fund: InsertFund, userId: string): Promise<Fund>;
-  updateFund(id: string, updates: Partial<Fund>): Promise<Fund | undefined>;
-  
-  getContributions(fundId: string): Promise<Contribution[]>;
-  createContribution(contribution: InsertContribution, userId: string): Promise<Contribution>;
+  getFund(id: number): Promise<Fund | undefined>;
+  createFund(insertFund: InsertFund, userId: string): Promise<Fund>;
+  updateFund(id: number, updates: Partial<Fund>): Promise<Fund | undefined>;
+
+  // Fund member operations
+  getFundMembers(fundId: number): Promise<FundMember[]>;
+  addFundMember(insertMember: InsertFundMember): Promise<FundMember>;
+
+  // Contribution operations
+  getContributions(fundId: number): Promise<Contribution[]>;
+  createContribution(insertContribution: InsertContribution, userId: string): Promise<Contribution>;
+  deleteContribution(id: string): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private funds: Map<string, Fund>;
-  private contributions: Map<string, Contribution>;
-
-  constructor() {
-    this.users = new Map();
-    this.funds = new Map();
-    this.contributions = new Map();
-    
-    // Initialize with sample data
-    this.initializeSampleData();
-  }
-
-  private initializeSampleData() {
-    // Create sample user
-    const userId = randomUUID();
-    const user: User = {
-      id: userId,
-      username: "lucas",
-      password: "password",
-      name: "Lucas"
-    };
-    this.users.set(userId, user);
-
-    // Create sample funds
-    const funds: Array<Omit<Fund, 'id'>> = [
-      {
-        name: "Fundo do futebol",
-        description: "Pagar os custos do time",
-        emoji: "⚽️",
-        balance: "5000.00",
-        growthPercentage: "12.00",
-        memberCount: 25,
-        createdAt: new Date("2024-03-01"),
-        createdBy: userId
-      },
-      {
-        name: "Fundo da casa nova",
-        description: "Economizar para mudança",
-        emoji: "🏠",
-        balance: "18500.00",
-        growthPercentage: "8.30",
-        memberCount: 8,
-        createdAt: new Date("2024-01-15"),
-        createdBy: userId
-      },
-      {
-        name: "Viagem Europa",
-        description: "Trip dos sonhos em família",
-        emoji: "✈️",
-        balance: "12300.00",
-        growthPercentage: "5.70",
-        memberCount: 12,
-        createdAt: new Date("2023-12-01"),
-        createdBy: userId
-      },
-      {
-        name: "Festa de fim de ano",
-        description: "Confraternização da família",
-        emoji: "🎉",
-        balance: "3750.00",
-        growthPercentage: "15.20",
-        memberCount: 18,
-        createdAt: new Date("2024-06-01"),
-        createdBy: userId
-      }
-    ];
-
-    funds.forEach(fund => {
-      const id = randomUUID();
-      this.funds.set(id, { ...fund, id });
-    });
-  }
-
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
-  }
-
-  async getFunds(): Promise<Fund[]> {
-    return Array.from(this.funds.values()).sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  }
-
-  async getFund(id: string): Promise<Fund | undefined> {
-    return this.funds.get(id);
-  }
-
-  async createFund(insertFund: InsertFund, userId: string): Promise<Fund> {
-    const id = randomUUID();
-    const fund: Fund = {
-      ...insertFund,
-      id,
-      balance: "0.00",
-      growthPercentage: "0.00",
-      memberCount: 1,
-      createdAt: new Date(),
-      createdBy: userId
-    };
-    this.funds.set(id, fund);
-    return fund;
-  }
-
-  async updateFund(id: string, updates: Partial<Fund>): Promise<Fund | undefined> {
-    const fund = this.funds.get(id);
-    if (!fund) return undefined;
-    
-    const updatedFund = { ...fund, ...updates };
-    this.funds.set(id, updatedFund);
-    return updatedFund;
-  }
-
-  async getContributions(fundId: string): Promise<Contribution[]> {
-    return Array.from(this.contributions.values()).filter(
-      contribution => contribution.fundId === fundId
-    );
-  }
-
-  async createContribution(insertContribution: InsertContribution, userId: string): Promise<Contribution> {
-    const id = randomUUID();
-    const contribution: Contribution = {
-      ...insertContribution,
-      id,
-      userId,
-      createdAt: new Date()
-    };
-    this.contributions.set(id, contribution);
-    
-    // Update fund balance
-    const fund = this.funds.get(insertContribution.fundId);
-    if (fund) {
-      const newBalance = parseFloat(fund.balance) + parseFloat(insertContribution.amount);
-      fund.balance = newBalance.toFixed(2);
-      this.funds.set(fund.id, fund);
-    }
-    
-    return contribution;
-  }
-}
-
-export class SupabaseStorage implements IStorage {
-  async getUser(id: string): Promise<User | undefined> {
+// Supabase storage implementation
+class SupabaseStorage implements IStorage {
+  // Account operations (usando tabela accounts)
+  async getUser(id: string): Promise<Account | undefined> {
     const { data, error } = await supabase
-      .from('users')
+      .from('accounts')
       .select('*')
       .eq('id', id)
       .single();
     
     if (error) return undefined;
-    return data as User;
+    return data as Account;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
+  async getUserByUsername(username: string): Promise<Account | undefined> {
     const { data, error } = await supabase
-      .from('users')
+      .from('accounts')
       .select('*')
-      .eq('username', username)
+      .eq('email', username) // usando email como username
       .single();
     
     if (error) return undefined;
-    return data as User;
+    return data as Account;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(insertUser: InsertAccount): Promise<Account> {
     const { data, error } = await supabase
-      .from('users')
+      .from('accounts')
       .insert(insertUser)
       .select()
       .single();
     
     if (error) throw error;
-    return data as User;
+    return data as Account;
   }
 
+  // Fund operations
   async getFunds(): Promise<Fund[]> {
     const { data, error } = await supabase
       .from('funds')
@@ -215,7 +75,7 @@ export class SupabaseStorage implements IStorage {
     return data as Fund[];
   }
 
-  async getFund(id: string): Promise<Fund | undefined> {
+  async getFund(id: number): Promise<Fund | undefined> {
     const { data, error } = await supabase
       .from('funds')
       .select('*')
@@ -227,14 +87,23 @@ export class SupabaseStorage implements IStorage {
   }
 
   async createFund(insertFund: InsertFund, userId: string): Promise<Fund> {
-    // Create fund without foreign key constraint temporarily
     const fundData = {
-      ...insertFund,
-      balance: "0.00",
-      growth_percentage: "0.00", 
-      member_count: 1,
-      created_at: new Date().toISOString(),
-      // Skip created_by for now to avoid foreign key issues
+      name: insertFund.name,
+      objective: insertFund.objective,
+      fund_image_type: "emoji",
+      fund_image_value: insertFund.fundImageValue || "💰",
+      contribution_rate: insertFund.contributionRate || 100,
+      retribution_rate: insertFund.retributionRate || 100,
+      is_open_for_new_members: insertFund.isOpenForNewMembers ?? true,
+      requires_approval_for_new_members: insertFund.requiresApprovalForNewMembers ?? false,
+      created_by: parseInt(userId),
+      is_active: true,
+      governance_type: "quorum",
+      quorum_percentage: 60,
+      voting_restriction: "all_members",
+      proposal_expiry_hours: 168,
+      allow_member_proposals: true,
+      auto_execute_approved: true,
     };
 
     const { data, error } = await supabase
@@ -247,7 +116,7 @@ export class SupabaseStorage implements IStorage {
     return data as Fund;
   }
 
-  async updateFund(id: string, updates: Partial<Fund>): Promise<Fund | undefined> {
+  async updateFund(id: number, updates: Partial<Fund>): Promise<Fund | undefined> {
     const { data, error } = await supabase
       .from('funds')
       .update(updates)
@@ -259,11 +128,41 @@ export class SupabaseStorage implements IStorage {
     return data as Fund;
   }
 
-  async getContributions(fundId: string): Promise<Contribution[]> {
+  // Fund member operations
+  async getFundMembers(fundId: number): Promise<FundMember[]> {
+    const { data, error } = await supabase
+      .from('fund_members')
+      .select('*')
+      .eq('fund_id', fundId)
+      .eq('status', 'active');
+    
+    if (error) throw error;
+    return data as FundMember[];
+  }
+
+  async addFundMember(insertMember: InsertFundMember): Promise<FundMember> {
+    const { data, error } = await supabase
+      .from('fund_members')
+      .insert({
+        fund_id: insertMember.fundId,
+        account_id: insertMember.accountId,
+        role: insertMember.role || 'member',
+        status: 'active',
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as FundMember;
+  }
+
+  // Contribution operations
+  async getContributions(fundId: number): Promise<Contribution[]> {
     const { data, error } = await supabase
       .from('contributions')
       .select('*')
-      .eq('fund_id', fundId);
+      .eq('fund_id', fundId)
+      .order('created_at', { ascending: false });
     
     if (error) throw error;
     return data as Contribution[];
@@ -273,24 +172,29 @@ export class SupabaseStorage implements IStorage {
     const { data, error } = await supabase
       .from('contributions')
       .insert({
-        ...insertContribution,
-        user_id: userId
+        fund_id: insertContribution.fundId,
+        account_id: parseInt(userId),
+        amount: insertContribution.amount,
+        description: insertContribution.description,
+        payment_method: insertContribution.paymentMethod || 'account_balance',
+        status: 'completed',
       })
       .select()
       .single();
     
     if (error) throw error;
-    
-    // Update fund balance
-    const fund = await this.getFund(insertContribution.fundId);
-    if (fund) {
-      const newBalance = parseFloat(fund.balance) + parseFloat(insertContribution.amount);
-      await this.updateFund(fund.id, { balance: newBalance.toFixed(2) });
-    }
-    
     return data as Contribution;
+  }
+
+  async deleteContribution(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('contributions')
+      .delete()
+      .eq('id', id);
+    
+    return !error;
   }
 }
 
-// Use SupabaseStorage via REST API
+// Use SupabaseStorage 
 export const storage = new SupabaseStorage();
