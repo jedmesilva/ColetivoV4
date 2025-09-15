@@ -336,8 +336,6 @@ class SupabaseStorage implements IStorage {
       // Não falhar a criação do fundo por isso
     }
 
-    return data as Fund; fund');
-
     // Map snake_case to camelCase
     return {
       id: data.id,
