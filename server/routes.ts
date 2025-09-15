@@ -91,6 +91,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get fund balance
+  app.get("/api/funds/:id/balance", async (req, res) => {
+    try {
+      const fundId = parseInt(req.params.id);
+      if (isNaN(fundId)) {
+        return res.status(400).json({ message: "Invalid fund ID" });
+      }
+      
+      const fundBalance = await storage.getFundBalance(fundId);
+      res.json(fundBalance);
+    } catch (error) {
+      console.error("Error fetching fund balance:", error);
+      res.status(500).json({ message: "Failed to fetch fund balance" });
+    }
+  });
+
+  // Get multiple fund balances
+  app.get("/api/funds/balances", async (req, res) => {
+    try {
+      const { fundIds } = req.query;
+      
+      if (!fundIds) {
+        return res.status(400).json({ message: "fundIds query parameter is required" });
+      }
+      
+      let parsedFundIds: number[];
+      
+      if (typeof fundIds === 'string') {
+        parsedFundIds = fundIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      } else if (Array.isArray(fundIds)) {
+        parsedFundIds = fundIds.map(id => parseInt(String(id))).filter(id => !isNaN(id));
+      } else {
+        return res.status(400).json({ message: "Invalid fundIds format" });
+      }
+      
+      const fundBalances = await storage.getFundBalances(parsedFundIds);
+      res.json(fundBalances);
+    } catch (error) {
+      console.error("Error fetching fund balances:", error);
+      res.status(500).json({ message: "Failed to fetch fund balances" });
+    }
+  });
+
   // Create new fund
   app.post("/api/funds", async (req, res) => {
     try {

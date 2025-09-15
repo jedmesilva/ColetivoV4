@@ -3,16 +3,17 @@ import { Fund } from "@shared/schema";
 
 interface FundCardProps {
   fund: Fund;
+  balance?: number;
   onToggleBalance?: () => void;
   onClick?: () => void;
 }
 
-export default function FundCard({ fund, onToggleBalance, onClick }: FundCardProps) {
-  const formatCurrency = (value: string) => {
+export default function FundCard({ fund, balance, onToggleBalance, onClick }: FundCardProps) {
+  const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(parseFloat(value));
+    }).format(value);
   };
 
   const formatDate = (date: Date | string | null | undefined) => {
@@ -74,7 +75,7 @@ export default function FundCard({ fund, onToggleBalance, onClick }: FundCardPro
         
         <div className="flex items-center gap-3">
           <h4 className="text-4xl font-bold text-dark" data-testid={`fund-balance-${fund.id}`}>
-            {formatCurrency("0.00")} {/* TODO: Implementar cálculo de saldo */}
+            {formatCurrency(balance ?? 0)}
           </h4>
           <div className="flex items-center gap-1 px-2 py-1 rounded-full gradient-primary">
             <TrendingUp className="w-3 h-3 text-creme" />

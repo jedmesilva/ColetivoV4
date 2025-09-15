@@ -136,6 +136,87 @@ class SupabaseStorage implements IStorage {
     };
   }
 
+  // Fund balance operations
+  async getFundBalance(fundId: number): Promise<{ fundId: number; currentBalance: number }> {
+    // Primeiro tenta buscar da view fund_balances se existir
+    try {
+      const { data: viewData, error: viewError } = await supabase
+        .from('fund_balances')
+        .select('fund_id, current_balance')
+        .eq('fund_id', fundId)
+        .single();
+      
+      if (!viewError && viewData) {
+        return {
+          fundId: viewData.fund_id,
+          currentBalance: parseFloat(viewData.current_balance || '0')
+        };
+      }
+    } catch (error) {
+      // View não existe, usar fallback JavaScript
+      console.log('fund_balances view not found, using JavaScript fallback');
+    }
+
+    // Fallback: calcular em JavaScript
+    const { data: transactions, error: transactionError } = await supabase
+      .from('account_transactions')
+      .select('transaction_type, amount')
+      .eq('fund_id', fundId)
+      .eq('status', 'completed');
+
+    if (transactionError) throw transactionError;
+
+    let currentBalance = 0;
+    if (transactions) {
+      for (const transaction of transactions) {
+        const amount = parseFloat(transaction.amount || '0');
+        
+        if (transaction.transaction_type === 'fund_contribution') {
+          currentBalance += amount;
+        } else if (transaction.transaction_type === 'fund_withdrawal') {
+          currentBalance -= amount;
+        }
+      }
+    }
+
+    return {
+      fundId,
+      currentBalance
+    };
+  }
+
+  async getFundBalances(fundIds: number[]): Promise<{ balances: Array<{ fundId: number; currentBalance: number }> }> {
+    // Primeiro tenta buscar da view fund_balances se existir
+    try {
+      const { data: viewData, error: viewError } = await supabase
+        .from('fund_balances')
+        .select('fund_id, current_balance')
+        .in('fund_id', fundIds);
+      
+      if (!viewError && viewData) {
+        return {
+          balances: viewData.map(row => ({
+            fundId: row.fund_id,
+            currentBalance: parseFloat(row.current_balance || '0')
+          }))
+        };
+      }
+    } catch (error) {
+      // View não existe, usar fallback JavaScript
+      console.log('fund_balances view not found, using JavaScript fallback');
+    }
+
+    // Fallback: calcular em JavaScript para cada fundo
+    const balances: Array<{ fundId: number; currentBalance: number }> = [];
+    
+    for (const fundId of fundIds) {
+      const fundBalance = await this.getFundBalance(fundId);
+      balances.push(fundBalance);
+    }
+
+    return { balances };
+  }
+
   // Fund operations
   async getFunds(): Promise<Fund[]> {
     const { data, error } = await supabase

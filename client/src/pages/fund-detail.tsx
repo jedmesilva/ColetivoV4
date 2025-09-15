@@ -18,11 +18,22 @@ export default function FundDetail() {
     enabled: !!fundId,
   });
 
-  const formatCurrency = (value: string) => {
+  // Hook para buscar saldo do fundo específico
+  const { data: fundBalance } = useQuery({
+    queryKey: ['/api/funds', fundId, 'balance'],
+    queryFn: async () => {
+      const response = await fetch(`/api/funds/${fundId}/balance`);
+      if (!response.ok) throw new Error('Failed to fetch fund balance');
+      return response.json();
+    },
+    enabled: !!fundId,
+  });
+
+  const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(parseFloat(value));
+    }).format(value);
   };
 
   const formatDate = (date: Date | string | null | undefined) => {
@@ -173,7 +184,7 @@ export default function FundDetail() {
               
               <div className="mb-6">
                 <h3 className="text-4xl font-bold text-dark" data-testid="fund-balance">
-                  {balanceVisible ? formatCurrency("0.00") : "••••••"}
+                  {balanceVisible ? formatCurrency(fundBalance?.currentBalance ?? 0) : "••••••"}
                 </h3>
               </div>
 
@@ -261,9 +272,9 @@ export default function FundDetail() {
                   sessionStorage.setItem('lastPath', `/fund/${fund.id}`);
                   // Pré-selecionar o fundo atual para contribuição
                   updateContributionCache({
-                    fundId: fund.id,
+                    fundId: fund.id.toString(),
                     fundName: fund.name,
-                    fundEmoji: fund.fundImageValue
+                    fundEmoji: fund.fundImageValue || "💰"
                   });
                   setLocation('/contribute/amount');
                 }}
@@ -288,9 +299,9 @@ export default function FundDetail() {
                   sessionStorage.setItem('lastPath', `/fund/${fund.id}`);
                   // Pré-selecionar o fundo atual para solicitação
                   updateRequestCache({
-                    fundId: fund.id,
+                    fundId: fund.id.toString(),
                     fundName: fund.name,
-                    fundEmoji: fund.fundImageValue
+                    fundEmoji: fund.fundImageValue || "💰"
                   });
                   setLocation('/request/amount');
                 }}

@@ -14,6 +14,20 @@ export default function Home() {
     queryKey: ['/api/funds'],
   });
 
+  // Hook para buscar saldos dos fundos
+  const { data: fundBalances } = useQuery({
+    queryKey: ['/api/funds/balances'],
+    queryFn: async () => {
+      if (funds.length === 0) return { balances: [] };
+      
+      const fundIds = funds.map(fund => fund.id).join(',');
+      const response = await fetch(`/api/funds/balances?fundIds=${fundIds}`);
+      if (!response.ok) throw new Error('Failed to fetch fund balances');
+      return response.json();
+    },
+    enabled: funds.length > 0,
+  });
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -22,7 +36,7 @@ export default function Home() {
   };
 
   // Hook para buscar saldo da conta do usuário (ID temporário: 1)
-  const { data: accountBalance } = useQuery({
+  const { data: accountBalance } = useQuery<{ balanceInFunds: number; freeBalance: number; totalBalance: number }>({
     queryKey: ['/api/accounts/1/balance'],
     enabled: true,
   });
@@ -35,6 +49,14 @@ export default function Home() {
     // Por enquanto, retorna um valor fixo até implementarmos cálculo de crescimento real
     return "12.5";
   };
+
+  // Criar mapa de saldos dos fundos para fácil acesso
+  const fundBalanceMap = new Map();
+  if (fundBalances?.balances) {
+    fundBalances.balances.forEach((balance: { fundId: number; currentBalance: number }) => {
+      fundBalanceMap.set(balance.fundId, balance.currentBalance);
+    });
+  }
 
   if (isLoading) {
     return (
@@ -224,6 +246,7 @@ export default function Home() {
                 <FundCard 
                   key={fund.id} 
                   fund={fund}
+                  balance={fundBalanceMap.get(fund.id) || 0}
                   onToggleBalance={() => {
                     // Implement individual fund balance toggle
                     console.log(`Toggle balance for fund ${fund.id}`);
