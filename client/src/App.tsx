@@ -28,7 +28,7 @@ import RequestAmount from "@/pages/request-amount";
 import RequestReason from "@/pages/request-reason";
 import RequestPaymentPlan from "@/pages/request-payment-plan";
 import RequestConfirmation from "@/pages/request-confirmation";
-import UserProfile from "@/pages/user";
+import UserProfile from "@/pages/account";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -59,7 +59,7 @@ function Router() {
       <Route path="/request/reason" component={RequestReason} />
       <Route path="/request/payment-plan" component={RequestPaymentPlan} />
       <Route path="/request/confirmation" component={RequestConfirmation} />
-      <Route path="/user" component={UserProfile} />
+      <Route path="/account" component={UserProfile} />
       <Route component={NotFound} />
     </Switch>
   );

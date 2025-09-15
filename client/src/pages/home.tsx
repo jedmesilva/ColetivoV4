@@ -280,7 +280,7 @@ export default function Home() {
           sessionStorage.setItem('lastPath', '/');
           setLocation('/contribute/select-fund');
         }}
-        onOpenProfile={() => setLocation('/user')}
+        onOpenProfile={() => setLocation('/account')}
       />
     </div>
   );
