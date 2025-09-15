@@ -514,9 +514,8 @@ class SupabaseStorage implements IStorage {
 
     return !error;
   }
-}
 
-// Method to ensure test account exists
+  // Method to ensure test account exists
   async ensureTestAccount(): Promise<void> {
     console.log('Ensuring test account with ID 13 exists...');
     
