@@ -138,46 +138,92 @@ class SupabaseStorage implements IStorage {
 
   // Fund balance operations
   async getFundBalance(fundId: number): Promise<{ fundId: number; currentBalance: number }> {
+    console.log('getFundBalance called for fundId:', fundId);
+    
     // Primeiro tenta buscar da view fund_balances se existir
+    console.log('Trying to fetch from fund_balances view...');
+    const { data: viewData, error: viewError } = await supabase
+      .from('fund_balances')
+      .select('*') // Usar * temporariamente para ver todas as colunas
+      .eq('fund_id', fundId)
+      .maybeSingle();
+    
+    if (viewError) {
+      console.log('Error accessing fund_balances view:', viewError);
+    } else if (viewData) {
+      console.log('Found data in fund_balances view:', viewData);
+      return {
+        fundId: viewData.fund_id || viewData.id,
+        currentBalance: parseFloat(viewData.current_balance || viewData.balance || '0')
+      };
+    } else {
+      console.log('No data found in fund_balances view for fundId:', fundId);
+    }
+
+    // Segundo, tenta buscar current_balance diretamente da tabela funds
     try {
-      const { data: viewData, error: viewError } = await supabase
-        .from('fund_balances')
-        .select('fund_id, current_balance')
-        .eq('fund_id', fundId)
+      const { data: fundData, error: fundError } = await supabase
+        .from('funds')
+        .select('id, current_balance')
+        .eq('id', fundId)
         .single();
       
-      if (!viewError && viewData) {
+      if (!fundError && fundData && fundData.current_balance !== undefined) {
+        console.log('Found current_balance in funds table:', fundData);
         return {
-          fundId: viewData.fund_id,
-          currentBalance: parseFloat(viewData.current_balance || '0')
+          fundId: fundData.id,
+          currentBalance: parseFloat(fundData.current_balance || '0')
         };
       }
     } catch (error) {
-      // View não existe, usar fallback JavaScript
-      console.log('fund_balances view not found, using JavaScript fallback');
+      console.log('current_balance column not found in funds table');
     }
 
-    // Fallback: calcular em JavaScript
-    const { data: transactions, error: transactionError } = await supabase
-      .from('account_transactions')
-      .select('transaction_type, amount')
+    // Fallback: calcular a partir das contribuições e retiradas
+    console.log('Using contributions/capital_requests fallback calculation');
+    
+    // Buscar contribuições (entradas)
+    const { data: contributions, error: contributionError } = await supabase
+      .from('contributions')
+      .select('amount')
       .eq('fund_id', fundId)
       .eq('status', 'completed');
 
-    if (transactionError) throw transactionError;
-
-    let currentBalance = 0;
-    if (transactions) {
-      for (const transaction of transactions) {
-        const amount = parseFloat(transaction.amount || '0');
-        
-        if (transaction.transaction_type === 'fund_contribution') {
-          currentBalance += amount;
-        } else if (transaction.transaction_type === 'fund_withdrawal') {
-          currentBalance -= amount;
-        }
-      }
+    if (contributionError) {
+      console.error('Error fetching contributions:', contributionError);
+      throw contributionError;
     }
+
+    // Buscar retiradas/pagamentos (saídas) - usar apenas 'completed'
+    const { data: withdrawals, error: withdrawalError } = await supabase
+      .from('capital_requests')
+      .select('amount')
+      .eq('fund_id', fundId)
+      .eq('status', 'completed');
+
+    if (withdrawalError) {
+      console.error('Error fetching capital requests:', withdrawalError);
+      throw withdrawalError;
+    }
+
+    // Calcular saldo: entradas - saídas
+    let inflow = 0;
+    if (contributions) {
+      inflow = contributions.reduce((sum, contribution) => {
+        return sum + parseFloat(contribution.amount || '0');
+      }, 0);
+    }
+
+    let outflow = 0;
+    if (withdrawals) {
+      outflow = withdrawals.reduce((sum, withdrawal) => {
+        return sum + parseFloat(withdrawal.amount || '0');
+      }, 0);
+    }
+
+    const currentBalance = inflow - outflow;
+    
+    console.log('Calculated balance for fund', fundId, ': inflow =', inflow, ', outflow =', outflow, ', balance =', currentBalance);
 
     return {
       fundId,
@@ -186,34 +232,22 @@ class SupabaseStorage implements IStorage {
   }
 
   async getFundBalances(fundIds: number[]): Promise<{ balances: Array<{ fundId: number; currentBalance: number }> }> {
-    // Primeiro tenta buscar da view fund_balances se existir
-    try {
-      const { data: viewData, error: viewError } = await supabase
-        .from('fund_balances')
-        .select('fund_id, current_balance')
-        .in('fund_id', fundIds);
-      
-      if (!viewError && viewData) {
-        return {
-          balances: viewData.map(row => ({
-            fundId: row.fund_id,
-            currentBalance: parseFloat(row.current_balance || '0')
-          }))
-        };
-      }
-    } catch (error) {
-      // View não existe, usar fallback JavaScript
-      console.log('fund_balances view not found, using JavaScript fallback');
-    }
+    console.log('getFundBalances called with fundIds:', fundIds);
+    
+    // Pular tentativa da view e usar diretamente o fallback JavaScript
+    console.log('Using JavaScript fallback for fund balances calculation');
 
     // Fallback: calcular em JavaScript para cada fundo
     const balances: Array<{ fundId: number; currentBalance: number }> = [];
     
     for (const fundId of fundIds) {
+      console.log('Processing fundId:', fundId);
       const fundBalance = await this.getFundBalance(fundId);
+      console.log('Received balance for fund', fundId, ':', fundBalance);
       balances.push(fundBalance);
     }
 
+    console.log('Final balances result:', balances);
     return { balances };
   }
 
