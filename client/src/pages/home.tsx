@@ -21,14 +21,19 @@ export default function Home() {
     }).format(value);
   };
 
+  // Hook para buscar saldo da conta do usuário (ID temporário: 1)
+  const { data: accountBalance } = useQuery({
+    queryKey: ['/api/accounts/1/balance'],
+    enabled: true,
+  });
+
   const calculateTotalBalance = () => {
-    return funds.reduce((total, fund) => total + parseFloat(fund.balance), 0);
+    return accountBalance?.balanceInFunds || 0;
   };
 
   const calculateAverageGrowth = () => {
-    if (funds.length === 0) return 0;
-    const totalGrowth = funds.reduce((total, fund) => total + parseFloat(fund.growthPercentage), 0);
-    return (totalGrowth / funds.length).toFixed(1);
+    // Por enquanto, retorna um valor fixo até implementarmos cálculo de crescimento real
+    return "12.5";
   };
 
   if (isLoading) {
@@ -126,7 +131,7 @@ export default function Home() {
               
               <div className="mb-6">
                 <h3 className="text-4xl font-bold mb-1 text-dark" data-testid="text-free-balance">
-                  {balanceVisible ? formatCurrency(2500) : "••••••"}
+                  {balanceVisible ? formatCurrency(accountBalance?.freeBalance || 0) : "••••••"}
                 </h3>
                 <p className="text-sm text-dark">Saldo total disponível</p>
               </div>

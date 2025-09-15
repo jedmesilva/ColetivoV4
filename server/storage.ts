@@ -10,11 +10,21 @@ import {
   type User, type InsertUser
 } from "@shared/schema";
 
+// Tipo para saldo das contas
+export interface AccountBalance {
+  accountId: number;
+  totalBalance: number;
+  freeBalance: number;
+  balanceInFunds: number;
+  account: Account;
+}
+
 export interface IStorage {
   // Account operations via SUPABASE ONLY (mantendo compatibilidade com User)
   getUser(id: string): Promise<Account | undefined>;
   getUserByUsername(username: string): Promise<Account | undefined>;
   createUser(insertUser: InsertAccount): Promise<Account>;
+  getAccountBalance(accountId: number): Promise<AccountBalance | undefined>;
 
   // Fund operations via SUPABASE ONLY
   getFunds(): Promise<Fund[]>;
@@ -66,6 +76,64 @@ class SupabaseStorage implements IStorage {
     
     if (error) throw error;
     return data as Account;
+  }
+
+  async getAccountBalance(accountId: number): Promise<AccountBalance | undefined> {
+    // Buscar dados da conta
+    const account = await this.getUser(accountId.toString());
+    if (!account) return undefined;
+
+    // Buscar transações da conta para calcular saldo total
+    const { data: transactions, error: transactionError } = await supabase
+      .from('account_transactions')
+      .select('transaction_type, amount')
+      .eq('account_id', accountId)
+      .eq('status', 'completed');
+
+    if (transactionError) throw transactionError;
+
+    // Calcular saldo total baseado nas transações
+    let totalBalance = 0;
+    if (transactions) {
+      for (const transaction of transactions) {
+        const amount = parseFloat(transaction.amount || '0');
+        
+        // Transações que aumentam o saldo
+        if (['deposit', 'fund_withdrawal', 'transfer_in', 'refund'].includes(transaction.transaction_type)) {
+          totalBalance += amount;
+        }
+        // Transações que diminuem o saldo
+        else if (['withdrawal', 'fund_contribution', 'transfer_out', 'fee'].includes(transaction.transaction_type)) {
+          totalBalance -= amount;
+        }
+      }
+    }
+
+    // Buscar total em fundos (contribuições ativas)
+    const { data: fundMemberships, error: memberError } = await supabase
+      .from('fund_members')
+      .select('total_contributed')
+      .eq('account_id', accountId)
+      .eq('status', 'active');
+
+    if (memberError) throw memberError;
+
+    let balanceInFunds = 0;
+    if (fundMemberships) {
+      balanceInFunds = fundMemberships.reduce((sum, membership) => {
+        return sum + parseFloat(membership.total_contributed || '0');
+      }, 0);
+    }
+
+    const freeBalance = totalBalance - balanceInFunds;
+
+    return {
+      accountId,
+      totalBalance,
+      freeBalance: Math.max(0, freeBalance), // Não permitir saldo livre negativo
+      balanceInFunds,
+      account
+    };
   }
 
   // Fund operations

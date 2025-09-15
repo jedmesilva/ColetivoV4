@@ -74,6 +74,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get account balance
+  app.get("/api/accounts/:id/balance", async (req, res) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      const accountBalance = await storage.getAccountBalance(accountId);
+      
+      if (!accountBalance) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+      
+      res.json(accountBalance);
+    } catch (error) {
+      console.error("Error fetching account balance:", error);
+      res.status(500).json({ message: "Failed to fetch account balance" });
+    }
+  });
+
   // Create new fund
   app.post("/api/funds", async (req, res) => {
     try {
