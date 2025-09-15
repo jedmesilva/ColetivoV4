@@ -35,7 +35,7 @@ export default function FundCard({ fund, onToggleBalance, onClick }: FundCardPro
       <div className="flex items-start mb-6">
         <div className="w-12 h-12 rounded-xl mr-4 flex items-center justify-center gradient-primary">
           <span className="text-2xl" data-testid={`fund-emoji-${fund.id}`}>
-            {fund.emoji}
+            {fund.fundImageValue || "💰"}
           </span>
         </div>
         <div className="flex-1">
@@ -43,7 +43,7 @@ export default function FundCard({ fund, onToggleBalance, onClick }: FundCardPro
             {fund.name}
           </h2>
           <p className="text-sm text-dark" data-testid={`fund-description-${fund.id}`}>
-            {fund.description}
+            {fund.objective || "Sem descrição"}
           </p>
         </div>
         <button 
@@ -67,12 +67,12 @@ export default function FundCard({ fund, onToggleBalance, onClick }: FundCardPro
         
         <div className="flex items-center gap-3">
           <h4 className="text-4xl font-bold text-dark" data-testid={`fund-balance-${fund.id}`}>
-            {formatCurrency(fund.balance)}
+            {formatCurrency("0.00")} {/* TODO: Implementar cálculo de saldo */}
           </h4>
           <div className="flex items-center gap-1 px-2 py-1 rounded-full gradient-primary">
             <TrendingUp className="w-3 h-3 text-creme" />
             <span className="text-xs font-medium text-creme" data-testid={`fund-growth-${fund.id}`}>
-              +{fund.growthPercentage}%
+              {fund.contributionRate || "0"}%
             </span>
           </div>
         </div>
@@ -83,7 +83,7 @@ export default function FundCard({ fund, onToggleBalance, onClick }: FundCardPro
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-dark" />
             <span className="text-sm text-dark opacity-80" data-testid={`fund-members-${fund.id}`}>
-              {fund.memberCount} membros
+              0 membros {/* TODO: Implementar contagem de membros */}
             </span>
           </div>
           <div className="flex items-center gap-2">
