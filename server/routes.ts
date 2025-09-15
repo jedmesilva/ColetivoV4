@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
-import { insertFundSchema, insertContributionSchema, insertUserSchema } from "@shared/schema";
+import { insertFundSchema, insertContributionSchema, insertAccountSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Check username availability
@@ -20,25 +20,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new user
   app.post("/api/users", async (req, res) => {
     try {
-      const validatedData = insertUserSchema.parse(req.body);
+      const validatedData = insertAccountSchema.parse(req.body);
       
-      // Check if username already exists
-      const existingUser = await storage.getUserByUsername(validatedData.username);
+      // Check if email already exists (usando email como username)
+      const existingUser = await storage.getUserByUsername(validatedData.email);
       if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
+        return res.status(400).json({ message: "Email already exists" });
       }
       
       // Hash password before storing
       const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(validatedData.password, saltRounds);
+      const hashedPassword = await bcrypt.hash(validatedData.passwordHash, saltRounds);
       
       const user = await storage.createUser({
         ...validatedData,
-        password: hashedPassword
+        passwordHash: hashedPassword
       });
       
       // Remove password from response for security
-      const { password, ...userResponse } = user;
+      const { passwordHash, ...userResponse } = user;
       res.status(201).json(userResponse);
     } catch (error) {
       console.error("Error creating user:", error);
@@ -63,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get single fund
   app.get("/api/funds/:id", async (req, res) => {
     try {
-      const fund = await storage.getFund(req.params.id);
+      const fund = await storage.getFund(parseInt(req.params.id));
       if (!fund) {
         return res.status(404).json({ message: "Fund not found" });
       }
@@ -97,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get contributions for a fund
   app.get("/api/funds/:id/contributions", async (req, res) => {
     try {
-      const contributions = await storage.getContributions(req.params.id);
+      const contributions = await storage.getContributions(parseInt(req.params.id));
       res.json(contributions);
     } catch (error) {
       console.error("Error fetching contributions:", error);

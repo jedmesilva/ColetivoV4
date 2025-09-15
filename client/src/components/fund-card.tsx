@@ -15,15 +15,22 @@ export default function FundCard({ fund, onToggleBalance, onClick }: FundCardPro
     }).format(parseFloat(value));
   };
 
-  const formatDate = (date: Date | string) => {
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    if (isNaN(dateObj.getTime())) {
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) {
+      return 'Sem data';
+    }
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) {
+        return 'Data inválida';
+      }
+      return new Intl.DateTimeFormat('pt-BR', {
+        month: 'short',
+        year: 'numeric'
+      }).format(dateObj);
+    } catch (error) {
       return 'Data inválida';
     }
-    return new Intl.DateTimeFormat('pt-BR', {
-      month: 'short',
-      year: 'numeric'
-    }).format(dateObj);
   };
 
   return (

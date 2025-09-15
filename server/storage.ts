@@ -96,7 +96,8 @@ class SupabaseStorage implements IStorage {
       retribution_rate: insertFund.retributionRate || 100,
       is_open_for_new_members: insertFund.isOpenForNewMembers ?? true,
       requires_approval_for_new_members: insertFund.requiresApprovalForNewMembers ?? false,
-      created_by: parseInt(userId),
+      // Deixar created_by como null temporariamente para evitar foreign key constraint
+      created_by: null,
       is_active: true,
       governance_type: "quorum",
       quorum_percentage: 60,
