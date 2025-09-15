@@ -55,30 +55,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get multiple fund balances - deve vir ANTES da rota /api/funds/:id
+  // Fund summary routes (includes member count and balance)
+  app.get("/api/funds/summaries", async (req, res) => {
+    try {
+      const fundIds = req.query.fundIds as string;
+      if (!fundIds) {
+        return res.status(400).json({ error: 'fundIds parameter is required' });
+      }
+
+      const fundIdArray = fundIds.split(',').filter(id => id.trim());
+      const result = await storage.getFundSummaries(fundIdArray);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching fund summaries:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Fund balance routes
   app.get("/api/funds/balances", async (req, res) => {
     try {
-      const { fundIds } = req.query;
-
+      const fundIds = req.query.fundIds as string;
       if (!fundIds) {
-        return res.status(400).json({ message: "fundIds query parameter is required" });
+        return res.status(400).json({ error: 'fundIds parameter is required' });
       }
 
-      let parsedFundIds: string[];
-
-      if (typeof fundIds === 'string') {
-        parsedFundIds = fundIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
-      } else if (Array.isArray(fundIds)) {
-        parsedFundIds = fundIds.map(id => String(id).trim()).filter(id => id.length > 0);
-      } else {
-        return res.status(400).json({ message: "Invalid fundIds format" });
-      }
-
-      const fundBalances = await storage.getFundBalances(parsedFundIds);
-      res.json(fundBalances);
-    } catch (error) {
-      console.error("Error fetching fund balances:", error);
-      res.status(500).json({ message: "Failed to fetch fund balances" });
+      const fundIdArray = fundIds.split(',').filter(id => id.trim());
+      const result = await storage.getFundBalances(fundIdArray);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching fund balances:', error);
+      res.status(500).json({ error: error.message });
     }
   });
 
@@ -222,11 +229,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/logout", async (req, res) => {
     try {
       const { session_token } = req.body;
-      
+
       if (session_token) {
         // Tentar fazer logout usando o token de sessão
         const { error } = await supabase.auth.admin.signOut(session_token);
-        
+
         if (error) {
           console.error("Error during logout:", error);
           // Mesmo com erro, continuamos e retornamos sucesso para o frontend

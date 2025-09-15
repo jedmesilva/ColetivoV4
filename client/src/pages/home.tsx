@@ -14,15 +14,15 @@ export default function Home() {
     queryKey: ['/api/funds'],
   });
 
-  // Hook para buscar saldos dos fundos
-  const { data: fundBalances } = useQuery({
-    queryKey: ['/api/funds/balances'],
+  // Hook para buscar dados dos fundos (saldo e número de membros)
+  const { data: fundSummaries } = useQuery({
+    queryKey: ['/api/funds/summaries'],
     queryFn: async () => {
-      if (funds.length === 0) return { balances: [] };
+      if (funds.length === 0) return { summaries: [] };
 
       const fundIds = funds.map(fund => fund.id).join(',');
-      const response = await fetch(`/api/funds/balances?fundIds=${fundIds}`);
-      if (!response.ok) throw new Error('Failed to fetch fund balances');
+      const response = await fetch(`/api/funds/summaries?fundIds=${fundIds}`);
+      if (!response.ok) throw new Error('Failed to fetch fund summaries');
       return response.json();
     },
     enabled: funds.length > 0,
@@ -50,11 +50,14 @@ export default function Home() {
     return "12.5";
   };
 
-  // Criar mapa de saldos dos fundos para fácil acesso
-  const fundBalanceMap = new Map();
-  if (fundBalances?.balances) {
-    fundBalances.balances.forEach((balance: { fundId: number; currentBalance: number }) => {
-      fundBalanceMap.set(balance.fundId, balance.currentBalance);
+  // Criar mapa de dados dos fundos para fácil acesso
+  const fundDataMap = new Map();
+  if (fundSummaries?.summaries) {
+    fundSummaries.summaries.forEach((summary: { fundId: string; memberCount: number; currentBalance: number }) => {
+      fundDataMap.set(summary.fundId, {
+        balance: summary.currentBalance,
+        memberCount: summary.memberCount
+      });
     });
   }
 
@@ -242,18 +245,22 @@ export default function Home() {
                 <p className="text-sm text-dark opacity-60">Crie seu primeiro fundo coletivo!</p>
               </div>
             ) : (
-              funds.map((fund) => (
-                <FundCard 
-                  key={fund.id} 
-                  fund={fund}
-                  balance={fundBalanceMap.get(fund.id) || 0}
-                  onToggleBalance={() => {
-                    // Implement individual fund balance toggle
-                    console.log(`Toggle balance for fund ${fund.id}`);
-                  }}
-                  onClick={() => setLocation(`/fund/${fund.id}`)}
-                />
-              ))
+              funds.map((fund) => {
+                const fundData = fundDataMap.get(fund.id) || { balance: 0, memberCount: 0 };
+                return (
+                  <FundCard 
+                    key={fund.id} 
+                    fund={fund}
+                    balance={fundData.balance}
+                    memberCount={fundData.memberCount}
+                    onToggleBalance={() => {
+                      // Implement individual fund balance toggle
+                      console.log(`Toggle balance for fund ${fund.id}`);
+                    }}
+                    onClick={() => setLocation(`/fund/${fund.id}`)}
+                  />
+                );
+              })
             )}
           </div>
         </div>

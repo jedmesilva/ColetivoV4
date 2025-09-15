@@ -418,6 +418,53 @@ class SupabaseStorage implements IStorage {
     return !error;
   }
 
+  // Fund summary operations (includes member count)
+  async getFundSummaries(fundIds: string[]): Promise<{ summaries: Array<{ fundId: string; memberCount: number; currentBalance: number }> }> {
+    console.log('getFundSummaries called with fundIds:', fundIds);
+
+    if (fundIds.length === 0) {
+      return { summaries: [] };
+    }
+
+    // Get fund summaries from the fund_summary view
+    const { data: fundSummaries, error } = await supabase
+      .from('fund_summary')
+      .select('id, member_count, fund_balance')
+      .in('id', fundIds);
+
+    if (error) {
+      console.log('Error accessing fund_summary view:', error);
+      // Fallback: get balances and calculate member count separately
+      const balanceData = await this.getFundBalances(fundIds);
+      const summariesWithMemberCount = [];
+      
+      for (const balance of balanceData.balances) {
+        const { data: memberCount } = await supabase
+          .from('fund_members')
+          .select('id', { count: 'exact' })
+          .eq('fund_id', balance.fundId)
+          .eq('status', 'active');
+        
+        summariesWithMemberCount.push({
+          fundId: balance.fundId,
+          memberCount: memberCount?.length || 0,
+          currentBalance: balance.currentBalance
+        });
+      }
+      
+      return { summaries: summariesWithMemberCount };
+    }
+
+    // Map results from view
+    const summaries = (fundSummaries || []).map(item => ({
+      fundId: item.id,
+      memberCount: parseInt(item.member_count || '0'),
+      currentBalance: parseFloat(item.fund_balance || '0')
+    }));
+
+    return { summaries };
+  }
+
   // Fund balance operations
   async getFundBalances(fundIds: string[]): Promise<{ balances: Array<{ fundId: string; currentBalance: number }> }> {
     console.log('getFundBalances called with fundIds:', fundIds);

@@ -4,11 +4,12 @@ import { Fund } from "@shared/schema";
 interface FundCardProps {
   fund: Fund;
   balance?: number;
+  memberCount?: number;
   onToggleBalance?: () => void;
   onClick?: () => void;
 }
 
-export default function FundCard({ fund, balance, onToggleBalance, onClick }: FundCardProps) {
+export default function FundCard({ fund, balance, memberCount, onToggleBalance, onClick }: FundCardProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -91,7 +92,7 @@ export default function FundCard({ fund, balance, onToggleBalance, onClick }: Fu
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-dark" />
             <span className="text-sm text-dark opacity-80" data-testid={`fund-members-${fund.id}`}>
-              0 membros {/* TODO: Implementar contagem de membros */}
+              {memberCount || 0} {(memberCount || 0) === 1 ? 'membro' : 'membros'}
             </span>
           </div>
           <div className="flex items-center gap-2">
