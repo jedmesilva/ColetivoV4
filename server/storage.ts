@@ -68,14 +68,57 @@ class SupabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertAccount): Promise<Account> {
-    const { data, error } = await supabase
+    // 1. Primeiro criar usuário no Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: insertUser.email,
+      password: insertUser.passwordHash, // Supabase vai fazer o hash automaticamente
+      options: {
+        data: {
+          full_name: insertUser.fullName,
+          phone: insertUser.phone,
+          cpf: insertUser.cpf,
+          birth_date: insertUser.birthDate
+        }
+      }
+    });
+
+    if (authError) {
+      console.error('Error creating auth user:', authError);
+      throw authError;
+    }
+
+    if (!authData.user) {
+      throw new Error('Failed to create user in auth');
+    }
+
+    // 2. Depois criar o perfil na tabela accounts
+    const accountData = {
+      id: authData.user.id, // Usar o ID do auth.users
+      email: insertUser.email,
+      password_hash: 'handled_by_auth', // Placeholder, pois o Supabase Auth gerencia
+      full_name: insertUser.fullName,
+      phone: insertUser.phone,
+      cpf: insertUser.cpf,
+      birth_date: insertUser.birthDate,
+      is_active: true,
+      email_verified: false,
+      phone_verified: false
+    };
+
+    const { data: profileData, error: profileError } = await supabase
       .from('accounts')
-      .insert(insertUser)
+      .insert(accountData)
       .select()
       .single();
 
-    if (error) throw error;
-    return data as Account;
+    if (profileError) {
+      console.error('Error creating profile:', profileError);
+      // Se falhar ao criar perfil, tentar deletar o usuário auth
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      throw profileError;
+    }
+
+    return profileData as Account;
   }
 
   async getAccountBalance(accountId: number): Promise<AccountBalance | undefined> {

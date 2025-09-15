@@ -28,17 +28,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email already exists" });
       }
 
-      // Hash password before storing
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(validatedData.passwordHash, saltRounds);
-
-      const user = await storage.createUser({
-        ...validatedData,
-        passwordHash: hashedPassword
-      });
+      // Não fazer hash da senha aqui - o Supabase Auth fará isso
+      const user = await storage.createUser(validatedData);
 
       // Remove password from response for security
-      const { passwordHash, ...userResponse } = user;
+      const { password_hash, ...userResponse } = user;
       res.status(201).json(userResponse);
     } catch (error) {
       console.error("Error creating user:", error);
@@ -194,21 +188,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
-      const user = await storage.getUserByUsername(email); // Assuming email is used as username for login
+      // Usar Supabase Auth para fazer login
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (authError || !authData.user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Buscar dados do perfil na tabela accounts
+      const user = await storage.getUser(authData.user.id);
 
       if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(404).json({ message: "User profile not found" });
       }
 
-      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-
-      if (!isPasswordValid) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-
-      // For simplicity, returning user info without sensitive data
-      const { passwordHash, ...userResponse } = user;
-      res.status(200).json(userResponse);
+      // Retornar dados do usuário sem informações sensíveis
+      const { password_hash, ...userResponse } = user;
+      res.status(200).json({
+        ...userResponse,
+        session: authData.session // Incluir session token para manter usuário logado
+      });
     } catch (error) {
       console.error("Error during login:", error);
       res.status(500).json({ message: "Login failed" });
