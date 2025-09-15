@@ -35,9 +35,15 @@ export default function Home() {
     }).format(value);
   };
 
+  // Hook para buscar dados do usuário logado
+  const { data: currentUser } = useQuery({
+    queryKey: ['/api/accounts/8a1d8a0f-04c4-405d-beeb-7aa75690b32e'],
+    enabled: true,
+  });
+
   // Hook para buscar saldo da conta do usuário (usando ID do usuário que existe no Supabase)
   const { data: accountBalance } = useQuery<{ balanceInFunds: number; freeBalance: number; totalBalance: number }>({
-    queryKey: ['/api/accounts/94dbf90f-8be6-403d-b66b-ba53b0c4d8a1/balance'],
+    queryKey: ['/api/accounts/8a1d8a0f-04c4-405d-beeb-7aa75690b32e/balance'],
     enabled: true,
   });
 
@@ -129,7 +135,7 @@ export default function Home() {
           {/* Welcome Section */}
           <div className="px-4 mb-8">
             <h1 className="text-3xl font-bold mb-2 text-creme" data-testid="text-greeting">
-              Olá, Lucas!
+              Olá, {currentUser?.fullName || currentUser?.full_name || 'Usuário'}!
             </h1>
             <p className="text-lg text-creme">Bem vindo ao ColetivoBank</p>
           </div>

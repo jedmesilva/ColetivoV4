@@ -103,6 +103,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user by ID
+  app.get("/api/accounts/:id", async (req, res) => {
+    try {
+      const accountId = req.params.id;
+      const user = await storage.getUser(accountId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Remove password from response for security
+      const { password_hash, ...userResponse } = user;
+      res.json(userResponse);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   // Get account balance
   app.get("/api/accounts/:id/balance", async (req, res) => {
     try {
