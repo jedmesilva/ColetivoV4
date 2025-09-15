@@ -59,7 +59,7 @@ export const accounts = pgTable("accounts", {
 
 // Fundos coletivos
 export const funds = pgTable("funds", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }).notNull(),
   objective: text("objective"),
   contributionRate: decimal("contribution_rate", { precision: 5, scale: 2 }).default("100.00"),
@@ -82,14 +82,14 @@ export const funds = pgTable("funds", {
 
 // Transações das contas
 export const accountTransactions = pgTable("account_transactions", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   accountId: uuid("account_id").references(() => accounts.id),
-  fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
+  fundId: uuid("fund_id").references(() => funds.id),
   transactionType: transactionTypeEnum("transaction_type").notNull(),
   amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
   description: text("description"),
   referenceType: referenceTypeEnum("reference_type").notNull(),
-  referenceId: bigint("reference_id", { mode: "number" }),
+  referenceId: uuid("reference_id"),
   status: transactionStatusEnum("status").default('completed'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   processedAt: timestamp("processed_at").defaultNow(),
@@ -97,8 +97,8 @@ export const accountTransactions = pgTable("account_transactions", {
 
 // Membros dos fundos
 export const fundMembers = pgTable("fund_members", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id),
   accountId: uuid("account_id").references(() => accounts.id),
   role: memberRoleEnum("role").default('member'),
   status: memberStatusEnum("status").default('active'),
@@ -112,8 +112,8 @@ export const fundMembers = pgTable("fund_members", {
 
 // Contribuições
 export const contributions = pgTable("contributions", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id),
   accountId: uuid("account_id").references(() => accounts.id),
   amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
   description: text("description"),
@@ -126,8 +126,8 @@ export const contributions = pgTable("contributions", {
 
 // Solicitações de capital
 export const capitalRequests = pgTable("capital_requests", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  fundId: bigint("fund_id", { mode: "number" }).references(() => funds.id),
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id),
   accountId: uuid("account_id").references(() => accounts.id),
   amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
   reason: text("reason").notNull(),
