@@ -1,24 +1,19 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { createClient } from "@supabase/supabase-js";
 import * as schema from "@shared/schema";
 
-// Use Supabase REST API instead of direct postgres connection
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-  throw new Error("SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required");
+// Use Replit's built-in PostgreSQL database (force use of Replit PG vars)
+const databaseUrl = `postgresql://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}:${process.env.PGPORT}/${process.env.PGDATABASE}`;
+
+if (!process.env.PGHOST || !process.env.PGUSER || !process.env.PGPASSWORD) {
+  throw new Error("Database connection credentials are required");
 }
 
-// Create Supabase client
-export const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
-
-// For now, create a mock postgres connection that won't be used
-// We'll use Supabase client directly in storage
-const client = postgres("postgresql://localhost/dummy", {
+// Create postgres connection
+const client = postgres(databaseUrl, {
   prepare: false,
   transform: { undefined: null },
+  ssl: { rejectUnauthorized: false },
 });
 
 export const db = drizzle(client, { schema });
