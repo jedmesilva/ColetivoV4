@@ -483,21 +483,21 @@ class SupabaseStorage implements IStorage {
       return sum + parseFloat(request.amount || '0');
     }, 0);
 
-    // 3. Somar transações de retribuição da tabela account_transactions (se existir)
+    // 3. Somar todas as retribuições pagas da tabela retributions
     const { data: retributions, error: retributionError } = await supabase
-      .from('account_transactions')
+      .from('retributions')
       .select('amount')
       .eq('account_id', accountId)
-      .eq('reference_type', 'retribution')
-      .eq('status', 'completed');
+      .eq('status', 'paid');
 
-    // Se a tabela account_transactions não existir ou não tiver dados, ignorar esse erro
-    let totalRetributions = 0;
-    if (!retributionError && retributions) {
-      totalRetributions = retributions.reduce((sum, retribution) => {
-        return sum + parseFloat(retribution.amount || '0');
-      }, 0);
+    if (retributionError) {
+      console.error('Error fetching user retributions:', retributionError);
+      throw new Error(retributionError.message);
     }
+
+    const totalRetributions = (retributions || []).reduce((sum, retribution) => {
+      return sum + parseFloat(retribution.amount || '0');
+    }, 0);
 
     // Cálculo final: contribuições - retiradas - retribuições
     const totalBalanceInFunds = totalContributions - totalWithdrawals - totalRetributions;
