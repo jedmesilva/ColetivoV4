@@ -512,6 +512,23 @@ class SupabaseStorage implements IStorage {
     return Math.max(0, totalBalanceInFunds);
   }
 
+  async getUserPendingRetributionsCount(accountId: string): Promise<number> {
+    console.log('getUserPendingRetributionsCount called for accountId:', accountId);
+    
+    const { data, error } = await supabase
+      .from('retributions')
+      .select('id')
+      .eq('account_id', accountId)
+      .eq('status', 'pending');
+
+    if (error) {
+      console.error('Error fetching user pending retributions:', error);
+      throw new Error(error.message);
+    }
+
+    return (data || []).length;
+  }
+
   async createContribution(insertContribution: InsertContribution, userId: string): Promise<Contribution> {
     const contributionData = {
       fund_id: insertContribution.fundId,

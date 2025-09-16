@@ -218,6 +218,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's pending retributions count
+  app.get("/api/accounts/:accountId/pending-retributions", async (req, res) => {
+    try {
+      const { accountId } = req.params;
+      
+      // TODO: Implementar autenticação adequada
+      // Por enquanto, limitando ao usuário fixo para desenvolvimento
+      const allowedUserId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+      if (accountId !== allowedUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const pendingCount = await storage.getUserPendingRetributionsCount(accountId);
+      res.json({ pendingCount });
+    } catch (error) {
+      console.error("Error fetching user pending retributions count:", error);
+      res.status(500).json({ message: "Failed to fetch user pending retributions count" });
+    }
+  });
+
   // Create contribution
   app.post("/api/contributions", async (req, res) => {
     try {

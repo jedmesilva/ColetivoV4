@@ -53,6 +53,12 @@ export default function Home() {
     enabled: true,
   });
 
+  // Hook para buscar quantidade de retribuições pendentes
+  const { data: pendingRetributions } = useQuery<{ pendingCount: number }>({
+    queryKey: ['/api/accounts/8a1d8a0f-04c4-405d-beeb-7aa75690b32e/pending-retributions'],
+    enabled: true,
+  });
+
   const calculateTotalBalance = () => {
     return balanceInFunds?.totalBalanceInFunds || 0;
   };
@@ -219,7 +225,7 @@ export default function Home() {
                     </div>
                     <div className="text-left">
                       <h4 className="text-2xl font-bold text-dark" data-testid="text-pending-count">
-                        2
+                        {pendingRetributions?.pendingCount || 0}
                       </h4>
                       <p className="text-xs text-dark">À RETRIBUIR</p>
                     </div>
