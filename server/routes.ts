@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { supabase } from "./db";
-import { insertFundSchema, insertContributionSchema, insertAccountSchema } from "@shared/schema";
+import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Check username availability
@@ -355,6 +355,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error during logout:", error);
       // Retorna sucesso mesmo com erro para não atrapalhar o frontend
       res.status(200).json({ message: "Logout successful" });
+    }
+  });
+
+  // Criar solicitação de capital com plano de retribuição
+  app.post("/api/capital-requests", async (req, res) => {
+    try {
+      const { accountId, ...requestData } = req.body;
+      
+      if (!accountId) {
+        return res.status(400).json({ message: "accountId é obrigatório" });
+      }
+
+      // Validar dados da solicitação
+      const validatedData = insertCapitalRequestWithPlanSchema.parse(requestData);
+
+      const result = await storage.createCapitalRequestWithPlan(validatedData, accountId);
+      
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error creating capital request:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Dados inválidos", details: error });
+      }
+      res.status(500).json({ message: error instanceof Error ? error.message : "Erro ao criar solicitação de capital" });
+    }
+  });
+
+  // Aprovar solicitação de capital
+  app.post("/api/capital-requests/:id/approve", async (req, res) => {
+    try {
+      const { id: requestId } = req.params;
+      const { approverId } = req.body;
+      
+      if (!approverId) {
+        return res.status(400).json({ message: "approverId é obrigatório" });
+      }
+
+      const result = await storage.approveCapitalRequest(requestId, approverId);
+      
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("Error approving capital request:", error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Erro ao aprovar solicitação de capital" });
     }
   });
 

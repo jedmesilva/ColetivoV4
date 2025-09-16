@@ -233,6 +233,23 @@ export const insertCapitalRequestSchema = createInsertSchema(capitalRequests).pi
   urgencyLevel: true,
 });
 
+// Schema estendido para criar solicitação com plano de retribuição
+export const insertCapitalRequestWithPlanSchema = insertCapitalRequestSchema.extend({
+  installments: z.number().min(1).max(60),
+  frequency: z.enum(['monthly', 'quarterly', 'semiannual', 'annual']),
+  firstDueDate: z.string().refine((date) => !isNaN(Date.parse(date)), "Data inválida"),
+});
+
+// Schema para planos de retribuição
+export const insertRetributionPlanSchema = createInsertSchema(retributionPlans).pick({
+  capitalRequestId: true,
+  totalAmount: true,
+  installments: true,
+  frequency: true,
+  installmentAmount: true,
+  startDate: true,
+});
+
 // Schemas para retributions  
 export const insertRetributionSchema = createInsertSchema(retributions).pick({
   retributionPlanId: true,
@@ -261,7 +278,11 @@ export type InsertFundMember = z.infer<typeof insertFundMemberSchema>;
 export type FundMember = typeof fundMembers.$inferSelect;
 
 export type InsertCapitalRequest = z.infer<typeof insertCapitalRequestSchema>;
+export type InsertCapitalRequestWithPlan = z.infer<typeof insertCapitalRequestWithPlanSchema>;
 export type CapitalRequest = typeof capitalRequests.$inferSelect;
+
+export type InsertRetributionPlan = z.infer<typeof insertRetributionPlanSchema>;
+export type RetributionPlan = typeof retributionPlans.$inferSelect;
 
 export type InsertRetribution = z.infer<typeof insertRetributionSchema>;
 export type Retribution = typeof retributions.$inferSelect;

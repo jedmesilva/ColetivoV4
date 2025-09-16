@@ -4,6 +4,7 @@ import { supabase } from "./db";
 import {
   type Account, type Fund, type Contribution, type FundMember, type AccountTransaction, type Retribution,
   type InsertAccount, type InsertFund, type InsertContribution, type InsertFundMember, type InsertRetribution,
+  type CapitalRequest, type InsertCapitalRequestWithPlan, type RetributionPlan,
   // Maintain compatibility
   type User, type InsertUser
 } from "@shared/schema";
@@ -44,6 +45,17 @@ export interface IStorage {
 
   // Retribution operations
   getUserFundPendingRetributionsCount(fundId: string, accountId: string): Promise<number>;
+
+  // Capital request operations
+  createCapitalRequestWithPlan(requestData: InsertCapitalRequestWithPlan, accountId: string): Promise<{
+    capitalRequest: CapitalRequest;
+    retributionPlan: RetributionPlan;
+    retributions: Retribution[];
+  }>;
+  approveCapitalRequest(requestId: string, approverId: string): Promise<{
+    capitalRequest: CapitalRequest;
+    transaction: AccountTransaction;
+  }>;
 }
 
 // Supabase storage implementation
@@ -853,6 +865,298 @@ class SupabaseStorage implements IStorage {
     return {
       fundId,
       currentBalance
+    };
+  }
+
+  // Helper function to calculate due dates
+  private calculateDueDates(startDate: string, installments: number, frequency: string): Date[] {
+    const dates: Date[] = [];
+    const start = new Date(startDate);
+    
+    for (let i = 0; i < installments; i++) {
+      const dueDate = new Date(start);
+      
+      switch (frequency) {
+        case 'monthly':
+          dueDate.setMonth(start.getMonth() + i);
+          break;
+        case 'quarterly':
+          dueDate.setMonth(start.getMonth() + (i * 3));
+          break;
+        case 'semiannual':
+          dueDate.setMonth(start.getMonth() + (i * 6));
+          break;
+        case 'annual':
+          dueDate.setFullYear(start.getFullYear() + i);
+          break;
+        default:
+          throw new Error(`Frequência não suportada: ${frequency}`);
+      }
+      
+      dates.push(dueDate);
+    }
+    
+    return dates;
+  }
+
+  async createCapitalRequestWithPlan(requestData: InsertCapitalRequestWithPlan, accountId: string): Promise<{
+    capitalRequest: CapitalRequest;
+    retributionPlan: RetributionPlan;
+    retributions: Retribution[];
+  }> {
+    // 1. Verificar se o usuário é membro ativo do fundo
+    const { data: membership, error: membershipError } = await supabase
+      .from('fund_members')
+      .select('*')
+      .eq('fund_id', requestData.fundId)
+      .eq('account_id', accountId)
+      .eq('status', 'active')
+      .single();
+
+    if (membershipError || !membership) {
+      throw new Error('Usuário não é membro ativo deste fundo');
+    }
+
+    // 2. Criar a solicitação de capital
+    const { data: capitalRequest, error: requestError } = await supabase
+      .from('capital_requests')
+      .insert({
+        fund_id: requestData.fundId,
+        account_id: accountId,
+        amount: requestData.amount,
+        reason: requestData.reason,
+        urgency_level: requestData.urgencyLevel || 'medium',
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (requestError || !capitalRequest) {
+      throw new Error(`Erro ao criar solicitação de capital: ${requestError?.message}`);
+    }
+
+    // 3. Calcular valores das parcelas
+    const totalAmount = parseFloat(requestData.amount);
+    const installmentAmount = Math.floor((totalAmount * 100) / requestData.installments) / 100;
+    const lastInstallmentAmount = totalAmount - (installmentAmount * (requestData.installments - 1));
+
+    // 4. Criar o plano de retribuição
+    const { data: retributionPlan, error: planError } = await supabase
+      .from('retribution_plans')
+      .insert({
+        capital_request_id: capitalRequest.id,
+        total_amount: requestData.amount,
+        installments: requestData.installments,
+        frequency: requestData.frequency,
+        installment_amount: installmentAmount.toString(),
+        start_date: requestData.firstDueDate,
+        next_due_date: requestData.firstDueDate,
+        status: 'active'
+      })
+      .select()
+      .single();
+
+    if (planError || !retributionPlan) {
+      // Reverter criação da solicitação se falhar
+      await supabase.from('capital_requests').delete().eq('id', capitalRequest.id);
+      throw new Error(`Erro ao criar plano de retribuição: ${planError?.message}`);
+    }
+
+    // 5. Calcular datas de vencimento e criar as parcelas
+    const dueDates = this.calculateDueDates(requestData.firstDueDate, requestData.installments, requestData.frequency);
+    
+    const retributionsData = dueDates.map((dueDate, index) => ({
+      retribution_plan_id: retributionPlan.id,
+      account_id: accountId,
+      fund_id: requestData.fundId,
+      amount: (index === requestData.installments - 1 ? lastInstallmentAmount : installmentAmount).toString(),
+      installment_number: index + 1,
+      due_date: dueDate.toISOString().split('T')[0],
+      status: 'pending'
+    }));
+
+    const { data: retributions, error: retributionsError } = await supabase
+      .from('retributions')
+      .insert(retributionsData)
+      .select();
+
+    if (retributionsError || !retributions) {
+      // Reverter criações anteriores se falhar
+      await supabase.from('retribution_plans').delete().eq('id', retributionPlan.id);
+      await supabase.from('capital_requests').delete().eq('id', capitalRequest.id);
+      throw new Error(`Erro ao criar parcelas de retribuição: ${retributionsError?.message}`);
+    }
+
+    // 6. Mapear dados para camelCase
+    const mappedCapitalRequest = {
+      ...capitalRequest,
+      fundId: capitalRequest.fund_id,
+      accountId: capitalRequest.account_id,
+      urgencyLevel: capitalRequest.urgency_level,
+      approvedAt: capitalRequest.approved_at,
+      approvedBy: capitalRequest.approved_by,
+      disbursedAt: capitalRequest.disbursed_at,
+      createdAt: capitalRequest.created_at
+    } as CapitalRequest;
+
+    const mappedRetributionPlan = {
+      ...retributionPlan,
+      capitalRequestId: retributionPlan.capital_request_id,
+      totalAmount: retributionPlan.total_amount,
+      customFrequencyDays: retributionPlan.custom_frequency_days,
+      installmentAmount: retributionPlan.installment_amount,
+      startDate: retributionPlan.start_date,
+      nextDueDate: retributionPlan.next_due_date,
+      createdAt: retributionPlan.created_at
+    } as RetributionPlan;
+
+    const mappedRetributions = retributions.map(r => ({
+      ...r,
+      retributionPlanId: r.retribution_plan_id,
+      accountId: r.account_id,
+      fundId: r.fund_id,
+      installmentNumber: r.installment_number,
+      dueDate: r.due_date,
+      paidDate: r.paid_date,
+      paymentMethod: r.payment_method,
+      createdAt: r.created_at
+    })) as Retribution[];
+
+    return {
+      capitalRequest: mappedCapitalRequest,
+      retributionPlan: mappedRetributionPlan,
+      retributions: mappedRetributions
+    };
+  }
+
+  async approveCapitalRequest(requestId: string, approverId: string): Promise<{
+    capitalRequest: CapitalRequest;
+    transaction: AccountTransaction;
+  }> {
+    // 1. Buscar a solicitação de capital
+    const { data: request, error: requestError } = await supabase
+      .from('capital_requests')
+      .select('*, fund_id, account_id')
+      .eq('id', requestId)
+      .single();
+
+    if (requestError || !request) {
+      throw new Error('Solicitação de capital não encontrada');
+    }
+
+    if (request.status !== 'pending') {
+      throw new Error('Solicitação já foi processada');
+    }
+
+    // 2. Verificar se o aprovador é admin do fundo
+    const { data: approverMembership, error: approverError } = await supabase
+      .from('fund_members')
+      .select('role, total_received')
+      .eq('fund_id', request.fund_id)
+      .eq('account_id', approverId)
+      .eq('status', 'active')
+      .single();
+
+    if (approverError || !approverMembership || approverMembership.role !== 'admin') {
+      throw new Error('Apenas admins do fundo podem aprovar solicitações');
+    }
+
+    // 2.1. Buscar informações do membro solicitante para atualizar total_received
+    const { data: requesterMembership, error: requesterError } = await supabase
+      .from('fund_members')
+      .select('total_received')
+      .eq('fund_id', request.fund_id)
+      .eq('account_id', request.account_id)
+      .eq('status', 'active')
+      .single();
+
+    if (requesterError || !requesterMembership) {
+      throw new Error('Membro solicitante não encontrado');
+    }
+
+    // 3. Verificar saldo do fundo
+    const fundBalance = await this.getFundBalance(request.fund_id);
+    const requestAmount = parseFloat(request.amount);
+
+    if (fundBalance.currentBalance < requestAmount) {
+      throw new Error('Saldo insuficiente no fundo para aprovar esta solicitação');
+    }
+
+    // 4. Criar transação na conta do solicitante (entrada de dinheiro)
+    const { data: transaction, error: transactionError } = await supabase
+      .from('account_transactions')
+      .insert({
+        account_id: request.account_id,
+        fund_id: request.fund_id,
+        transaction_type: 'fund_withdrawal',
+        amount: request.amount,
+        description: `Retirada aprovada do fundo - Solicitação #${requestId}`,
+        reference_type: 'capital_request',
+        reference_id: requestId,
+        status: 'completed'
+      })
+      .select()
+      .single();
+
+    if (transactionError || !transaction) {
+      throw new Error(`Erro ao criar transação: ${transactionError?.message}`);
+    }
+
+    // 5. Atualizar a solicitação como aprovada
+    const { data: approvedRequest, error: updateError } = await supabase
+      .from('capital_requests')
+      .update({
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        approved_by: approverId,
+        disbursed_at: new Date().toISOString()
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (updateError || !approvedRequest) {
+      // Reverter transação se a atualização falhar
+      await supabase.from('account_transactions').delete().eq('id', transaction.id);
+      throw new Error(`Erro ao atualizar solicitação: ${updateError?.message}`);
+    }
+
+    // 6. Atualizar total recebido do membro solicitante
+    const newTotalReceived = parseFloat(requesterMembership.total_received || '0') + requestAmount;
+    await supabase
+      .from('fund_members')
+      .update({
+        total_received: newTotalReceived.toString()
+      })
+      .eq('fund_id', request.fund_id)
+      .eq('account_id', request.account_id);
+
+    // 7. Mapear dados para camelCase
+    const mappedCapitalRequest = {
+      ...approvedRequest,
+      fundId: approvedRequest.fund_id,
+      accountId: approvedRequest.account_id,
+      urgencyLevel: approvedRequest.urgency_level,
+      approvedAt: approvedRequest.approved_at,
+      approvedBy: approvedRequest.approved_by,
+      disbursedAt: approvedRequest.disbursed_at,
+      createdAt: approvedRequest.created_at
+    } as CapitalRequest;
+
+    const mappedTransaction = {
+      ...transaction,
+      accountId: transaction.account_id,
+      fundId: transaction.fund_id,
+      transactionType: transaction.transaction_type,
+      referenceType: transaction.reference_type,
+      referenceId: transaction.reference_id,
+      createdAt: transaction.created_at,
+      processedAt: transaction.processed_at
+    } as AccountTransaction;
+
+    return {
+      capitalRequest: mappedCapitalRequest,
+      transaction: mappedTransaction
     };
   }
 }
