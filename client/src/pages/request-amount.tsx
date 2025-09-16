@@ -14,6 +14,7 @@ export default function RequestAmount() {
   const [valor, setValor] = useState('');
   const [valorSelecionado, setValorSelecionado] = useState('');
   const [fundoSelecionado, setFundoSelecionado] = useState<Fund | null>(null);
+  const [carregandoSaldo, setCarregandoSaldo] = useState(false);
   const [, setLocation] = useLocation();
   
   // Valores de seleção rápida
@@ -26,12 +27,45 @@ export default function RequestAmount() {
   useEffect(() => {
     const cached = getRequestCache();
     if (cached && cached.fundId) {
-      setFundoSelecionado({
+      // Criar objeto inicial sem o saldo
+      const fundoInicial = {
         id: cached.fundId,
         nome: cached.fundName || '',
         emoji: cached.fundEmoji || '',
-        saldoDisponivel: 850.50 // Valor simulado - em um app real viria do backend
-      });
+        saldoDisponivel: 0
+      };
+      setFundoSelecionado(fundoInicial);
+      
+      // Buscar o saldo real do fundo
+      const buscarSaldoFundo = async () => {
+        try {
+          setCarregandoSaldo(true);
+          const response = await fetch(`/api/funds/${cached.fundId}/balance`);
+          if (response.ok) {
+            const data = await response.json();
+            const saldo = data.currentBalance ?? data.balance ?? 0;
+            if (saldo === 0 && !data.currentBalance && !data.balance) {
+              console.warn('Resposta da API não contém saldo esperado:', data);
+            }
+            setFundoSelecionado(prev => prev ? {
+              ...prev,
+              saldoDisponivel: saldo
+            } : null);
+          } else {
+            console.error('Erro ao buscar saldo do fundo:', response.status);
+            // Em caso de erro, exibir alerta para o usuário
+            alert('Erro ao carregar saldo do fundo. Tente novamente.');
+          }
+        } catch (error) {
+          console.error('Erro ao buscar saldo do fundo:', error);
+          // Em caso de erro, exibir alerta para o usuário
+          alert('Erro ao carregar saldo do fundo. Tente novamente.');
+        } finally {
+          setCarregandoSaldo(false);
+        }
+      };
+      
+      buscarSaldoFundo();
       
       if (cached.valor) {
         const valorFormatado = cached.valor.toLocaleString('pt-BR', {
@@ -114,7 +148,7 @@ export default function RequestAmount() {
   };
 
   const valorNumerico = obterValorNumerico(valor);
-  const podeAvancar = valorNumerico > 0 && fundoSelecionado && valorNumerico <= fundoSelecionado.saldoDisponivel;
+  const podeAvancar = valorNumerico > 0 && fundoSelecionado && valorNumerico <= fundoSelecionado.saldoDisponivel && !carregandoSaldo;
 
   if (!fundoSelecionado) {
     return (
@@ -362,10 +396,17 @@ export default function RequestAmount() {
                   <div className="flex items-center gap-2">
                     <Wallet className="w-4 h-4" style={{ color: 'rgba(48, 48, 48, 0.7)' }} />
                     <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                      Disponível: {fundoSelecionado.saldoDisponivel.toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      })}
+                      Disponível: {carregandoSaldo ? (
+                        <span className="inline-flex items-center gap-1">
+                          <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+                          Carregando...
+                        </span>
+                      ) : (
+                        fundoSelecionado.saldoDisponivel.toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        })
+                      )}
                     </p>
                   </div>
                 </div>
