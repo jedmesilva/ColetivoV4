@@ -1113,14 +1113,15 @@ class SupabaseStorage implements IStorage {
       throw new Error(`Erro ao criar transação: ${transactionError?.message}`);
     }
 
-    // 5. Atualizar a solicitação como aprovada
+    // 5. Atualizar a solicitação como aprovada e desembolsada
+    const now = new Date().toISOString();
     const { data: approvedRequest, error: updateError } = await supabase
       .from('capital_requests')
       .update({
-        status: 'approved',
-        approved_at: new Date().toISOString(),
+        status: 'completed', // Status final após desembolso
+        approved_at: now,
         approved_by: approverId,
-        disbursed_at: new Date().toISOString()
+        disbursed_at: now
       })
       .eq('id', requestId)
       .select()
