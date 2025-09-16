@@ -1048,7 +1048,11 @@ class SupabaseStorage implements IStorage {
       throw new Error('Solicitação já foi processada');
     }
 
-    // 2. Verificar se o aprovador é admin do fundo
+    // 2. Verificar se o aprovador é admin do fundo e não é o próprio solicitante
+    if (approverId === request.account_id) {
+      throw new Error('Um usuário não pode aprovar sua própria solicitação');
+    }
+
     const { data: approverMembership, error: approverError } = await supabase
       .from('fund_members')
       .select('role, total_received')
@@ -1078,8 +1082,15 @@ class SupabaseStorage implements IStorage {
     const fundBalance = await this.getFundBalance(request.fund_id);
     const requestAmount = parseFloat(request.amount);
 
+    console.log(`Verificando saldo: Fundo ${request.fund_id} tem ${fundBalance.currentBalance}, solicitação é ${requestAmount}`);
+
     if (fundBalance.currentBalance < requestAmount) {
-      throw new Error('Saldo insuficiente no fundo para aprovar esta solicitação');
+      throw new Error(`Saldo insuficiente no fundo. Disponível: R$ ${fundBalance.currentBalance.toFixed(2)}, Solicitado: R$ ${requestAmount.toFixed(2)}`);
+    }
+
+    // 3.1. Verificar se já não existe uma aprovação duplicada (idempotência)
+    if (request.status === 'approved') {
+      throw new Error('Esta solicitação já foi aprovada anteriormente');
     }
 
     // 4. Criar transação na conta do solicitante (entrada de dinheiro)

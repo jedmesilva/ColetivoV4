@@ -258,7 +258,8 @@ export const insertRetributionSchema = createInsertSchema(retributions).pick({
   amount: true,
   installmentNumber: true,
   dueDate: true,
-  paymentMethod: true,
+}).extend({
+  paymentMethod: createInsertSchema(retributions).shape.paymentMethod.optional(),
 });
 
 // ============================================================================
