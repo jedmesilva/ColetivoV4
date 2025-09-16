@@ -44,6 +44,14 @@ export const retributionPaymentMethodEnum = pgEnum('retribution_payment_method_e
   'pix', 'ted', 'debit_card', 'credit_card', 'account_balance', 'cash'
 ]);
 
+export const frequencyEnum = pgEnum('frequency_enum', [
+  'daily', 'weekly', 'monthly', 'quarterly', 'semiannual', 'annual', 'custom'
+]);
+
+export const retributionPlanStatusEnum = pgEnum('retribution_plan_status_enum', [
+  'active', 'completed', 'overdue', 'cancelled'
+]);
+
 // ============================================================================
 // TABELAS PRINCIPAIS
 // ============================================================================
@@ -147,10 +155,25 @@ export const capitalRequests = pgTable("capital_requests", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Planos de retribuição
+export const retributionPlans = pgTable("retribution_plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  capitalRequestId: uuid("capital_request_id").references(() => capitalRequests.id),
+  totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).notNull(),
+  installments: integer("installments").notNull(),
+  frequency: frequencyEnum("frequency").notNull(),
+  customFrequencyDays: integer("custom_frequency_days"),
+  installmentAmount: decimal("installment_amount", { precision: 15, scale: 2 }).notNull(),
+  startDate: date("start_date").notNull(),
+  nextDueDate: date("next_due_date"),
+  status: retributionPlanStatusEnum("status").default('active'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Retribuições (estrutura real no banco)
 export const retributions = pgTable("retributions", {
   id: uuid("id").primaryKey().defaultRandom(),
-  retributionPlanId: uuid("retribution_plan_id"),
+  retributionPlanId: uuid("retribution_plan_id").references(() => retributionPlans.id),
   accountId: uuid("account_id").references(() => accounts.id),
   fundId: uuid("fund_id").references(() => funds.id),
   amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
