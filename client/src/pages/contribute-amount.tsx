@@ -1,6 +1,7 @@
 import { ArrowLeft, Settings, Check, Wallet, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { getContributionCache, updateContributionCache } from "@/lib/contribution-cache";
 
 export default function ContributeAmount() {
@@ -10,8 +11,13 @@ export default function ContributeAmount() {
   const [fundoSelecionado, setFundoSelecionado] = useState<any>(null);
   const [, setLocation] = useLocation();
   
-  // Saldo disponível na conta (viria de uma API)
-  const saldoDisponivel = 1250.75;
+  // Buscar saldo disponível da conta via API
+  const { data: accountBalance } = useQuery({
+    queryKey: ['/api/accounts/8a1d8a0f-04c4-405d-beeb-7aa75690b32e/balance'],
+    enabled: true,
+  });
+  
+  const saldoDisponivel = (accountBalance as any)?.freeBalance || 0;
 
   // Valores de seleção rápida
   const valoresRapidos = [
