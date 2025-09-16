@@ -77,22 +77,68 @@ export default function RequestConfirmation() {
   const handleSolicitarCapital = async () => {
     setProcessando(true);
     
-    // Simular processamento da solicitação
-    const dadosCompletos = {
-      fundo: fundoSelecionado,
-      valorSolicitado: solicitacao.valorSolicitado,
-      taxaRetribuicao: solicitacao.taxaRetribuicao,
-      valorTotalRetribuicao: valorTotalRetribuicao,
-      motivoSolicitacao: solicitacao.motivoSolicitacao,
-      planoPagamento: planoPagamento,
-      dataLimite: solicitacao.dataLimite,
-      dataSolicitacao: new Date().toISOString()
-    };
+    try {
+      // Mapear intervalos do frontend para frequências do backend
+      const frequencyMap: { [key: string]: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'custom' } = {
+        'diario': 'daily',
+        'semanal': 'weekly',
+        'mensal': 'monthly',
+        'bimestral': 'custom', // Bimestral não tem equivalente direto, usar custom
+        'trimestral': 'quarterly', 
+        'semestral': 'semiannual',
+        'anual': 'annual'
+      };
 
-    console.log('Solicitando capital com os dados:', dadosCompletos);
-    
-    // Simular delay de processamento
-    setTimeout(() => {
+      // Preparar dados para o backend
+      let installments: number;
+      let frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'custom';
+      let firstDueDate: string;
+
+      if (planoPagamento.tipo === 'automatico') {
+        // Para plano automático, usar os dados configurados
+        installments = planoPagamento.numeroParcelas || 1;
+        frequency = frequencyMap[planoPagamento.intervaloParcelas || 'mensal'] || 'monthly';
+        firstDueDate = planoPagamento.dataInicio || new Date().toISOString().split('T')[0];
+      } else {
+        // Para plano personalizado, inferir dados das parcelas
+        installments = planoPagamento.parcelas?.length || 1;
+        frequency = 'monthly'; // Padrão para personalizado
+        firstDueDate = planoPagamento.parcelas?.[0]?.data || new Date().toISOString().split('T')[0];
+      }
+
+      const requestData = {
+        fundId: dadosCache.fundId,
+        amount: dadosCache.valor.toString(),
+        reason: dadosCache.motivo,
+        urgencyLevel: 'medium' as const,
+        installments: installments,
+        frequency: frequency,
+        firstDueDate: firstDueDate
+      };
+
+      // Obter accountId do usuário logado (por enquanto usando um ID fixo)
+      // TODO: Implementar autenticação real
+      const accountId = '8a1d8a0f-04c4-405d-beeb-7aa75690b32e'; // ID de exemplo dos logs
+
+      console.log('Enviando solicitação de capital:', { accountId, ...requestData });
+
+      // Fazer a chamada real para a API
+      const response = await fetch('/api/capital-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ accountId, ...requestData })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao processar solicitação');
+      }
+
+      const result = await response.json();
+      console.log('Solicitação criada com sucesso:', result);
+      
       setProcessando(false);
       clearRequestCache(); // Limpar cache após sucesso
       alert('Solicitação enviada com sucesso! Você receberá uma notificação quando for aprovada.');
@@ -107,7 +153,12 @@ export default function RequestConfirmation() {
       
       // Limpar a rota anterior do sessionStorage
       sessionStorage.removeItem('lastPath');
-    }, 2000);
+      
+    } catch (error) {
+      console.error('Erro ao solicitar capital:', error);
+      setProcessando(false);
+      alert('Erro ao processar solicitação: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
+    }
   };
 
   const formatarDataLimite = (data: string) => {
