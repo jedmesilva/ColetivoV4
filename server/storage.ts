@@ -483,12 +483,12 @@ class SupabaseStorage implements IStorage {
       return sum + parseFloat(request.amount || '0');
     }, 0);
 
-    // 3. Somar todas as retribuições completadas da tabela retributions
+    // 3. Somar todas as retribuições pagas da tabela retributions (usando 'paid' conforme V2.0 schema)
     const { data: retributions, error: retributionError } = await supabase
       .from('retributions')
       .select('amount')
       .eq('account_id', accountId)
-      .eq('status', 'completed');
+      .eq('status', 'paid');
 
     if (retributionError) {
       console.error('Error fetching user retributions:', retributionError);
