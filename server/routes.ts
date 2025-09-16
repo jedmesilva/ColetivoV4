@@ -33,7 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createUser(validatedData);
 
       // Remove password from response for security
-      const { password_hash, ...userResponse } = user;
+      const { passwordHash, ...userResponse } = user;
       res.status(201).json(userResponse);
     } catch (error) {
       console.error("Error creating user:", error);
@@ -114,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Remove password from response for security
-      const { password_hash, ...userResponse } = user;
+      const { passwordHash, ...userResponse } = user;
       res.json(userResponse);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -171,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof Error && error.name === 'ZodError') {
         return res.status(400).json({ message: "Invalid fund data", details: error });
       }
-      res.status(500).json({ message: "Failed to create fund", error: error.message });
+      res.status(500).json({ message: "Failed to create fund", error: (error as Error).message });
     }
   });
 
@@ -245,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Retornar dados do usuário sem informações sensíveis
-      const { password_hash, ...userResponse } = user;
+      const { passwordHash, ...userResponse } = user;
       res.status(200).json({
         ...userResponse,
         session: authData.session // Incluir session token para manter usuário logado
