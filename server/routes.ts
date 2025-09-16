@@ -198,6 +198,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's total balance in all funds
+  app.get("/api/accounts/:accountId/balance-in-funds", async (req, res) => {
+    try {
+      const { accountId } = req.params;
+      const totalBalance = await storage.getUserTotalBalanceInFunds(accountId);
+      res.json({ totalBalance });
+    } catch (error) {
+      console.error("Error fetching user total balance in funds:", error);
+      res.status(500).json({ message: "Failed to fetch user total balance in funds" });
+    }
+  });
+
   // Create contribution
   app.post("/api/contributions", async (req, res) => {
     try {
