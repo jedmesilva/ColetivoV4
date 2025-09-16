@@ -358,6 +358,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET capital requests for debugging
+  app.get("/api/capital-requests", async (req, res) => {
+    try {
+      const { data: requests, error } = await supabase
+        .from('capital_requests')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Erro ao buscar capital requests:', error);
+        return res.status(500).json({ error: error.message });
+      }
+
+      res.json(requests || []);
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
   // Criar solicitação de capital com plano de retribuição
   app.post("/api/capital-requests", async (req, res) => {
     try {
