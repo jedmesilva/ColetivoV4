@@ -202,8 +202,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/accounts/:accountId/balance-in-funds", async (req, res) => {
     try {
       const { accountId } = req.params;
-      const totalBalance = await storage.getUserTotalBalanceInFunds(accountId);
-      res.json({ totalBalance });
+      
+      // TODO: Implementar autenticação adequada
+      // Por enquanto, limitando ao usuário fixo para desenvolvimento
+      const allowedUserId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+      if (accountId !== allowedUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const totalBalanceInFunds = await storage.getUserTotalBalanceInFunds(accountId);
+      res.json({ totalBalanceInFunds });
     } catch (error) {
       console.error("Error fetching user total balance in funds:", error);
       res.status(500).json({ message: "Failed to fetch user total balance in funds" });

@@ -449,66 +449,44 @@ class SupabaseStorage implements IStorage {
   async getUserTotalBalanceInFunds(accountId: string): Promise<number> {
     console.log('getUserTotalBalanceInFunds called for accountId:', accountId);
 
-    // 1. Somar todas as contribuições completed do usuário para todos os fundos
-    const { data: contributions, error: contributionError } = await supabase
-      .from('contributions')
-      .select('amount')
-      .eq('account_id', accountId)
-      .eq('status', 'completed');
-
-    if (contributionError) {
-      console.error('Error fetching user contributions:', contributionError);
-      throw new Error(contributionError.message);
-    }
-
-    const totalContributions = (contributions || []).reduce((sum, contribution) => {
-      return sum + parseFloat(contribution.amount || '0');
-    }, 0);
-
-    // 2. Subtrair todas as solicitações de capital completed (retiradas)
-    const { data: capitalRequests, error: capitalError } = await supabase
-      .from('capital_requests')
-      .select('amount')
-      .eq('account_id', accountId)
-      .eq('status', 'completed');
-
-    if (capitalError) {
-      console.error('Error fetching user capital requests:', capitalError);
-      throw new Error(capitalError.message);
-    }
-
-    const totalWithdrawals = (capitalRequests || []).reduce((sum, request) => {
-      return sum + parseFloat(request.amount || '0');
-    }, 0);
-
-    // 3. Subtrair transações de retribuição (pagamentos que o usuário fez de volta aos fundos)
-    const { data: retributions, error: retributionError } = await supabase
-      .from('account_transactions')
-      .select('amount')
-      .eq('account_id', accountId)
-      .eq('reference_type', 'retribution')
-      .eq('status', 'completed');
-
-    if (retributionError) {
-      console.error('Error fetching user retributions:', retributionError);
-      throw new Error(retributionError.message);
-    }
-
-    const totalRetributions = (retributions || []).reduce((sum, retribution) => {
-      return sum + parseFloat(retribution.amount || '0');
-    }, 0);
-
-    // Cálculo final: contribuições - retiradas - retribuições
-    const totalBalanceInFunds = totalContributions - totalWithdrawals - totalRetributions;
-    
-    console.log('Balance calculation for user', accountId, ':', {
-      totalContributions,
-      totalWithdrawals,
-      totalRetributions,
-      totalBalanceInFunds
+    // Executar uma única query SQL para calcular o saldo com precisão
+    const { data, error } = await supabase.rpc('calculate_user_balance_in_funds', {
+      user_account_id: accountId
     });
 
-    return Math.max(0, totalBalanceInFunds); // Não permitir saldo negativo
+    if (error) {
+      console.error('Error calculating user balance in funds:', error);
+      
+      // Fallback para múltiplas queries se a function não existir
+      console.log('Using fallback calculation method');
+      
+      const { data: result, error: fallbackError } = await supabase
+        .from('account_transactions')
+        .select(`
+          COALESCE(
+            SUM(CASE 
+              WHEN reference_type = 'contribution' AND status = 'completed' THEN amount::numeric
+              WHEN reference_type = 'capital_request' AND status = 'completed' THEN -amount::numeric  
+              WHEN reference_type = 'retribution' AND status = 'completed' THEN -amount::numeric
+              ELSE 0
+            END), 0
+          ) as total_balance
+        `)
+        .eq('account_id', accountId);
+
+      if (fallbackError) {
+        console.error('Error in fallback calculation:', fallbackError);
+        throw new Error(fallbackError.message);
+      }
+
+      const totalBalance = parseFloat(result?.[0]?.total_balance || '0');
+      console.log('Calculated balance for user', accountId, ':', totalBalance);
+      return Math.max(0, totalBalance);
+    }
+
+    const totalBalance = parseFloat(data || '0');
+    console.log('Calculated balance for user', accountId, ':', totalBalance);
+    return Math.max(0, totalBalance);
   }
 
   async createContribution(insertContribution: InsertContribution, userId: string): Promise<Contribution> {

@@ -54,7 +54,7 @@ export default function Home() {
   });
 
   const calculateTotalBalance = () => {
-    return balanceInFunds?.totalBalance || 0;
+    return balanceInFunds?.totalBalanceInFunds || 0;
   };
 
   const calculateAverageGrowth = () => {
@@ -168,9 +168,9 @@ export default function Home() {
 
               <div className="mb-6">
                 <h3 className="text-4xl font-bold mb-1 text-dark" data-testid="text-free-balance">
-                  {balanceVisible ? formatCurrency(accountBalance?.totalBalance || 0) : "••••••"}
+                  {balanceVisible ? formatCurrency(accountBalance?.freeBalance || 0) : "••••••"}
                 </h3>
-                <p className="text-sm text-dark">Saldo total disponível</p>
+                <p className="text-sm text-dark">Saldo livre disponível</p>
               </div>
 
               {/* Applied Balance Card */}
