@@ -483,7 +483,7 @@ class SupabaseStorage implements IStorage {
       return sum + parseFloat(request.amount || '0');
     }, 0);
 
-    // 3. Somar todas as retribuições completed da tabela retributions
+    // 3. Somar todas as retribuições completadas da tabela retributions
     const { data: retributions, error: retributionError } = await supabase
       .from('retributions')
       .select('amount')
