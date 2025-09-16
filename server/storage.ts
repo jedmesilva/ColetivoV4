@@ -450,7 +450,7 @@ class SupabaseStorage implements IStorage {
     console.log('getUserTotalBalanceInFunds called for accountId:', accountId);
 
     // Calcular usando múltiplas queries para as tabelas corretas
-    
+
     // 1. Somar todas as contribuições completed do usuário
     const { data: contributions, error: contributionError } = await supabase
       .from('contributions')
@@ -483,12 +483,12 @@ class SupabaseStorage implements IStorage {
       return sum + parseFloat(request.amount || '0');
     }, 0);
 
-    // 3. Somar todas as retribuições pagas da tabela retributions (usando 'paid' conforme V2.0 schema)
+    // 3. Somar todas as retribuições completadas da tabela retributions
     const { data: retributions, error: retributionError } = await supabase
       .from('retributions')
       .select('amount')
       .eq('account_id', accountId)
-      .eq('status', 'paid');
+      .eq('status', 'completed');
 
     if (retributionError) {
       console.error('Error fetching user retributions:', retributionError);
@@ -501,7 +501,7 @@ class SupabaseStorage implements IStorage {
 
     // Cálculo final: contribuições - retiradas - retribuições
     const totalBalanceInFunds = totalContributions - totalWithdrawals - totalRetributions;
-    
+
     console.log('Balance calculation for user', accountId, ':', {
       totalContributions,
       totalWithdrawals,
@@ -514,7 +514,7 @@ class SupabaseStorage implements IStorage {
 
   async getUserPendingRetributionsCount(accountId: string): Promise<number> {
     console.log('getUserPendingRetributionsCount called for accountId:', accountId);
-    
+
     const { data, error } = await supabase
       .from('retributions')
       .select('id')
@@ -577,21 +577,21 @@ class SupabaseStorage implements IStorage {
       // Fallback: get balances and calculate member count separately
       const balanceData = await this.getFundBalances(fundIds);
       const summariesWithMemberCount = [];
-      
+
       for (const balance of balanceData.balances) {
         const { data: memberCount } = await supabase
           .from('fund_members')
           .select('id', { count: 'exact' })
           .eq('fund_id', balance.fundId)
           .eq('status', 'active');
-        
+
         summariesWithMemberCount.push({
           fundId: balance.fundId,
           memberCount: memberCount?.length || 0,
           currentBalance: balance.currentBalance
         });
       }
-      
+
       return { summaries: summariesWithMemberCount };
     }
 

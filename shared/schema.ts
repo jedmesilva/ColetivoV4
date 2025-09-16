@@ -37,7 +37,7 @@ export const capitalRequestStatusEnum = pgEnum('capital_request_status_enum', [
 ]);
 
 export const retributionStatusEnum = pgEnum('retribution_status_enum', [
-  'pending', 'paid', 'cancelled', 'overdue'
+  'pending', 'completed', 'overdue', 'partial'
 ]);
 
 export const retributionPaymentMethodEnum = pgEnum('retribution_payment_method_enum', [
