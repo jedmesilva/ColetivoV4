@@ -570,6 +570,133 @@ class SupabaseStorage implements IStorage {
     return data as Contribution;
   }
 
+  async processContribution(insertContribution: InsertContribution, userId: string): Promise<{
+    contribution: Contribution;
+    accountTransaction?: any;
+    success: boolean;
+    message: string;
+  }> {
+    const paymentMethod = insertContribution.paymentMethod || 'account_balance';
+    const amount = parseFloat(insertContribution.amount as string);
+    
+    try {
+      // Primeiro, verificar se o usuário é membro do fundo
+      const { data: membership, error: memberError } = await supabase
+        .from('fund_members')
+        .select('*')
+        .eq('fund_id', insertContribution.fundId)
+        .eq('account_id', userId)
+        .eq('status', 'active')
+        .single();
+
+      if (memberError || !membership) {
+        throw new Error('Usuário não é membro ativo deste fundo');
+      }
+
+      let accountTransaction: any = null;
+
+      // Se o pagamento é do saldo da conta, verificar saldo e criar transação de débito
+      if (paymentMethod === 'account_balance') {
+        // Verificar saldo disponível
+        const accountBalance = await this.getAccountBalance(userId);
+        if (!accountBalance || accountBalance.freeBalance < amount) {
+          throw new Error('Saldo insuficiente na conta');
+        }
+
+        // Criar transação de débito na conta
+        const transactionData = {
+          account_id: userId,
+          fund_id: insertContribution.fundId,
+          transaction_type: 'fund_contribution',
+          amount: -amount, // Valor negativo para débito
+          description: insertContribution.description || 'Contribuição para fundo',
+          reference_type: 'contribution',
+          reference_id: null, // Será atualizado após criar a contribuição
+          status: 'completed'
+        };
+
+        const { data: transaction, error: transactionError } = await supabase
+          .from('account_transactions')
+          .insert(transactionData)
+          .select()
+          .single();
+
+        if (transactionError) {
+          throw new Error(`Erro ao criar transação: ${transactionError.message}`);
+        }
+        
+        accountTransaction = transaction;
+      }
+
+      // Criar a contribuição
+      const contributionData = {
+        fund_id: insertContribution.fundId,
+        account_id: userId,
+        amount: amount,
+        description: insertContribution.description,
+        payment_method: paymentMethod,
+        status: paymentMethod === 'account_balance' ? 'completed' : 'pending',
+        transaction_id: accountTransaction?.id || null
+      };
+
+      const { data: contribution, error: contributionError } = await supabase
+        .from('contributions')
+        .insert(contributionData)
+        .select()
+        .single();
+
+      if (contributionError) {
+        // Se houve erro ao criar contribuição e já criamos transação, fazer rollback
+        if (accountTransaction) {
+          await supabase
+            .from('account_transactions')
+            .delete()
+            .eq('id', accountTransaction.id);
+        }
+        throw new Error(`Erro ao criar contribuição: ${contributionError.message}`);
+      }
+
+      // Atualizar o reference_id na transação se necessário
+      if (accountTransaction) {
+        await supabase
+          .from('account_transactions')
+          .update({ reference_id: contribution.id })
+          .eq('id', accountTransaction.id);
+      }
+
+      // Atualizar o total contribuído do membro no fundo
+      const newTotalContributed = parseFloat(membership.total_contributed || '0') + amount;
+      
+      const { error: updateError } = await supabase
+        .from('fund_members')
+        .update({ total_contributed: newTotalContributed.toString() })
+        .eq('id', membership.id);
+
+      if (updateError) {
+        console.error('Erro ao atualizar total contribuído:', updateError);
+        // Não falhar a operação por causa disso, mas logar o erro
+      }
+
+      return {
+        contribution: contribution as Contribution,
+        accountTransaction,
+        success: true,
+        message: paymentMethod === 'account_balance' 
+          ? 'Contribuição processada com sucesso usando saldo da conta'
+          : 'Contribuição registrada. Aguardando confirmação do pagamento externo'
+      };
+
+    } catch (error) {
+      console.error('Erro ao processar contribuição:', error);
+      return {
+        contribution: null as any,
+        accountTransaction: null,
+        success: false,
+        message: error instanceof Error ? error.message : 'Erro desconhecido ao processar contribuição'
+      };
+    }
+  }
+
   async deleteContribution(id: string): Promise<boolean> {
     const { error } = await supabase
       .from('contributions')

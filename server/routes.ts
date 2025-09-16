@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Use a fixed user ID that exists in your Supabase
       // This should be replaced with proper authentication later
-      const userId = "00000000-0000-0000-0000-000000000000";
+      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
 
       const contribution = await storage.createContribution(validatedData, userId);
       res.status(201).json(contribution);
@@ -267,6 +267,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid contribution data", details: error });
       }
       res.status(500).json({ message: "Failed to create contribution" });
+    }
+  });
+
+  // Nova rota para processar contribuições completas
+  app.post("/api/contributions/process", async (req, res) => {
+    try {
+      const validatedData = insertContributionSchema.parse(req.body);
+
+      // Use o ID do usuário existente no sistema
+      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+
+      const result = await storage.processContribution(validatedData, userId);
+      
+      if (result.success) {
+        res.status(201).json(result);
+      } else {
+        res.status(400).json({ 
+          message: result.message,
+          success: false
+        });
+      }
+    } catch (error) {
+      console.error("Error processing contribution:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Dados de contribuição inválidos", details: error });
+      }
+      res.status(500).json({ message: "Falha ao processar contribuição", error: error instanceof Error ? error.message : 'Erro desconhecido' });
     }
   });
 

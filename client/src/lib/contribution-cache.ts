@@ -34,23 +34,52 @@ export const processContribution = async (): Promise<any> => {
     throw new Error('Dados incompletos para processar contribuição');
   }
 
-  // Simular processamento da contribuição
-  const contribution = {
-    id: `contrib-${Date.now()}`,
-    fundId: contributionCache.fundId,
-    fundName: contributionCache.fundName,
-    fundEmoji: contributionCache.fundEmoji,
-    valor: contributionCache.valor,
-    metodoPagamento: contributionCache.metodoPagamento,
-    status: 'concluida',
-    dataContribuicao: new Date().toISOString(),
-    idTransacao: `TXN-${Date.now()}`
-  };
+  try {
+    // Preparar dados para a API
+    const contributionData = {
+      fundId: contributionCache.fundId,
+      amount: contributionCache.valor.toString(),
+      description: `Contribuição para ${contributionCache.fundName}`,
+      paymentMethod: contributionCache.metodoPagamento === 'conta' ? 'account_balance' : contributionCache.metodoPagamento
+    };
 
-  // Simular delay de processamento
-  await new Promise(resolve => setTimeout(resolve, 2000));
+    // Chamar API real para processar a contribuição
+    const response = await fetch('/api/contributions/process', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(contributionData)
+    });
 
-  // NÃO limpar cache aqui - será limpo quando o usuário sair da tela de confirmação
-  
-  return contribution;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Erro ao processar contribuição');
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.message || 'Falha no processamento da contribuição');
+    }
+
+    // Formatar resposta para compatibilidade com o frontend
+    return {
+      id: result.contribution.id,
+      fundId: contributionCache.fundId,
+      fundName: contributionCache.fundName,
+      fundEmoji: contributionCache.fundEmoji,
+      valor: contributionCache.valor,
+      metodoPagamento: contributionCache.metodoPagamento,
+      status: result.contribution.status === 'completed' ? 'concluida' : 'pendente',
+      dataContribuicao: result.contribution.created_at,
+      idTransacao: result.contribution.transaction_id || result.contribution.id,
+      message: result.message,
+      accountTransaction: result.accountTransaction
+    };
+    
+  } catch (error) {
+    console.error('Erro ao processar contribuição:', error);
+    throw error;
+  }
 };
