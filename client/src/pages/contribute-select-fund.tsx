@@ -29,7 +29,7 @@ export default function ContributeSelectFund() {
     updateContributionCache({
       fundId: fund.id,
       fundName: fund.name,
-      fundEmoji: fund.emoji
+      fundEmoji: fund.fundImageValue || "💰"
     });
     
     // Navegar para definir valor
@@ -137,13 +137,13 @@ export default function ContributeSelectFund() {
                   <div className="flex items-center gap-4">
                     {/* Ícone do Fundo */}
                     <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 bg-bege-transparent">
-                      <span className="text-2xl">{fund.emoji}</span>
+                      <span className="text-2xl">{fund.fundImageValue || "💰"}</span>
                     </div>
                     
                     {/* Nome e Descrição */}
                     <div className="flex-1 text-left">
                       <h3 className="text-xl font-bold mb-1 text-dark">{fund.name}</h3>
-                      <p className="text-sm text-dark opacity-70">{fund.description}</p>
+                      <p className="text-sm text-dark opacity-70">{fund.objective}</p>
                     </div>
                     
                     {/* Seta indicativa de navegação */}
