@@ -36,6 +36,14 @@ export const capitalRequestStatusEnum = pgEnum('capital_request_status_enum', [
   'pending', 'approved', 'rejected', 'completed', 'cancelled'
 ]);
 
+export const retributionStatusEnum = pgEnum('retribution_status_enum', [
+  'pending', 'paid', 'cancelled', 'overdue'
+]);
+
+export const retributionPaymentMethodEnum = pgEnum('retribution_payment_method_enum', [
+  'pix', 'ted', 'debit_card', 'credit_card', 'account_balance', 'cash'
+]);
+
 // ============================================================================
 // TABELAS PRINCIPAIS
 // ============================================================================
@@ -139,18 +147,19 @@ export const capitalRequests = pgTable("capital_requests", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Retribuições
+// Retribuições (estrutura real no banco)
 export const retributions = pgTable("retributions", {
   id: uuid("id").primaryKey().defaultRandom(),
-  fundId: uuid("fund_id").references(() => funds.id),
+  retributionPlanId: uuid("retribution_plan_id"),
   accountId: uuid("account_id").references(() => accounts.id),
+  fundId: uuid("fund_id").references(() => funds.id),
   amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
-  description: text("description"),
-  paymentMethod: paymentMethodEnum("payment_method"),
-  status: transactionStatusEnum("status").default('pending'),
-  transactionId: varchar("transaction_id", { length: 100 }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  processedAt: timestamp("processed_at"),
+  installmentNumber: integer("installment_number").notNull(),
+  dueDate: date("due_date").notNull(),
+  paidDate: timestamp("paid_date"),
+  status: retributionStatusEnum("status").default('pending'),
+  paymentMethod: retributionPaymentMethodEnum("payment_method"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // ============================================================================
@@ -201,11 +210,14 @@ export const insertCapitalRequestSchema = createInsertSchema(capitalRequests).pi
   urgencyLevel: true,
 });
 
-// Schemas para retributions
+// Schemas para retributions  
 export const insertRetributionSchema = createInsertSchema(retributions).pick({
+  retributionPlanId: true,
+  accountId: true,
   fundId: true,
   amount: true,
-  description: true,
+  installmentNumber: true,
+  dueDate: true,
   paymentMethod: true,
 });
 
