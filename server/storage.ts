@@ -488,7 +488,7 @@ class SupabaseStorage implements IStorage {
       .from('retributions')
       .select('amount')
       .eq('account_id', accountId)
-      .eq('status', 'paid');
+      .not('paid_date', 'is', null); // Usar paid_date não nulo ao invés de status
 
     if (retributionError) {
       console.error('Error fetching user retributions:', retributionError);
