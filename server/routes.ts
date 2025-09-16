@@ -187,14 +187,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user's total contributions for a specific fund
-  app.get("/api/funds/:fundId/contributions/user/:accountId", async (req, res) => {
+  app.get("/api/funds/:fundId/contributions/user/:userId", async (req, res) => {
     try {
-      const { fundId, accountId } = req.params;
-      const total = await storage.getUserContributionTotal(fundId, accountId);
+      const { fundId, userId } = req.params;
+      const total = await storage.getUserContributionTotal(fundId, userId);
       res.json({ total });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching user contribution total:", error);
-      res.status(500).json({ message: "Failed to fetch user contribution total" });
+      res.status(500).json({ error: error.message });
     }
   });
 
@@ -202,14 +202,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/accounts/:accountId/balance-in-funds", async (req, res) => {
     try {
       const { accountId } = req.params;
-      
+
       // TODO: Implementar autenticação adequada
       // Por enquanto, limitando ao usuário fixo para desenvolvimento
       const allowedUserId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
       if (accountId !== allowedUserId) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
       const totalBalanceInFunds = await storage.getUserTotalBalanceInFunds(accountId);
       res.json({ totalBalanceInFunds });
     } catch (error) {
@@ -222,19 +222,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/accounts/:accountId/pending-retributions", async (req, res) => {
     try {
       const { accountId } = req.params;
-      
+
       // TODO: Implementar autenticação adequada
       // Por enquanto, limitando ao usuário fixo para desenvolvimento
       const allowedUserId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
       if (accountId !== allowedUserId) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
       const pendingCount = await storage.getUserPendingRetributionsCount(accountId);
       res.json({ pendingCount });
     } catch (error) {
       console.error("Error fetching user pending retributions count:", error);
       res.status(500).json({ message: "Failed to fetch user pending retributions count" });
+    }
+  });
+
+  // Get user pending retributions count for a specific fund
+  app.get("/api/funds/:fundId/pending-retributions/:userId", async (req, res) => {
+    try {
+      const { fundId, userId } = req.params;
+      const pendingCount = await storage.getUserFundPendingRetributionsCount(fundId, userId);
+      res.json({ pendingCount });
+    } catch (error: any) {
+      console.error("Error fetching user fund pending retributions:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 

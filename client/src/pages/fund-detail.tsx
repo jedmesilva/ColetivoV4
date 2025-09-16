@@ -55,6 +55,17 @@ export default function FundDetail() {
     enabled: !!fundId && !!currentUserId,
   });
 
+  // Hook para buscar quantidade de retribuições pendentes do usuário para este fundo específico
+  const { data: fundPendingRetributions } = useQuery<{ pendingCount: number }>({
+    queryKey: ['/api/funds', fundId, 'pending-retributions', currentUserId],
+    queryFn: async () => {
+      const response = await fetch(`/api/funds/${fundId}/pending-retributions/${currentUserId}`);
+      if (!response.ok) throw new Error('Failed to fetch fund pending retributions');
+      return response.json();
+    },
+    enabled: !!fundId && !!currentUserId,
+  });
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -216,18 +227,18 @@ export default function FundDetail() {
 
               {/* Statistics Grid - Layout Responsivo */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
-                {/* Dívidas do Fundo */}
+                {/* Retribuições Pendentes do Fundo */}
                 <button 
                   className="rounded-2xl p-4 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] flex-1 min-h-[80px] w-full bg-bege-transparent"
-                  data-testid="button-debts"
+                  data-testid="button-pending-retributions"
                 >
                   <div className="flex items-center gap-3 h-full w-full">
                     <div className="rounded-xl p-2 flex-shrink-0 bg-bege-transparent">
                       <CreditCard className="w-5 h-5 text-dark" />
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <h4 className="text-2xl font-bold text-dark">3</h4>
-                      <p className="text-xs text-dark">DÍVIDAS</p>
+                      <h4 className="text-2xl font-bold text-dark">{fundPendingRetributions?.pendingCount || 0}</h4>
+                      <p className="text-xs text-dark">À RETRIBUIR</p>
                     </div>
                   </div>
                 </button>

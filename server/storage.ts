@@ -41,6 +41,9 @@ export interface IStorage {
   getUserTotalBalanceInFunds(accountId: string): Promise<number>;
   createContribution(insertContribution: InsertContribution, userId: string): Promise<Contribution>;
   deleteContribution(id: string): Promise<boolean>;
+
+  // Retribution operations
+  getUserFundPendingRetributionsCount(fundId: string, accountId: string): Promise<number>;
 }
 
 // Supabase storage implementation
@@ -523,6 +526,24 @@ class SupabaseStorage implements IStorage {
 
     if (error) {
       console.error('Error fetching user pending retributions:', error);
+      throw new Error(error.message);
+    }
+
+    return (data || []).length;
+  }
+
+  async getUserFundPendingRetributionsCount(fundId: string, accountId: string): Promise<number> {
+    console.log('getUserFundPendingRetributionsCount called for fundId:', fundId, 'accountId:', accountId);
+
+    const { data, error } = await supabase
+      .from('retributions')
+      .select('id')
+      .eq('fund_id', fundId)
+      .eq('account_id', accountId)
+      .eq('status', 'pending');
+
+    if (error) {
+      console.error('Error fetching user fund pending retributions:', error);
       throw new Error(error.message);
     }
 
