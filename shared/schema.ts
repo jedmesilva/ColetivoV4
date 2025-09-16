@@ -139,6 +139,20 @@ export const capitalRequests = pgTable("capital_requests", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Retribuições
+export const retributions = pgTable("retributions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id),
+  accountId: uuid("account_id").references(() => accounts.id),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  description: text("description"),
+  paymentMethod: paymentMethodEnum("payment_method"),
+  status: transactionStatusEnum("status").default('pending'),
+  transactionId: varchar("transaction_id", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  processedAt: timestamp("processed_at"),
+});
+
 // ============================================================================
 // SCHEMAS DE INSERÇÃO E TIPOS
 // ============================================================================
@@ -187,6 +201,14 @@ export const insertCapitalRequestSchema = createInsertSchema(capitalRequests).pi
   urgencyLevel: true,
 });
 
+// Schemas para retributions
+export const insertRetributionSchema = createInsertSchema(retributions).pick({
+  fundId: true,
+  amount: true,
+  description: true,
+  paymentMethod: true,
+});
+
 // ============================================================================
 // TIPOS TYPESCRIPT
 // ============================================================================
@@ -205,6 +227,9 @@ export type FundMember = typeof fundMembers.$inferSelect;
 
 export type InsertCapitalRequest = z.infer<typeof insertCapitalRequestSchema>;
 export type CapitalRequest = typeof capitalRequests.$inferSelect;
+
+export type InsertRetribution = z.infer<typeof insertRetributionSchema>;
+export type Retribution = typeof retributions.$inferSelect;
 
 export type AccountTransaction = typeof accountTransactions.$inferSelect;
 

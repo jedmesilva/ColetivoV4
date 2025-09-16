@@ -2,8 +2,8 @@
 
 import { supabase } from "./db";
 import {
-  type Account, type Fund, type Contribution, type FundMember, type AccountTransaction,
-  type InsertAccount, type InsertFund, type InsertContribution, type InsertFundMember,
+  type Account, type Fund, type Contribution, type FundMember, type AccountTransaction, type Retribution,
+  type InsertAccount, type InsertFund, type InsertContribution, type InsertFundMember, type InsertRetribution,
   // Maintain compatibility
   type User, type InsertUser
 } from "@shared/schema";
@@ -483,21 +483,21 @@ class SupabaseStorage implements IStorage {
       return sum + parseFloat(request.amount || '0');
     }, 0);
 
-    // 3. Somar transações de retribuição da tabela account_transactions (se existir)
+    // 3. Somar todas as retribuições completed da tabela retributions
     const { data: retributions, error: retributionError } = await supabase
-      .from('account_transactions')
+      .from('retributions')
       .select('amount')
       .eq('account_id', accountId)
-      .eq('reference_type', 'retribution')
       .eq('status', 'completed');
 
-    // Se a tabela account_transactions não existir ou não tiver dados, ignorar esse erro
-    let totalRetributions = 0;
-    if (!retributionError && retributions) {
-      totalRetributions = retributions.reduce((sum, retribution) => {
-        return sum + parseFloat(retribution.amount || '0');
-      }, 0);
+    if (retributionError) {
+      console.error('Error fetching user retributions:', retributionError);
+      throw new Error(retributionError.message);
     }
+
+    const totalRetributions = (retributions || []).reduce((sum, retribution) => {
+      return sum + parseFloat(retribution.amount || '0');
+    }, 0);
 
     // Cálculo final: contribuições - retiradas - retribuições
     const totalBalanceInFunds = totalContributions - totalWithdrawals - totalRetributions;
