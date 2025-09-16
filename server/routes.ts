@@ -186,6 +186,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's total contributions for a specific fund
+  app.get("/api/funds/:fundId/contributions/user/:accountId", async (req, res) => {
+    try {
+      const { fundId, accountId } = req.params;
+      const total = await storage.getUserContributionTotal(fundId, accountId);
+      res.json({ total });
+    } catch (error) {
+      console.error("Error fetching user contribution total:", error);
+      res.status(500).json({ message: "Failed to fetch user contribution total" });
+    }
+  });
+
   // Create contribution
   app.post("/api/contributions", async (req, res) => {
     try {

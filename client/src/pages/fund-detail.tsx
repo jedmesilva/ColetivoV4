@@ -12,6 +12,9 @@ export default function FundDetail() {
   const [, setLocation] = useLocation();
   const [activeNav, setActiveNav] = useState<string | null>(null);
   const [balanceVisible, setBalanceVisible] = useState(true);
+
+  // ID do usuário atual - hardcoded por enquanto
+  const currentUserId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
   
   const { data: fund, isLoading } = useQuery<Fund>({
     queryKey: ['/api/funds', fundId],
@@ -39,6 +42,17 @@ export default function FundDetail() {
       return data.summaries && data.summaries.length > 0 ? data.summaries[0] : { memberCount: 0, currentBalance: 0 };
     },
     enabled: !!fundId,
+  });
+
+  // Hook para buscar total de contribuições do usuário atual para este fundo
+  const { data: userContribution } = useQuery({
+    queryKey: ['/api/funds', fundId, 'contributions/user', currentUserId],
+    queryFn: async () => {
+      const response = await fetch(`/api/funds/${fundId}/contributions/user/${currentUserId}`);
+      if (!response.ok) throw new Error('Failed to fetch user contribution total');
+      return response.json();
+    },
+    enabled: !!fundId && !!currentUserId,
   });
 
   const formatCurrency = (value: number) => {
@@ -228,7 +242,9 @@ export default function FundDetail() {
                       <ArrowUp className="w-5 h-5 text-dark" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-2xl font-bold text-dark">R$ 850</h4>
+                      <h4 className="text-2xl font-bold text-dark">
+                        {formatCurrency(userContribution?.total ?? 0)}
+                      </h4>
                       <p className="text-xs text-dark">CONTRIBUIÇÃO</p>
                     </div>
                   </div>

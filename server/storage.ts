@@ -37,6 +37,7 @@ export interface IStorage {
 
   // Contribution operations
   getContributions(fundId: string): Promise<Contribution[]>;
+  getUserContributionTotal(fundId: string, accountId: string): Promise<number>;
   createContribution(insertContribution: InsertContribution, userId: string): Promise<Contribution>;
   deleteContribution(id: string): Promise<boolean>;
 }
@@ -194,8 +195,17 @@ class SupabaseStorage implements IStorage {
       account: {
         id: accountBalance.id,
         email: accountBalance.email,
+        passwordHash: accountBalance.password_hash || '',
         fullName: accountBalance.full_name,
-        createdAt: accountBalance.created_at
+        phone: accountBalance.phone,
+        cpf: accountBalance.cpf,
+        birthDate: accountBalance.birth_date,
+        profilePictureUrl: accountBalance.profile_picture_url,
+        isActive: accountBalance.is_active,
+        emailVerified: accountBalance.email_verified,
+        phoneVerified: accountBalance.phone_verified,
+        createdAt: accountBalance.created_at,
+        updatedAt: accountBalance.updated_at
       }
     };
   }
@@ -412,6 +422,27 @@ class SupabaseStorage implements IStorage {
 
     if (error) throw new Error(error.message);
     return data as Contribution[];
+  }
+
+  async getUserContributionTotal(fundId: string, accountId: string): Promise<number> {
+    const { data, error } = await supabase
+      .from('contributions')
+      .select('amount')
+      .eq('fund_id', fundId)
+      .eq('account_id', accountId)
+      .eq('status', 'completed');
+
+    if (error) {
+      console.error('Error fetching user contributions:', error);
+      throw new Error(error.message);
+    }
+
+    // Calculate total contributions for this user and fund
+    const total = (data || []).reduce((sum, contribution) => {
+      return sum + parseFloat(contribution.amount || '0');
+    }, 0);
+
+    return total;
   }
 
   async createContribution(insertContribution: InsertContribution, userId: string): Promise<Contribution> {
