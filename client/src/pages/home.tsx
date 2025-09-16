@@ -47,8 +47,14 @@ export default function Home() {
     enabled: true,
   });
 
+  // Hook para buscar saldo total em fundos calculado corretamente
+  const { data: balanceInFunds } = useQuery({
+    queryKey: ['/api/accounts/8a1d8a0f-04c4-405d-beeb-7aa75690b32e/balance-in-funds'],
+    enabled: true,
+  });
+
   const calculateTotalBalance = () => {
-    return accountBalance?.balanceInFunds || 0;
+    return balanceInFunds?.totalBalance || 0;
   };
 
   const calculateAverageGrowth = () => {
