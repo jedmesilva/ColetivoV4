@@ -201,7 +201,7 @@ class SupabaseStorage implements IStorage {
     // Separate transactions by type
     for (const tx of transactions || []) {
       const amount = parseFloat(tx.amount || '0');
-      
+
       if (tx.reference_type === 'contribution') {
         // Contributions to funds (stored as negative, convert to positive)
         totalContributions += Math.abs(amount);
@@ -518,7 +518,7 @@ class SupabaseStorage implements IStorage {
 
     // CORRIGIDO: Usar account_transactions para incluir contribuições E retribuições pagas
     // Calcular total que o usuário já contribuiu para o fundo (dinheiro que saiu da conta para o fundo)
-    
+
     const { data: transactions, error: txError } = await supabase
       .from('account_transactions')
       .select('transaction_type, amount, reference_type, description, status')
@@ -536,7 +536,7 @@ class SupabaseStorage implements IStorage {
     // Processar transações para somar tudo que saiu da conta para o fundo
     for (const tx of transactions || []) {
       const amount = parseFloat(tx.amount || '0');
-      
+
       if (tx.reference_type === 'contribution') {
         // Contribuições para o fundo (valor negativo, somar)
         totalContributed += Math.abs(amount);
@@ -563,7 +563,7 @@ class SupabaseStorage implements IStorage {
 
     // CORRIGIDO: Usar account_transactions como fonte única da verdade
     // Calcular o saldo em fundos baseado apenas em transações realmente executadas
-    
+
     // Buscar todas as transações completas do usuário
     const { data: transactions, error: txError } = await supabase
       .from('account_transactions')
@@ -581,7 +581,7 @@ class SupabaseStorage implements IStorage {
     // Processar cada transação para calcular o saldo atual em fundos
     for (const tx of transactions || []) {
       const amount = parseFloat(tx.amount || '0');
-      
+
       if (tx.reference_type === 'contribution') {
         // Contribuições para fundos (valor negativo, somar ao saldo em fundos)
         balanceInFunds += Math.abs(amount);
@@ -604,18 +604,45 @@ class SupabaseStorage implements IStorage {
   async getUserPendingRetributionsCount(accountId: string): Promise<number> {
     console.log('getUserPendingRetributionsCount called for accountId:', accountId);
 
-    const { data, error } = await supabase
+    const { data: retributions, error } = await supabase
       .from('retributions')
       .select('id')
       .eq('account_id', accountId)
       .eq('status', 'pending');
 
     if (error) {
-      console.error('Error fetching user pending retributions:', error);
+      console.error('Error fetching pending retributions count:', error);
       throw new Error(error.message);
     }
 
-    return (data || []).length;
+    const count = retributions?.length || 0;
+    console.log('Pending retributions count:', count);
+    return count;
+  }
+
+  async getUserTransactions(accountId: string, limit: number = 50, offset: number = 0) {
+    console.log('getUserTransactions called for accountId:', accountId, 'limit:', limit, 'offset:', offset);
+
+    const { data: transactions, error } = await supabase
+      .from('account_transactions')
+      .select('*')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('Error fetching user transactions:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('User transactions fetched:', {
+      accountId,
+      count: transactions?.length || 0,
+      limit,
+      offset
+    });
+
+    return transactions || [];
   }
 
   async getUserFundPendingRetributionsCount(fundId: string, accountId: string): Promise<number> {
@@ -664,7 +691,7 @@ class SupabaseStorage implements IStorage {
   }> {
     const paymentMethod = insertContribution.paymentMethod || 'account_balance';
     const amount = parseFloat(insertContribution.amount as string);
-    
+
     try {
       // Primeiro, verificar se o usuário é membro do fundo
       const { data: membership, error: memberError } = await supabase
@@ -710,7 +737,7 @@ class SupabaseStorage implements IStorage {
         if (transactionError) {
           throw new Error(`Erro ao criar transação: ${transactionError.message}`);
         }
-        
+
         accountTransaction = transaction;
       }
 
@@ -752,7 +779,7 @@ class SupabaseStorage implements IStorage {
 
       // Atualizar o total contribuído do membro no fundo
       const newTotalContributed = parseFloat(membership.total_contributed || '0') + amount;
-      
+
       const { error: updateError } = await supabase
         .from('fund_members')
         .update({ total_contributed: newTotalContributed.toString() })
@@ -767,7 +794,7 @@ class SupabaseStorage implements IStorage {
         contribution: contribution as Contribution,
         accountTransaction,
         success: true,
-        message: paymentMethod === 'account_balance' 
+        message: paymentMethod === 'account_balance'
           ? 'Contribuição processada com sucesso usando saldo da conta'
           : 'Contribuição registrada. Aguardando confirmação do pagamento externo'
       };
@@ -879,7 +906,7 @@ class SupabaseStorage implements IStorage {
 
     // CORRIGIDO: Usar account_transactions como fonte única da verdade
     // Calcular saldo do fundo baseado em todas as transações que afetam o patrimônio do fundo
-    
+
     const { data: transactions, error: txError } = await supabase
       .from('account_transactions')
       .select('transaction_type, amount, reference_type, status, account_id')
@@ -896,7 +923,7 @@ class SupabaseStorage implements IStorage {
     // Processar todas as transações que afetam o patrimônio do fundo
     for (const tx of transactions || []) {
       const amount = parseFloat(tx.amount || '0');
-      
+
       if (tx.reference_type === 'contribution') {
         // Contribuições: dinheiro ENTRANDO no fundo (negativo na conta, positivo no fundo)
         fundBalance += Math.abs(amount);
@@ -927,10 +954,10 @@ class SupabaseStorage implements IStorage {
   private calculateDueDates(startDate: string, installments: number, frequency: string): Date[] {
     const dates: Date[] = [];
     const start = new Date(startDate);
-    
+
     for (let i = 0; i < installments; i++) {
       const dueDate = new Date(start);
-      
+
       switch (frequency) {
         case 'monthly':
           dueDate.setMonth(start.getMonth() + i);
@@ -947,10 +974,10 @@ class SupabaseStorage implements IStorage {
         default:
           throw new Error(`Frequência não suportada: ${frequency}`);
       }
-      
+
       dates.push(dueDate);
     }
-    
+
     return dates;
   }
 
@@ -1019,7 +1046,7 @@ class SupabaseStorage implements IStorage {
 
     // 5. Calcular datas de vencimento e criar as parcelas
     const dueDates = this.calculateDueDates(requestData.firstDueDate, requestData.installments, requestData.frequency);
-    
+
     const retributionsData = dueDates.map((dueDate, index) => ({
       retribution_plan_id: retributionPlan.id,
       account_id: accountId,
@@ -1230,4 +1257,3 @@ class SupabaseStorage implements IStorage {
 
 // Export Supabase storage instance
 export const storage = new SupabaseStorage();
-

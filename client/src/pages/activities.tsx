@@ -1,17 +1,131 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Users, Heart, Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Users, Heart, Search, DollarSign } from "lucide-react";
+import { useAuth } from "../hooks/use-auth";
+
+interface AccountTransaction {
+  id: string;
+  transactionType: string;
+  amount: string;
+  description: string;
+  referenceType: string;
+  referenceId: string;
+  status: string;
+  createdAt: string;
+  processedAt: string;
+}
 
 export default function Activities() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
+  const { user } = useAuth();
 
   const handleBack = () => {
-    // Verificar se há uma página salva no sessionStorage, caso contrário vai para conta
     const lastPath = sessionStorage.getItem('lastPath') || '/account';
     setLocation(lastPath);
   };
+
+  // Buscar transações do usuário
+  const { data: transactions, isLoading } = useQuery<AccountTransaction[]>({
+    queryKey: ['/api/accounts', user?.id, 'transactions'],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const response = await fetch(`/api/accounts/${user.id}/transactions`);
+      if (!response.ok) throw new Error('Falha ao carregar transações');
+      return response.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  // Filtrar transações baseado no termo de busca
+  const filteredTransactions = useMemo(() => {
+    if (!transactions) return [];
+    
+    return transactions.filter(transaction => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        transaction.description?.toLowerCase().includes(searchLower) ||
+        transaction.transactionType.toLowerCase().includes(searchLower) ||
+        transaction.referenceType.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [transactions, searchTerm]);
+
+  // Função para obter ícone baseado no tipo de transação
+  const getTransactionIcon = (transaction: AccountTransaction) => {
+    const amount = parseFloat(transaction.amount);
+    
+    switch (transaction.referenceType) {
+      case 'contribution':
+        return ArrowUpFromLine;
+      case 'capital_request':
+        return amount > 0 ? ArrowDownToLine : ArrowUpFromLine;
+      case 'retribution':
+        return Heart;
+      case 'transfer':
+        return amount > 0 ? ArrowDownToLine : ArrowUpFromLine;
+      default:
+        return DollarSign;
+    }
+  };
+
+  // Função para obter título baseado no tipo de transação
+  const getTransactionTitle = (transaction: AccountTransaction) => {
+    const amount = parseFloat(transaction.amount);
+    
+    switch (transaction.referenceType) {
+      case 'contribution':
+        return 'Contribuição enviada';
+      case 'capital_request':
+        return amount > 0 ? 'Pagamento recebido' : 'Solicitação enviada';
+      case 'retribution':
+        return amount > 0 ? 'Retribuição recebida' : 'Retribuição enviada';
+      case 'transfer':
+        return amount > 0 ? 'Transferência recebida' : 'Transferência enviada';
+      default:
+        return transaction.transactionType === 'deposit' ? 'Depósito' : 'Transação';
+    }
+  };
+
+  // Função para formatar valor
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  // Função para formatar data
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) {
+      return `Hoje, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    } else if (diffDays === 2) {
+      return `Ontem, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    } else if (diffDays <= 7) {
+      return `${diffDays - 1} dias atrás`;
+    } else if (diffDays <= 14) {
+      return '1 semana atrás';
+    } else if (diffDays <= 21) {
+      return '2 semanas atrás';
+    } else {
+      return date.toLocaleDateString('pt-BR');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-creme">
+        <div className="text-xl text-dark">Carregando atividades...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-creme">
@@ -27,7 +141,7 @@ export default function Activities() {
             <ArrowLeft className="w-6 h-6 text-dark" />
           </button>
           <h1 className="text-2xl font-bold text-dark">Atividades</h1>
-          <div className="w-12" /> {/* Spacer para centralizar o título */}
+          <div className="w-12" />
         </div>
       </div>
 
@@ -85,7 +199,7 @@ export default function Activities() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Digite o tipo de atividade ou pessoa"
+              placeholder="Digite o tipo de atividade ou descrição"
               className="input-limpo"
               data-testid="input-search"
             />
@@ -95,173 +209,54 @@ export default function Activities() {
 
         {/* Seção de Atividades */}
         <div className="space-y-4">
-          {/* Card de Atividade - Pagamento Recebido */}
-          <div 
-            className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
-            data-testid="activity-received-payment"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-bege-transparent">
-                  <ArrowDownToLine className="w-6 h-6 text-dark" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1 text-dark">Pagamento recebido</h4>
-                  <p className="text-sm text-dark opacity-70">Ana Silva • Hoje, 14:32</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-lg text-dark">+R$ 150,00</p>
-              </div>
+          {filteredTransactions.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-lg text-dark mb-4">
+                {searchTerm ? 'Nenhuma atividade encontrada' : 'Nenhuma atividade registrada'}
+              </p>
+              <p className="text-sm text-dark opacity-60">
+                {searchTerm ? 'Tente buscar por outros termos' : 'Suas transações aparecerão aqui'}
+              </p>
             </div>
-          </div>
-
-          {/* Card de Atividade - Contribuição */}
-          <div 
-            className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
-            data-testid="activity-contribution"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-bege-transparent">
-                  <ArrowUpFromLine className="w-6 h-6 text-dark" />
+          ) : (
+            filteredTransactions.map((transaction) => {
+              const IconComponent = getTransactionIcon(transaction);
+              const amount = parseFloat(transaction.amount);
+              const isPositive = amount > 0;
+              
+              return (
+                <div 
+                  key={transaction.id}
+                  className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
+                  data-testid={`activity-${transaction.id}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-bege-transparent">
+                        <IconComponent className="w-6 h-6 text-dark" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-1 text-dark">
+                          {getTransactionTitle(transaction)}
+                        </h4>
+                        <p className="text-sm text-dark opacity-70">
+                          {transaction.description || 'Sem descrição'} • {formatDate(transaction.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-bold text-lg text-dark ${isPositive ? 'text-green-600' : ''}`}>
+                        {isPositive ? '+' : ''}{formatCurrency(Math.abs(amount))}
+                      </p>
+                      <p className="text-xs text-dark opacity-50 capitalize">
+                        {transaction.status}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold mb-1 text-dark">Contribuição enviada</h4>
-                  <p className="text-sm text-dark opacity-70">Projeto Água Limpa • Ontem, 09:15</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-lg text-dark">R$ 50,00</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card de Atividade - Pagamento Coletivo */}
-          <div 
-            className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
-            data-testid="activity-collective-payment"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-bege-transparent">
-                  <Users className="w-6 h-6 text-dark" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1 text-dark">Pagamento coletivo</h4>
-                  <p className="text-sm text-dark opacity-70">Jantar com amigos • 2 dias atrás</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-lg text-dark">R$ 75,00</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card de Atividade - Retribuição */}
-          <div 
-            className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
-            data-testid="activity-reciprocation"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-bege-transparent">
-                  <Heart className="w-6 h-6 text-dark" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1 text-dark">Retribuição enviada</h4>
-                  <p className="text-sm text-dark opacity-70">João Santos • 3 dias atrás</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-lg text-dark">R$ 25,00</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card de Atividade - Pagamento Enviado */}
-          <div 
-            className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
-            data-testid="activity-payment-sent"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-bege-transparent">
-                  <ArrowUpFromLine className="w-6 h-6 text-dark" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1 text-dark">Pagamento enviado</h4>
-                  <p className="text-sm text-dark opacity-70">Maria Costa • 4 dias atrás, 16:20</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-lg text-dark">R$ 100,00</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card de Atividade - Contribuição Anterior */}
-          <div 
-            className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
-            data-testid="activity-contribution-2"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-bege-transparent">
-                  <ArrowUpFromLine className="w-6 h-6 text-dark" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1 text-dark">Contribuição enviada</h4>
-                  <p className="text-sm text-dark opacity-70">Fundo Comunitário • 1 semana atrás</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-lg text-dark">R$ 80,00</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card de Atividade - Pagamento Coletivo Anterior */}
-          <div 
-            className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
-            data-testid="activity-collective-payment-2"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-bege-transparent">
-                  <Users className="w-6 h-6 text-dark" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1 text-dark">Pagamento coletivo</h4>
-                  <p className="text-sm text-dark opacity-70">Cinema com a turma • 1 semana atrás</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-lg text-dark">R$ 45,00</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card de Atividade - Retribuição Anterior */}
-          <div 
-            className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
-            data-testid="activity-reciprocation-2"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-bege-transparent">
-                  <Heart className="w-6 h-6 text-dark" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1 text-dark">Retribuição recebida</h4>
-                  <p className="text-sm text-dark opacity-70">Pedro Lima • 2 semanas atrás</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-lg text-dark">+R$ 35,00</p>
-              </div>
-            </div>
-          </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

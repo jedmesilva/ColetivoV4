@@ -257,6 +257,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user transactions
+  app.get("/api/accounts/:accountId/transactions", async (req, res) => {
+    try {
+      const { accountId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      // TODO: Implementar autenticação adequada
+      // Por enquanto, limitando ao usuário fixo para desenvolvimento
+      const allowedUserId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+      if (accountId !== allowedUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const transactions = await storage.getUserTransactions(accountId, limit, offset);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching user transactions:", error);
+      res.status(500).json({ message: "Failed to fetch user transactions" });
+    }
+  });
+
   // Create contribution
   app.post("/api/contributions", async (req, res) => {
     try {
