@@ -14,6 +14,7 @@ interface AccountTransaction {
   referenceId: string;
   status: string;
   createdAt: string;
+  created_at: string; // Adicionar campo do banco
   processedAt: string;
 }
 
@@ -259,7 +260,7 @@ export default function Activities() {
                           {getTransactionTitle(transaction)}
                         </h4>
                         <p className="text-sm text-dark opacity-70">
-                          {transaction.description || 'Sem descrição'} • {formatDate(transaction.createdAt)}
+                          {transaction.description || 'Sem descrição'} • {formatDate(transaction.createdAt || transaction.created_at)}
                         </p>
                       </div>
                     </div>
