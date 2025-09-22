@@ -1,12 +1,14 @@
 
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Bell, Menu, Settings, Copy, ArrowDownToLine, ArrowUpFromLine, ArrowUp, User, CreditCard, Heart, Users, History } from "lucide-react";
+import { Bell, Menu, Settings, Copy, ArrowDownToLine, ArrowUpFromLine, ArrowUp, User, CreditCard, Heart, Users, History, LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import BottomNavigation from "@/components/bottom-navigation";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function UserProfile() {
   const [, setLocation] = useLocation();
+  const { logout } = useAuth();
 
   // Hook para buscar dados do usuário logado
   const { data: currentUser } = useQuery({
@@ -96,7 +98,7 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* Botões Histórico e Settings */}
+              {/* Botões Histórico, Settings e Logout */}
               <div className="flex items-center gap-3">
                 <button 
                   className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 bg-bege-transparent"
@@ -111,6 +113,14 @@ export default function UserProfile() {
                   data-testid="button-settings"
                 >
                   <Settings className="w-6 h-6 text-creme" />
+                </button>
+                <button 
+                  onClick={logout}
+                  className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 bg-bege-transparent"
+                  aria-label="Logout"
+                  data-testid="button-logout"
+                >
+                  <LogOut className="w-6 h-6 text-creme" />
                 </button>
               </div>
             </div>
