@@ -264,8 +264,8 @@ export default function Activities() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`font-bold text-lg text-dark ${isPositive ? 'text-green-600' : ''}`}>
-                        {isPositive ? '+' : ''}{formatCurrency(Math.abs(amount))}
+                      <p className={`font-bold text-lg ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                        {isPositive ? '+' : '-'}{formatCurrency(Math.abs(amount))}
                       </p>
                       <p className="text-xs text-dark opacity-50 capitalize">
                         {transaction.status}
