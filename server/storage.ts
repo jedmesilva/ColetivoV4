@@ -514,24 +514,48 @@ class SupabaseStorage implements IStorage {
   }
 
   async getUserContributionTotal(fundId: string, accountId: string): Promise<number> {
-    const { data, error } = await supabase
-      .from('contributions')
-      .select('amount')
-      .eq('fund_id', fundId)
+    console.log('getUserContributionTotal called for fundId:', fundId, 'accountId:', accountId);
+
+    // CORRIGIDO: Usar account_transactions para incluir contribuições E retribuições pagas
+    // Calcular total que o usuário já contribuiu para o fundo (dinheiro que saiu da conta para o fundo)
+    
+    const { data: transactions, error: txError } = await supabase
+      .from('account_transactions')
+      .select('transaction_type, amount, reference_type, description, status')
       .eq('account_id', accountId)
+      .eq('fund_id', fundId)
       .eq('status', 'completed');
 
-    if (error) {
-      console.error('Error fetching user contributions:', error);
-      throw new Error(error.message);
+    if (txError) {
+      console.error('Error fetching account transactions:', txError);
+      throw new Error(txError.message);
     }
 
-    // Calculate total contributions for this user and fund
-    const total = (data || []).reduce((sum, contribution) => {
-      return sum + parseFloat(contribution.amount || '0');
-    }, 0);
+    let totalContributed = 0;
 
-    return total;
+    // Processar transações para somar tudo que saiu da conta para o fundo
+    for (const tx of transactions || []) {
+      const amount = parseFloat(tx.amount || '0');
+      
+      if (tx.reference_type === 'contribution') {
+        // Contribuições para o fundo (valor negativo, somar)
+        totalContributed += Math.abs(amount);
+      } else if (tx.reference_type === 'retribution' && amount < 0) {
+        // Retribuições pagas (valor negativo, somar - dinheiro saindo da conta para o fundo)
+        totalContributed += Math.abs(amount);
+      }
+      // NÃO somar retiradas de capital (capital_request com valor positivo)
+    }
+
+    console.log('User contribution calculation (CORRIGIDO):', {
+      fundId,
+      accountId,
+      totalTransactions: transactions?.length || 0,
+      totalContributed,
+      source: 'account_transactions'
+    });
+
+    return totalContributed;
   }
 
   async getUserTotalBalanceInFunds(accountId: string): Promise<number> {
