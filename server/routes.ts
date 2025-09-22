@@ -431,11 +431,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Listar solicitações de capital (para debug)
+  app.get("/api/capital-requests", async (req, res) => {
+    try {
+      const { data: requests, error } = await supabase
+        .from('capital_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao buscar capital requests:', error);
+        return res.status(500).json({ error: error.message });
+      }
+
+      res.json(requests || []);
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
   // Aprovar solicitação de capital
   app.post("/api/capital-requests/:id/approve", async (req, res) => {
     try {
       const { id: requestId } = req.params;
       const { approverId } = req.body;
+      
+      console.log(`=== INICIANDO APROVAÇÃO DE CAPITAL REQUEST ===`);
+      console.log(`Request ID: ${requestId}`);
+      console.log(`Approver ID: ${approverId}`);
       
       if (!approverId) {
         return res.status(400).json({ message: "approverId é obrigatório" });
@@ -443,10 +467,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await storage.approveCapitalRequest(requestId, approverId);
       
+      console.log(`=== APROVAÇÃO CONCLUÍDA COM SUCESSO ===`);
+      console.log(`Transaction created: ${result.transaction.id}`);
+      
       res.status(200).json(result);
     } catch (error) {
+      console.error("=== ERRO NA APROVAÇÃO ===");
       console.error("Error approving capital request:", error);
+      console.error("Stack trace:", error instanceof Error ? error.stack : 'No stack trace');
       res.status(500).json({ message: error instanceof Error ? error.message : "Erro ao aprovar solicitação de capital" });
+    }
+  });
+
+  // Teste de aprovação automática (para debug)
+  app.post("/api/capital-requests/:id/approve-test", async (req, res) => {
+    try {
+      const { id: requestId } = req.params;
+      
+      console.log(`=== TESTE DE APROVAÇÃO AUTOMÁTICA ===`);
+      
+      // Buscar a solicitação para pegar os dados
+      const { data: request, error: requestError } = await supabase
+        .from('capital_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (requestError || !request) {
+        return res.status(404).json({ message: 'Solicitação não encontrada' });
+      }
+
+      console.log(`Solicitação encontrada:`, request);
+      
+      // Buscar um admin do fundo para usar como aprovador
+      const { data: admins, error: adminError } = await supabase
+        .from('fund_members')
+        .select('account_id')
+        .eq('fund_id', request.fund_id)
+        .eq('role', 'admin')
+        .neq('account_id', request.account_id) // Não pode ser o próprio solicitante
+        .limit(1);
+
+      if (adminError || !admins?.length) {
+        return res.status(400).json({ message: 'Não há admin disponível para aprovação' });
+      }
+
+      const approverId = admins[0].account_id;
+      console.log(`Usando admin ${approverId} para aprovação`);
+
+      const result = await storage.approveCapitalRequest(requestId, approverId);
+      
+      console.log(`=== TESTE DE APROVAÇÃO CONCLUÍDO ===`);
+      
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("=== ERRO NO TESTE DE APROVAÇÃO ===");
+      console.error("Error in test approval:", error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Erro no teste de aprovação" });
     }
   });
 

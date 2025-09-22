@@ -127,11 +127,5 @@ export async function testCapitalRequestFlow() {
 }
 
 export async function setupDatabaseFunctions() {
-  console.log('Inicializando diagnóstico de transações...');
-  
-  // Executar diagnóstico
-  await debugAccountTransactions();
-  
-  // Executar teste básico
-  await testCapitalRequestFlow();
+  console.log('Sistema inicializado. Verificando solicitações de capital...');
 }
