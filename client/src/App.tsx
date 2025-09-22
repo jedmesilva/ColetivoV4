@@ -3,6 +3,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/components/protected-route";
 import Home from "@/pages/home";
 import FundDetail from "@/pages/fund-detail";
 import FundSettings from "@/pages/fund-settings";
@@ -31,35 +33,62 @@ import RequestConfirmation from "@/pages/request-confirmation";
 import UserProfile from "@/pages/account";
 import NotFound from "@/pages/not-found";
 
+// Componentes wrapper para rotas protegidas
+const ProtectedHome = () => <ProtectedRoute><Home /></ProtectedRoute>;
+const ProtectedFundDetail = () => <ProtectedRoute><FundDetail /></ProtectedRoute>;
+const ProtectedFundSettings = () => <ProtectedRoute><FundSettings /></ProtectedRoute>;
+const ProtectedFundReciprocatIonRate = () => <ProtectedRoute><FundReciprocatIonRate /></ProtectedRoute>;
+const ProtectedFundContributionRate = () => <ProtectedRoute><FundContributionRate /></ProtectedRoute>;
+const ProtectedFundGovernance = () => <ProtectedRoute><FundGovernance /></ProtectedRoute>;
+const ProtectedFundChat = () => <ProtectedRoute><FundChat /></ProtectedRoute>;
+const ProtectedFundMembers = () => <ProtectedRoute><FundMembers /></ProtectedRoute>;
+const ProtectedFundMemberSettings = () => <ProtectedRoute><FundMemberSettings /></ProtectedRoute>;
+const ProtectedCreateFundName = () => <ProtectedRoute><CreateFundName /></ProtectedRoute>;
+const ProtectedCreateFundObjective = () => <ProtectedRoute><CreateFundObjective /></ProtectedRoute>;
+const ProtectedCreateFundImage = () => <ProtectedRoute><CreateFundImage /></ProtectedRoute>;
+const ProtectedCreateFundMembers = () => <ProtectedRoute><CreateFundMembers /></ProtectedRoute>;
+const ProtectedContributeSelectFund = () => <ProtectedRoute><ContributeSelectFund /></ProtectedRoute>;
+const ProtectedContributeAmount = () => <ProtectedRoute><ContributeAmount /></ProtectedRoute>;
+const ProtectedContributeConfirmation = () => <ProtectedRoute><ContributeConfirmation /></ProtectedRoute>;
+const ProtectedRequestSelectFund = () => <ProtectedRoute><RequestSelectFund /></ProtectedRoute>;
+const ProtectedRequestAmount = () => <ProtectedRoute><RequestAmount /></ProtectedRoute>;
+const ProtectedRequestReason = () => <ProtectedRoute><RequestReason /></ProtectedRoute>;
+const ProtectedRequestPaymentPlan = () => <ProtectedRoute><RequestPaymentPlan /></ProtectedRoute>;
+const ProtectedRequestConfirmation = () => <ProtectedRoute><RequestConfirmation /></ProtectedRoute>;
+const ProtectedUserProfile = () => <ProtectedRoute><UserProfile /></ProtectedRoute>;
+
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/fund/:id" component={FundDetail} />
-      <Route path="/fund/:id/settings" component={FundSettings} />
-      <Route path="/fund/:id/reciprocation-rate" component={FundReciprocatIonRate} />
-      <Route path="/fund/:id/contribution-rate" component={FundContributionRate} />
-      <Route path="/fund/:id/governance" component={FundGovernance} />
-      <Route path="/fund/:id/chat" component={FundChat} />
-      <Route path="/fund/:id/members" component={FundMembers} />
-      <Route path="/fund/:id/member-settings" component={FundMemberSettings} />
-      <Route path="/create-fund/name" component={CreateFundName} />
-      <Route path="/create-fund/objective" component={CreateFundObjective} />
-      <Route path="/create-fund/image" component={CreateFundImage} />
-      <Route path="/create-fund/members" component={CreateFundMembers} />
+      {/* Rotas públicas - não precisam de autenticação */}
       <Route path="/login" component={Login} />
       <Route path="/criar-conta" component={CriarConta} />
       <Route path="/criar-conta/senha" component={CriarSenha} />
       <Route path="/criar-conta/username" component={CriarUsername} />
-      <Route path="/contribute/select-fund" component={ContributeSelectFund} />
-      <Route path="/contribute/amount" component={ContributeAmount} />
-      <Route path="/contribute/confirmation" component={ContributeConfirmation} />
-      <Route path="/request/select-fund" component={RequestSelectFund} />
-      <Route path="/request/amount" component={RequestAmount} />
-      <Route path="/request/reason" component={RequestReason} />
-      <Route path="/request/payment-plan" component={RequestPaymentPlan} />
-      <Route path="/request/confirmation" component={RequestConfirmation} />
-      <Route path="/account" component={UserProfile} />
+      
+      {/* Rotas protegidas - precisam de autenticação */}
+      <Route path="/" component={ProtectedHome} />
+      <Route path="/fund/:id" component={ProtectedFundDetail} />
+      <Route path="/fund/:id/settings" component={ProtectedFundSettings} />
+      <Route path="/fund/:id/reciprocation-rate" component={ProtectedFundReciprocatIonRate} />
+      <Route path="/fund/:id/contribution-rate" component={ProtectedFundContributionRate} />
+      <Route path="/fund/:id/governance" component={ProtectedFundGovernance} />
+      <Route path="/fund/:id/chat" component={ProtectedFundChat} />
+      <Route path="/fund/:id/members" component={ProtectedFundMembers} />
+      <Route path="/fund/:id/member-settings" component={ProtectedFundMemberSettings} />
+      <Route path="/create-fund/name" component={ProtectedCreateFundName} />
+      <Route path="/create-fund/objective" component={ProtectedCreateFundObjective} />
+      <Route path="/create-fund/image" component={ProtectedCreateFundImage} />
+      <Route path="/create-fund/members" component={ProtectedCreateFundMembers} />
+      <Route path="/contribute/select-fund" component={ProtectedContributeSelectFund} />
+      <Route path="/contribute/amount" component={ProtectedContributeAmount} />
+      <Route path="/contribute/confirmation" component={ProtectedContributeConfirmation} />
+      <Route path="/request/select-fund" component={ProtectedRequestSelectFund} />
+      <Route path="/request/amount" component={ProtectedRequestAmount} />
+      <Route path="/request/reason" component={ProtectedRequestReason} />
+      <Route path="/request/payment-plan" component={ProtectedRequestPaymentPlan} />
+      <Route path="/request/confirmation" component={ProtectedRequestConfirmation} />
+      <Route path="/account" component={ProtectedUserProfile} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -68,10 +97,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

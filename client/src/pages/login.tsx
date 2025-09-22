@@ -2,14 +2,15 @@
 import { ArrowLeft, LogIn, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [, setLocation] = useLocation();
+  const { login, isLoading } = useAuth();
 
   const handleSubmit = async () => {
     if (!email.trim() || !senha.trim()) {
@@ -17,35 +18,20 @@ export default function LoginScreen() {
       return;
     }
 
-    setIsLoading(true);
     setError('');
 
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          password: senha,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Login realizado com sucesso:', data);
+      const success = await login(email, senha);
+      if (success) {
+        console.log('Login realizado com sucesso');
         // Redirecionar para a página inicial
         setLocation('/');
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Erro ao fazer login');
+        setError('Email ou senha inválidos');
       }
     } catch (error) {
       console.error('Erro na requisição:', error);
       setError('Erro de conexão. Tente novamente.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
