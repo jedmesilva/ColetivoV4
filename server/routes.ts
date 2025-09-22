@@ -403,9 +403,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(result);
     } catch (error) {
       console.error("Error creating capital request:", error);
+      
+      // Melhor tratamento de erros de validação Zod
       if (error instanceof Error && error.name === 'ZodError') {
-        return res.status(400).json({ message: "Dados inválidos", details: error });
+        const zodError = error as any;
+        const firstIssue = zodError.issues?.[0];
+        
+        if (firstIssue && firstIssue.message.includes('Cada parcela deve ser de no mínimo R$ 0,01')) {
+          return res.status(400).json({ 
+            message: "Valor muito baixo para dividir em parcelas. Cada parcela deve ser de no mínimo R$ 0,01. Reduza o número de parcelas ou aumente o valor solicitado."
+          });
+        }
+        
+        return res.status(400).json({ 
+          message: "Dados inválidos: " + (firstIssue?.message || "Verifique os dados informados")
+        });
       }
+      
+      // Melhor tratamento para erros de constraint do banco
+      if (error instanceof Error && error.message.includes('retributions_amount_check')) {
+        return res.status(400).json({ 
+          message: "Valor muito baixo para dividir em parcelas. Cada parcela deve ser de no mínimo R$ 0,01."
+        });
+      }
+      
       res.status(500).json({ message: error instanceof Error ? error.message : "Erro ao criar solicitação de capital" });
     }
   });
