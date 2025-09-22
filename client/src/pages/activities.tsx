@@ -94,7 +94,7 @@ export default function Activities() {
         </div>
 
         {/* Seção de Atividades */}
-        <div className="space-y-4"></div>
+        <div className="space-y-4">
           {/* Card de Atividade - Pagamento Recebido */}
           <div 
             className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
