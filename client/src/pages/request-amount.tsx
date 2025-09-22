@@ -398,7 +398,7 @@ export default function RequestAmount() {
                     <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
                       Disponível: {carregandoSaldo ? (
                         <span className="inline-flex items-center gap-1">
-                          <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+                          <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
                           Carregando...
                         </span>
                       ) : (
