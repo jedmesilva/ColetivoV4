@@ -1,10 +1,11 @@
 
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Users, Heart } from "lucide-react";
+import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Users, Heart, Search } from "lucide-react";
 
 export default function Activities() {
   const [, setLocation] = useLocation();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleBack = () => {
     // Verificar se há uma página salva no sessionStorage, caso contrário vai para conta
@@ -32,8 +33,68 @@ export default function Activities() {
 
       {/* Content Section */}
       <div className="px-4 pb-6">
+        {/* Campo de Busca */}
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-4 text-dark" data-testid="search-title">
+            Buscar atividades
+          </h2>
+          <div 
+            className="w-8 h-1 rounded-full mb-6"
+            style={{ background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)' }}
+          ></div>
+          
+          <div className="relative">
+            <style>
+              {`
+                .input-limpo {
+                  width: 100%;
+                  padding: 1rem 1.5rem;
+                  padding-left: 3rem;
+                  border-radius: 1rem;
+                  border: 1px solid rgba(48, 48, 48, 0.1);
+                  font-size: 1.125rem;
+                  background-color: rgba(255, 229, 189, 0.1);
+                  color: #303030;
+                  outline: none;
+                  box-shadow: none;
+                }
+
+                .input-limpo:focus {
+                  outline: none;
+                  box-shadow: none;
+                  border-color: rgba(48, 48, 48, 0.1);
+                }
+
+                .input-limpo::placeholder {
+                  color: rgba(48, 48, 48, 0.5);
+                }
+
+                .input-limpo:focus-visible {
+                  outline: none;
+                  box-shadow: none;
+                }
+
+                .input-limpo:active,
+                .input-limpo:hover {
+                  outline: none;
+                  box-shadow: none;
+                }
+              `}
+            </style>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Digite o tipo de atividade ou pessoa"
+              className="input-limpo"
+              data-testid="input-search"
+            />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#303030', opacity: 0.5 }} />
+          </div>
+        </div>
+
         {/* Seção de Atividades */}
-        <div className="space-y-4">
+        <div className="space-y-4"></div>
           {/* Card de Atividade - Pagamento Recebido */}
           <div 
             className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] bg-creme border-dark-light"
