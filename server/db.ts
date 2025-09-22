@@ -1,18 +1,31 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Supabase configuration - using your existing Supabase database
-if (!process.env.SUPABASE_URL) {
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL) {
+  console.error("Environment variables available:", {
+    NODE_ENV: process.env.NODE_ENV,
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  });
   throw new Error("SUPABASE_URL is required");
 }
 
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+if (!SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("Environment variables available:", {
+    NODE_ENV: process.env.NODE_ENV,
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  });
   throw new Error("SUPABASE_SERVICE_ROLE_KEY is required");
 }
 
 // Create Supabase client for backend operations (service role)
 export const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
   {
     auth: { persistSession: false }
   }
