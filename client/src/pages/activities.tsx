@@ -98,15 +98,10 @@ export default function Activities() {
   };
 
   // Função para formatar data
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string) => {
     try {
-      // Verificar se dateString existe e não é null/undefined
-      if (!dateString) {
-        return 'Data não disponível';
-      }
-      
       // Normalizar a string de data para garantir compatibilidade
-      let normalizedDate = dateString.toString();
+      let normalizedDate = dateString;
       
       // Se a data não terminar com Z, adicionar Z para indicar UTC
       if (!normalizedDate.endsWith('Z') && !normalizedDate.includes('+')) {
@@ -139,7 +134,7 @@ export default function Activities() {
       }
     } catch (error) {
       console.error('Erro ao formatar data:', error, 'String original:', dateString);
-      return 'Data não disponível';
+      return 'Data inválida';
     }
   };
 
@@ -264,7 +259,7 @@ export default function Activities() {
                           {getTransactionTitle(transaction)}
                         </h4>
                         <p className="text-sm text-dark opacity-70">
-                          {transaction.description || 'Sem descrição'} • {transaction.createdAt ? formatDate(transaction.createdAt) : 'Data não disponível'}
+                          {transaction.description || 'Sem descrição'} • {formatDate(transaction.createdAt)}
                         </p>
                       </div>
                     </div>
