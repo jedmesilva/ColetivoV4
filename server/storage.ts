@@ -537,67 +537,44 @@ class SupabaseStorage implements IStorage {
   async getUserTotalBalanceInFunds(accountId: string): Promise<number> {
     console.log('getUserTotalBalanceInFunds called for accountId:', accountId);
 
-    // Calcular usando múltiplas queries para as tabelas corretas
-
-    // 1. Somar todas as contribuições completed do usuário
-    const { data: contributions, error: contributionError } = await supabase
-      .from('contributions')
-      .select('amount')
+    // CORRIGIDO: Usar account_transactions como fonte única da verdade
+    // Calcular o saldo em fundos baseado apenas em transações realmente executadas
+    
+    // Buscar todas as transações completas do usuário
+    const { data: transactions, error: txError } = await supabase
+      .from('account_transactions')
+      .select('transaction_type, amount, reference_type, description, status')
       .eq('account_id', accountId)
       .eq('status', 'completed');
 
-    if (contributionError) {
-      console.error('Error fetching user contributions:', contributionError);
-      throw new Error(contributionError.message);
+    if (txError) {
+      console.error('Error fetching account transactions:', txError);
+      throw new Error(txError.message);
     }
 
-    const totalContributions = (contributions || []).reduce((sum, contribution) => {
-      return sum + parseFloat(contribution.amount || '0');
-    }, 0);
+    let balanceInFunds = 0;
 
-    // 2. Somar todas as solicitações de capital completed/approved (retiradas)
-    const { data: capitalRequests, error: capitalError } = await supabase
-      .from('capital_requests')
-      .select('amount')
-      .eq('account_id', accountId)
-      .in('status', ['completed', 'approved']);
-
-    if (capitalError) {
-      console.error('Error fetching user capital requests:', capitalError);
-      throw new Error(capitalError.message);
+    // Processar cada transação para calcular o saldo atual em fundos
+    for (const tx of transactions || []) {
+      const amount = parseFloat(tx.amount || '0');
+      
+      if (tx.reference_type === 'contribution') {
+        // Contribuições para fundos (valor negativo, somar ao saldo em fundos)
+        balanceInFunds += Math.abs(amount);
+      } else if (tx.reference_type === 'capital_request' && amount > 0) {
+        // Retiradas de capital (valor positivo, subtrair do saldo em fundos)  
+        balanceInFunds -= amount;
+      }
+      // Retribuições não alteram o saldo em fundos, são apenas passagem de dinheiro
     }
 
-    const totalWithdrawals = (capitalRequests || []).reduce((sum, request) => {
-      return sum + parseFloat(request.amount || '0');
-    }, 0);
-
-    // 3. Somar todas as retribuições completadas da tabela retributions
-    const { data: retributions, error: retributionError } = await supabase
-      .from('retributions')
-      .select('amount')
-      .eq('account_id', accountId)
-      .eq('status', 'completed');
-
-    if (retributionError) {
-      console.error('Error fetching user retributions:', retributionError);
-      throw new Error(retributionError.message);
-    }
-
-    const totalRetributions = (retributions || []).reduce((sum, retribution) => {
-      return sum + parseFloat(retribution.amount || '0');
-    }, 0);
-
-    // Cálculo final: contribuições - retiradas - retribuições
-    const totalBalanceInFunds = totalContributions - totalWithdrawals - totalRetributions;
-
-    console.log('Balance calculation for user', accountId, ':', {
-      totalContributions,
-      totalWithdrawals,
-      totalRetributions,
-      totalBalanceInFunds
+    console.log('Balance calculation for user', accountId, '(CORRIGIDO usando account_transactions):', {
+      totalTransactions: transactions?.length || 0,
+      balanceInFunds: balanceInFunds,
+      source: 'account_transactions'
     });
 
-    return Math.max(0, totalBalanceInFunds);
+    return Math.max(0, balanceInFunds);
   }
 
   async getUserPendingRetributionsCount(accountId: string): Promise<number> {
@@ -1248,3 +1225,95 @@ class SupabaseStorage implements IStorage {
 
 // Export Supabase storage instance
 export const storage = new SupabaseStorage();
+
+// Função temporária para debugar transações e estrutura das tabelas
+export async function debugAccountTransactionStructure(accountId: string = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e") {
+  try {
+    console.log('=== ANÁLISE DA ESTRUTURA DAS TRANSAÇÕES ===');
+
+    // 1. Verificar estrutura da tabela account_transactions
+    console.log('1. Verificando transações na tabela account_transactions:');
+    const { data: transactions, error: txError } = await supabase
+      .from('account_transactions')
+      .select('*')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (txError) {
+      console.error('Erro ao buscar transações:', txError);
+    } else {
+      console.log(`Encontradas ${transactions?.length || 0} transações`);
+      if (transactions && transactions.length > 0) {
+        console.log('Primeiras transações:', transactions.map(tx => ({
+          id: tx.id,
+          transaction_type: tx.transaction_type,
+          amount: tx.amount,
+          reference_type: tx.reference_type,
+          reference_id: tx.reference_id,
+          status: tx.status,
+          description: tx.description,
+          created_at: tx.created_at
+        })));
+      }
+    }
+
+    // 2. Verificar tabela contributions
+    console.log('\n2. Verificando tabela contributions:');
+    const { data: contributions, error: contribError } = await supabase
+      .from('contributions')
+      .select('*')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (contribError) {
+      console.error('Erro ao buscar contributions:', contribError);
+    } else {
+      console.log(`Encontradas ${contributions?.length || 0} contribuições`);
+      if (contributions && contributions.length > 0) {
+        console.log('Primeiras contribuições:', contributions);
+      }
+    }
+
+    // 3. Verificar tabela capital_requests  
+    console.log('\n3. Verificando tabela capital_requests:');
+    const { data: capitalRequests, error: capError } = await supabase
+      .from('capital_requests')
+      .select('*')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (capError) {
+      console.error('Erro ao buscar capital_requests:', capError);
+    } else {
+      console.log(`Encontradas ${capitalRequests?.length || 0} solicitações de capital`);
+      if (capitalRequests && capitalRequests.length > 0) {
+        console.log('Primeiras solicitações:', capitalRequests);
+      }
+    }
+
+    // 4. Verificar tabela retributions
+    console.log('\n4. Verificando tabela retributions:');
+    const { data: retributions, error: retribError } = await supabase
+      .from('retributions')
+      .select('*')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (retribError) {
+      console.error('Erro ao buscar retributions:', retribError);
+    } else {
+      console.log(`Encontradas ${retributions?.length || 0} retribuições`);
+      if (retributions && retributions.length > 0) {
+        console.log('Primeiras retribuições:', retributions);
+      }
+    }
+
+    console.log('=== FIM DA ANÁLISE ===\n');
+  } catch (error) {
+    console.error('Erro no debug:', error);
+  }
+}
