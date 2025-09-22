@@ -216,7 +216,7 @@ class SupabaseStorage implements IStorage {
 
     // Calculate balances
     const grossBalance = totalInflows - totalContributions - totalOtherOutflows;
-    const freeBalance = totalInflows - totalOtherOutflows; // Money not locked in funds
+    const freeBalance = totalInflows - totalContributions - totalOtherOutflows; // Money not locked in funds
     const balanceInFunds = totalContributions;
 
     console.log('Balance calculation for user', accountId, ':', {
