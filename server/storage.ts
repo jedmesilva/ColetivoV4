@@ -185,46 +185,53 @@ class SupabaseStorage implements IStorage {
       throw new Error(accountError?.message || 'Account not found');
     }
 
-    // Get all completed transactions for this account
+    // Get all completed transactions for this account  
     const { data: transactions, error: txError } = await supabase
       .from('account_transactions')
-      .select('transaction_type, amount, reference_type')
+      .select('transaction_type, amount, reference_type, description')
       .eq('account_id', accountId)
       .eq('status', 'completed');
 
     if (txError) throw new Error(txError.message);
 
-    let totalBalance = 0;
-    let freeBalance = 0;
+    let totalInflows = 0;     // Total de entradas (depósitos, retiradas de fundos, etc.)
+    let totalContributions = 0; // Total contribuído aos fundos
+    let totalOtherOutflows = 0;  // Outras saídas (taxas, transferências out, etc.)
 
-    // Calculate balances from transactions
+    // Separate transactions by type
     for (const tx of transactions || []) {
       const amount = parseFloat(tx.amount || '0');
       
-      // Define if transaction is incoming or outgoing based on transaction_type
-      const isIncoming = ['deposit', 'fund_withdrawal', 'transfer_in', 'refund'].includes(tx.transaction_type);
-      const signedAmount = isIncoming ? amount : -amount;
-      
-      totalBalance += signedAmount;
-      
-      // Free balance excludes contributions and retributions (they are locked in funds)
-      if (!['contribution', 'retribution'].includes(tx.reference_type)) {
-        freeBalance += signedAmount;
+      if (tx.reference_type === 'contribution') {
+        // Contributions to funds (stored as negative, convert to positive)
+        totalContributions += Math.abs(amount);
+      } else if (amount > 0) {
+        // Positive amounts are inflows (deposits, fund withdrawals, transfers in, etc.)
+        totalInflows += amount;
+      } else {
+        // Other negative amounts are outflows (fees, transfers out, etc.)
+        totalOtherOutflows += Math.abs(amount);
       }
     }
 
-    const balanceInFunds = totalBalance - freeBalance;
+    // Calculate balances
+    const grossBalance = totalInflows - totalContributions - totalOtherOutflows;
+    const freeBalance = totalInflows - totalOtherOutflows; // Money not locked in funds
+    const balanceInFunds = totalContributions;
 
     console.log('Balance calculation for user', accountId, ':', {
       totalTransactions: transactions?.length || 0,
-      totalBalance,
+      totalInflows,
+      totalContributions,
+      totalOtherOutflows,
+      grossBalance,
       freeBalance,
       balanceInFunds
     });
 
     return {
       accountId,
-      totalBalance,
+      totalBalance: grossBalance,
       freeBalance: Math.max(0, freeBalance), // Don't allow negative free balance
       balanceInFunds,
       account: {
