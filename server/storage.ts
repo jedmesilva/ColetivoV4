@@ -174,35 +174,53 @@ class SupabaseStorage implements IStorage {
   async getAccountBalance(accountId: string): Promise<AccountBalance | undefined> {
     console.log('getAccountBalance called for accountId:', accountId);
 
-    // Get account balance from the account_balances view
-    const { data: accountBalance, error: balanceError } = await supabase
-      .from('account_balances')
+    // Get account info
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
       .select('*')
       .eq('id', accountId)
       .single();
 
-    if (balanceError || !accountBalance) {
-      throw new Error(balanceError?.message || 'Account balance not found');
+    if (accountError || !account) {
+      throw new Error(accountError?.message || 'Account not found');
     }
 
-    // Get total balance in funds (active contributions)
-    const { data: fundMemberships, error: memberError } = await supabase
-      .from('fund_members')
-      .select('total_contributed')
+    // Get all completed transactions for this account
+    const { data: transactions, error: txError } = await supabase
+      .from('account_transactions')
+      .select('transaction_type, amount, reference_type')
       .eq('account_id', accountId)
-      .eq('status', 'active');
+      .eq('status', 'completed');
 
-    if (memberError) throw new Error(memberError.message);
+    if (txError) throw new Error(txError.message);
 
-    let balanceInFunds = 0;
-    if (fundMemberships) {
-      for (const membership of fundMemberships) {
-        balanceInFunds += parseFloat(membership.total_contributed || '0');
+    let totalBalance = 0;
+    let freeBalance = 0;
+
+    // Calculate balances from transactions
+    for (const tx of transactions || []) {
+      const amount = parseFloat(tx.amount || '0');
+      
+      // Define if transaction is incoming or outgoing based on transaction_type
+      const isIncoming = ['deposit', 'fund_withdrawal', 'transfer_in', 'refund'].includes(tx.transaction_type);
+      const signedAmount = isIncoming ? amount : -amount;
+      
+      totalBalance += signedAmount;
+      
+      // Free balance excludes contributions and retributions (they are locked in funds)
+      if (!['contribution', 'retribution'].includes(tx.reference_type)) {
+        freeBalance += signedAmount;
       }
     }
 
-    const totalBalance = parseFloat(accountBalance.account_balance || '0');
-    const freeBalance = totalBalance - balanceInFunds;
+    const balanceInFunds = totalBalance - freeBalance;
+
+    console.log('Balance calculation for user', accountId, ':', {
+      totalTransactions: transactions?.length || 0,
+      totalBalance,
+      freeBalance,
+      balanceInFunds
+    });
 
     return {
       accountId,
@@ -210,19 +228,19 @@ class SupabaseStorage implements IStorage {
       freeBalance: Math.max(0, freeBalance), // Don't allow negative free balance
       balanceInFunds,
       account: {
-        id: accountBalance.id,
-        email: accountBalance.email,
-        passwordHash: accountBalance.password_hash || '',
-        fullName: accountBalance.full_name,
-        phone: accountBalance.phone,
-        cpf: accountBalance.cpf,
-        birthDate: accountBalance.birth_date,
-        profilePictureUrl: accountBalance.profile_picture_url,
-        isActive: accountBalance.is_active,
-        emailVerified: accountBalance.email_verified,
-        phoneVerified: accountBalance.phone_verified,
-        createdAt: accountBalance.created_at,
-        updatedAt: accountBalance.updated_at
+        id: account.id,
+        email: account.email,
+        passwordHash: account.password_hash || '',
+        fullName: account.full_name,
+        phone: account.phone,
+        cpf: account.cpf,
+        birthDate: account.birth_date,
+        profilePictureUrl: account.profile_picture_url,
+        isActive: account.is_active,
+        emailVerified: account.email_verified,
+        phoneVerified: account.phone_verified,
+        createdAt: account.created_at,
+        updatedAt: account.updated_at
       }
     };
   }
