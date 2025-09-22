@@ -99,23 +99,42 @@ export default function Activities() {
 
   // Função para formatar data
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    try {
+      // Normalizar a string de data para garantir compatibilidade
+      let normalizedDate = dateString;
+      
+      // Se a data não terminar com Z, adicionar Z para indicar UTC
+      if (!normalizedDate.endsWith('Z') && !normalizedDate.includes('+')) {
+        normalizedDate = normalizedDate + 'Z';
+      }
+      
+      const date = new Date(normalizedDate);
+      
+      // Verificar se a data é válida
+      if (isNaN(date.getTime())) {
+        return 'Data inválida';
+      }
+      
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - date.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 1) {
-      return `Hoje, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-    } else if (diffDays === 2) {
-      return `Ontem, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-    } else if (diffDays <= 7) {
-      return `${diffDays - 1} dias atrás`;
-    } else if (diffDays <= 14) {
-      return '1 semana atrás';
-    } else if (diffDays <= 21) {
-      return '2 semanas atrás';
-    } else {
-      return date.toLocaleDateString('pt-BR');
+      if (diffDays === 1) {
+        return `Hoje, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      } else if (diffDays === 2) {
+        return `Ontem, ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      } else if (diffDays <= 7) {
+        return `${diffDays - 1} dias atrás`;
+      } else if (diffDays <= 14) {
+        return '1 semana atrás';
+      } else if (diffDays <= 21) {
+        return '2 semanas atrás';
+      } else {
+        return date.toLocaleDateString('pt-BR');
+      }
+    } catch (error) {
+      console.error('Erro ao formatar data:', error, 'String original:', dateString);
+      return 'Data inválida';
     }
   };
 
