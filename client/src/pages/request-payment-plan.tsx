@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Calendar, CreditCard, Edit3, Plus, X, ChevronRight } from "lucide-react";
+import { ArrowLeft, Check, Calendar, CreditCard, Edit3, Plus, X, ChevronRight, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { getRequestCache, updateRequestCache } from "@/lib/request-cache";
@@ -84,6 +84,11 @@ export default function RequestPaymentPlan() {
     const parcelas = [];
     const valorParcela = valorTotal / parseInt(numeroParcelas);
     const dataBase = new Date(dataInicio);
+    
+    // Validar se cada parcela é pelo menos R$ 0,01
+    if (valorParcela < 0.01) {
+      return [];
+    }
     
     for (let i = 0; i < parseInt(numeroParcelas); i++) {
       const dataParcela = new Date(dataBase);
@@ -178,9 +183,11 @@ export default function RequestPaymentPlan() {
     setLocation('/request/confirmation');
   };
 
+  // Validar se pode avançar - verificar se parcelas não são muito pequenas
+  const temErroParcelaMinima = !modoPersonalizado && dataInicio && numeroParcelas && (valorTotal / parseInt(numeroParcelas) < 0.01);
   const podeAvancar = modoPersonalizado 
     ? Math.abs(valorRestante) < 0.01 && parcelasPersonalizadas.length > 0
-    : dataInicio && numeroParcelas && parcelasCalculadas.length > 0;
+    : dataInicio && numeroParcelas && parcelasCalculadas.length > 0 && !temErroParcelaMinima;
 
   if (!fundoSelecionado) {
     return (
@@ -462,6 +469,22 @@ export default function RequestPaymentPlan() {
                   onChange={setIntervaloParcelas}
                   placeholder="Selecione o intervalo"
                 />
+
+                {/* Erro de parcela muito pequena */}
+                {dataInicio && numeroParcelas && valorTotal / parseInt(numeroParcelas) < 0.01 && (
+                  <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255, 0, 0, 0.1)', border: '1px solid rgba(255, 0, 0, 0.2)' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="w-5 h-5" style={{ color: '#d32f2f' }} />
+                      <span className="text-sm font-semibold" style={{ color: '#d32f2f' }}>
+                        Valor muito baixo para dividir em parcelas
+                      </span>
+                    </div>
+                    <p className="text-sm" style={{ color: '#d32f2f' }}>
+                      Cada parcela resultaria em {(valorTotal / parseInt(numeroParcelas)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}, 
+                      mas o mínimo permitido é R$ 0,01. Reduza o número de parcelas ou aumente o valor solicitado.
+                    </p>
+                  </div>
+                )}
 
                 {/* Preview das Parcelas */}
                 {parcelasCalculadas.length > 0 && (

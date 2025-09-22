@@ -238,6 +238,14 @@ export const insertCapitalRequestWithPlanSchema = insertCapitalRequestSchema.ext
   installments: z.number().min(1).max(60),
   frequency: z.enum(['monthly', 'quarterly', 'semiannual', 'annual']),
   firstDueDate: z.string().refine((date) => !isNaN(Date.parse(date)), "Data inválida"),
+}).refine((data) => {
+  // Validar que cada parcela será de pelo menos R$ 0,01 (1 centavo)
+  const amount = typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount;
+  const installmentAmount = amount / data.installments;
+  return installmentAmount >= 0.01;
+}, {
+  message: "Cada parcela deve ser de no mínimo R$ 0,01. Reduza o número de parcelas ou aumente o valor solicitado.",
+  path: ["installments"]
 });
 
 // Schema para planos de retribuição
