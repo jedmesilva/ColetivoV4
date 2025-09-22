@@ -46,7 +46,7 @@ export default function Activities() {
     return transactions.filter(transaction => {
       const searchLower = searchTerm.toLowerCase();
       return (
-        transaction.description?.toLowerCase().includes(searchLower) ||
+        (transaction.description || '').toLowerCase().includes(searchLower) ||
         transaction.transactionType.toLowerCase().includes(searchLower) ||
         transaction.referenceType.toLowerCase().includes(searchLower)
       );
