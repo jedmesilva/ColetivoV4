@@ -4,9 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { updateContributionCache } from "@/lib/contribution-cache";
 import { Fund } from "@shared/schema";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function ContributeSelectFund() {
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
   
   // Função para voltar de forma inteligente
   const handleGoBack = () => {
@@ -19,9 +21,16 @@ export default function ContributeSelectFund() {
     }
   };
 
-  // Buscar fundos disponíveis
+  // Buscar fundos disponíveis onde o usuário é membro
   const { data: funds = [] } = useQuery<Fund[]>({ 
-    queryKey: ['/api/funds']
+    queryKey: ['/api/funds', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const response = await fetch(`/api/funds?accountId=${user.id}`);
+      if (!response.ok) throw new Error('Failed to fetch funds');
+      return response.json();
+    },
+    enabled: !!user?.id,
   });
 
   const handleSelecionarFundo = (fund: Fund) => {

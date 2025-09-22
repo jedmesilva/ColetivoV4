@@ -5,13 +5,22 @@ import { Bell, Eye, Menu, TrendingUp, Wallet, CreditCard, Plus, User } from "luc
 import { Fund } from "@shared/schema";
 import FundCard from "@/components/fund-card";
 import BottomNavigation from "@/components/bottom-navigation";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Home() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
 
   const { data: funds = [], isLoading } = useQuery<Fund[]>({
-    queryKey: ['/api/funds'],
+    queryKey: ['/api/funds', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const response = await fetch(`/api/funds?accountId=${user.id}`);
+      if (!response.ok) throw new Error('Failed to fetch funds');
+      return response.json();
+    },
+    enabled: !!user?.id,
   });
 
   // Hook para buscar dados dos fundos (saldo e número de membros)
@@ -37,30 +46,54 @@ export default function Home() {
 
   // Hook para buscar dados do usuário logado
   const { data: currentUser } = useQuery({
-    queryKey: ['/api/accounts/8a1d8a0f-04c4-405d-beeb-7aa75690b32e'],
-    enabled: true,
+    queryKey: ['/api/accounts', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/accounts/${user.id}`);
+      if (!response.ok) throw new Error('Failed to fetch user');
+      return response.json();
+    },
+    enabled: !!user?.id,
   });
 
-  // Hook para buscar saldo da conta do usuário (usando ID do usuário que existe no Supabase)
+  // Hook para buscar saldo da conta do usuário
   const { data: accountBalance } = useQuery<{ balanceInFunds: number; freeBalance: number; totalBalance: number }>({
-    queryKey: ['/api/accounts/8a1d8a0f-04c4-405d-beeb-7aa75690b32e/balance'],
-    enabled: true,
+    queryKey: ['/api/accounts', user?.id, 'balance'],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/accounts/${user.id}/balance`);
+      if (!response.ok) throw new Error('Failed to fetch balance');
+      return response.json();
+    },
+    enabled: !!user?.id,
   });
 
   // Hook para buscar saldo total em fundos calculado corretamente
   const { data: balanceInFunds } = useQuery({
-    queryKey: ['/api/accounts/8a1d8a0f-04c4-405d-beeb-7aa75690b32e/balance-in-funds'],
-    enabled: true,
+    queryKey: ['/api/accounts', user?.id, 'balance-in-funds'],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/accounts/${user.id}/balance-in-funds`);
+      if (!response.ok) throw new Error('Failed to fetch balance in funds');
+      return response.json();
+    },
+    enabled: !!user?.id,
   });
 
   // Hook para buscar quantidade de retribuições pendentes
   const { data: pendingRetributions } = useQuery<{ pendingCount: number }>({
-    queryKey: ['/api/accounts/8a1d8a0f-04c4-405d-beeb-7aa75690b32e/pending-retributions'],
-    enabled: true,
+    queryKey: ['/api/accounts', user?.id, 'pending-retributions'],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/accounts/${user.id}/pending-retributions`);
+      if (!response.ok) throw new Error('Failed to fetch pending retributions');
+      return response.json();
+    },
+    enabled: !!user?.id,
   });
 
   const calculateTotalBalance = () => {
-    return balanceInFunds?.totalBalanceInFunds || 0;
+    return (balanceInFunds as any)?.totalBalanceInFunds || 0;
   };
 
   const calculateAverageGrowth = () => {
@@ -147,7 +180,7 @@ export default function Home() {
           {/* Welcome Section */}
           <div className="px-4 mb-8">
             <h1 className="text-3xl font-bold mb-2 text-creme" data-testid="text-greeting">
-              Olá, {currentUser?.fullName || currentUser?.full_name || 'Usuário'}!
+              Olá, {user?.fullName || 'Usuário'}!
             </h1>
             <p className="text-lg text-creme">Bem vindo ao ColetivoBank</p>
           </div>

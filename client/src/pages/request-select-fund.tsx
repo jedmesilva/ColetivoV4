@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Fund } from "@shared/schema";
 import { updateRequestCache } from "@/lib/request-cache";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function RequestSelectFund() {
   const [searchTerm, setSearchTerm] = useState('');
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
   
   // Função para voltar de forma inteligente
   const handleGoBack = () => {
@@ -20,9 +22,16 @@ export default function RequestSelectFund() {
     }
   };
 
-  // Buscar fundos disponíveis
+  // Buscar fundos disponíveis onde o usuário é membro
   const { data: funds = [] } = useQuery<Fund[]>({ 
-    queryKey: ['/api/funds']
+    queryKey: ['/api/funds', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const response = await fetch(`/api/funds?accountId=${user.id}`);
+      if (!response.ok) throw new Error('Failed to fetch funds');
+      return response.json();
+    },
+    enabled: !!user?.id,
   });
 
   const handleSelecionarFundo = (fund: Fund) => {
@@ -30,7 +39,7 @@ export default function RequestSelectFund() {
     updateRequestCache({
       fundId: fund.id,
       fundName: fund.name,
-      fundEmoji: fund.emoji
+      fundEmoji: fund.fundImageValue || "💰"
     });
     
     // Navegar para definir valor
@@ -40,7 +49,7 @@ export default function RequestSelectFund() {
   // Filtrar fundos baseado no termo de busca
   const fundsFiltrados = funds.filter(fund =>
     fund.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fund.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (fund.objective && fund.objective.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -195,7 +204,7 @@ export default function RequestSelectFund() {
                       className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ backgroundColor: 'rgba(255, 194, 47, 0.3)' }}
                     >
-                      <span className="text-2xl">{fund.emoji}</span>
+                      <span className="text-2xl">{fund.fundImageValue || "💰"}</span>
                     </div>
                     
                     {/* Informações do Fundo */}
@@ -204,20 +213,17 @@ export default function RequestSelectFund() {
                         {fund.name}
                       </h3>
                       <p className="text-sm text-dark opacity-70 line-clamp-2">
-                        {fund.description}
+                        {fund.objective || "Fundo de investimento coletivo"}
                       </p>
                       <div className="flex items-center gap-4 mt-2">
                         <div className="flex items-center gap-1">
                           <Users className="w-4 h-4 text-dark opacity-60" />
                           <span className="text-sm text-dark opacity-60">
-                            {fund.memberCount} membros
+                            Membros ativos
                           </span>
                         </div>
                         <div className="text-sm font-medium text-dark">
-                          {parseFloat(fund.balance).toLocaleString('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL'
-                          })}
+                          Fundo disponível
                         </div>
                       </div>
                     </div>

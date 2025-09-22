@@ -47,7 +47,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all funds
   app.get("/api/funds", async (req, res) => {
     try {
-      const funds = await storage.getFunds();
+      const accountId = req.query.accountId as string;
+      
+      if (!accountId) {
+        return res.status(400).json({ message: "accountId é obrigatório" });
+      }
+
+      // Buscar apenas os fundos onde o usuário é membro ativo
+      const funds = await storage.getFundsForUser(accountId);
       res.json(funds);
     } catch (error) {
       console.error("Error fetching funds:", error);

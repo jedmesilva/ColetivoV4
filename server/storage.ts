@@ -28,6 +28,7 @@ export interface IStorage {
 
   // Fund operations
   getFunds(): Promise<Fund[]>;
+  getFundsForUser(accountId: string): Promise<Fund[]>;
   getFund(id: string): Promise<Fund | undefined>;
   createFund(insertFund: InsertFund, userId: string): Promise<Fund>;
   updateFund(id: string, updates: Partial<Fund>): Promise<Fund | undefined>;
@@ -240,6 +241,53 @@ class SupabaseStorage implements IStorage {
         created_at, updated_at
       `)
       .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    // Map snake_case to camelCase for each fund
+    return (data || []).map(fund => ({
+      id: fund.id,
+      name: fund.name,
+      objective: fund.objective,
+      contributionRate: fund.contribution_rate,
+      retributionRate: fund.retribution_rate,
+      isOpenForNewMembers: fund.is_open_for_new_members,
+      requiresApprovalForNewMembers: fund.requires_approval_for_new_members,
+      createdBy: fund.created_by,
+      fundImageType: fund.fund_image_type,
+      fundImageValue: fund.fund_image_value,
+      isActive: fund.is_active,
+      governanceType: fund.governance_type,
+      quorumPercentage: fund.quorum_percentage,
+      votingRestriction: fund.voting_restriction,
+      proposalExpiryHours: fund.proposal_expiry_hours,
+      allowMemberProposals: fund.allow_member_proposals,
+      autoExecuteApproved: fund.auto_execute_approved,
+      createdAt: fund.created_at,
+      updatedAt: fund.updated_at
+    })) as Fund[];
+  }
+
+  // Novo método para buscar fundos onde o usuário é membro ativo
+  async getFundsForUser(accountId: string): Promise<Fund[]> {
+    const { data, error } = await supabase
+      .from('funds')
+      .select(`
+        id, name, objective,
+        contribution_rate, retribution_rate,
+        is_open_for_new_members, requires_approval_for_new_members,
+        created_by, fund_image_type, fund_image_value, is_active,
+        governance_type, quorum_percentage, voting_restriction,
+        proposal_expiry_hours, allow_member_proposals, auto_execute_approved,
+        created_at, updated_at,
+        fund_members!inner (
+          account_id, status, role
+        )
+      `)
+      .eq('is_active', true)
+      .eq('fund_members.account_id', accountId)
+      .eq('fund_members.status', 'active')
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
