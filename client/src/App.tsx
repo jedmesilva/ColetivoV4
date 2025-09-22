@@ -31,6 +31,7 @@ import RequestReason from "@/pages/request-reason";
 import RequestPaymentPlan from "@/pages/request-payment-plan";
 import RequestConfirmation from "@/pages/request-confirmation";
 import UserProfile from "@/pages/account";
+import Activities from "@/pages/activities";
 import NotFound from "@/pages/not-found";
 
 // Componentes wrapper para rotas protegidas
@@ -56,6 +57,7 @@ const ProtectedRequestReason = () => <ProtectedRoute><RequestReason /></Protecte
 const ProtectedRequestPaymentPlan = () => <ProtectedRoute><RequestPaymentPlan /></ProtectedRoute>;
 const ProtectedRequestConfirmation = () => <ProtectedRoute><RequestConfirmation /></ProtectedRoute>;
 const ProtectedUserProfile = () => <ProtectedRoute><UserProfile /></ProtectedRoute>;
+const ProtectedActivities = () => <ProtectedRoute><Activities /></ProtectedRoute>;
 
 function Router() {
   return (
@@ -89,6 +91,7 @@ function Router() {
       <Route path="/request/payment-plan" component={ProtectedRequestPaymentPlan} />
       <Route path="/request/confirmation" component={ProtectedRequestConfirmation} />
       <Route path="/account" component={ProtectedUserProfile} />
+      <Route path="/activities" component={ProtectedActivities} />
       <Route component={NotFound} />
     </Switch>
   );

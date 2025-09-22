@@ -352,6 +352,11 @@ export default function UserProfile() {
             {/* Botão Ver Mais */}
             <div className="pt-4">
               <button 
+                onClick={() => {
+                  // Salvar a página atual antes de navegar
+                  sessionStorage.setItem('lastPath', '/account');
+                  setLocation('/activities');
+                }}
                 className="w-full rounded-3xl p-4 border transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] bg-creme border-dark-light"
                 data-testid="button-view-all-activities"
               >
