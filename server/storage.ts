@@ -337,38 +337,32 @@ class SupabaseStorage implements IStorage {
     const { data, error } = await supabase
       .from('funds')
       .select(`
-        id, name, objective,
-        contribution_rate, retribution_rate,
-        is_open_for_new_members, requires_approval_for_new_members,
-        created_by, fund_image_type, fund_image_value, is_active,
-        governance_type, quorum_percentage, voting_restriction,
-        proposal_expiry_hours, allow_member_proposals, auto_execute_approved,
-        created_at, updated_at
+        id, name, objective, created_by, fund_image_type, fund_image_value, is_active, created_at, updated_at
       `)
       .eq('id', id)
       .single();
 
     if (error || !data) return undefined;
 
-    // Map snake_case to camelCase
+    // Map usando apenas os campos disponíveis e valores padrão para os removidos
     return {
       id: data.id,
       name: data.name,
       objective: data.objective,
-      contributionRate: data.contribution_rate,
-      retributionRate: data.retribution_rate,
-      isOpenForNewMembers: data.is_open_for_new_members,
-      requiresApprovalForNewMembers: data.requires_approval_for_new_members,
+      contributionRate: '100.00', // Valor padrão
+      retributionRate: '100.00', // Valor padrão
+      isOpenForNewMembers: true, // Valor padrão
+      requiresApprovalForNewMembers: false, // Valor padrão
       createdBy: data.created_by,
       fundImageType: data.fund_image_type,
       fundImageValue: data.fund_image_value,
       isActive: data.is_active,
-      governanceType: data.governance_type,
-      quorumPercentage: data.quorum_percentage,
-      votingRestriction: data.voting_restriction,
-      proposalExpiryHours: data.proposal_expiry_hours,
-      allowMemberProposals: data.allow_member_proposals,
-      autoExecuteApproved: data.auto_execute_approved,
+      governanceType: 'quorum', // Valor padrão
+      quorumPercentage: '60.00', // Valor padrão
+      votingRestriction: 'all_members', // Valor padrão
+      proposalExpiryHours: 168, // Valor padrão
+      allowMemberProposals: true, // Valor padrão
+      autoExecuteApproved: true, // Valor padrão
       createdAt: data.created_at,
       updatedAt: data.updated_at
     } as Fund;
