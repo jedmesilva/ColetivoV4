@@ -66,7 +66,7 @@ export interface IStorage {
   // Fund configuration operations
   getFundAccessSettings(fundId: string): Promise<FundAccessSettings | undefined>;
   updateFundAccessSettings(insertSettings: InsertFundAccessSettings): Promise<FundAccessSettings>;
-  
+
   // Fund governance operations
   getFundQuorumSettings(fundId: string): Promise<FundQuorumSettings | undefined>;
   updateFundQuorumSettings(insertSettings: InsertFundQuorumSettings): Promise<FundQuorumSettings>;
@@ -1292,14 +1292,14 @@ class SupabaseStorage implements IStorage {
       // Se falhar por causa do allows_invite_link, tentar sem ele
       if (error && error.message.includes('allows_invite_link')) {
         console.log('Coluna allows_invite_link não existe, tentando sem ela...');
-        
+
         const { allows_invite_link, ...dataWithoutAllowsInviteLink } = insertData;
         const result = await supabase
           .from('fund_access_settings')
           .insert(dataWithoutAllowsInviteLink)
           .select()
           .single();
-        
+
         data = result.data;
         error = result.error;
       }
@@ -1421,12 +1421,12 @@ class SupabaseStorage implements IStorage {
           createdAt: data.created_at
         } as FundQuorumSettings;
       }
+
+      throw new Error('No data returned from insertion');
     } catch (error) {
       console.error('Error updating fund quorum settings:', error);
       throw error;
     }
-
-    throw new Error('Failed to update fund quorum settings');
   }
 }
 
