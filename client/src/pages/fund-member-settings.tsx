@@ -178,7 +178,7 @@ export default function FundMemberSettings() {
     if (settings && typeof settings === 'object') {
       setPermitirNovosMembros((settings as any).isOpenForNewMembers ?? true);
       setEntradaPorLink((settings as any).allowsInviteLink ?? true);
-      setEntradaPorSolicitacao((settings as any).allowsJoinRequests ?? false);
+      setEntradaPorSolicitacao((settings as any).requiresApprovalForNewMembers ?? false);
     }
   }, [settings]);
 
@@ -215,9 +215,8 @@ export default function FundMemberSettings() {
 
     saveSettingsMutation.mutate({
       isOpenForNewMembers: permitirNovosMembros,
-      requiresApprovalForNewMembers: entradaPorSolicitacao, // Solicitação implica aprovação
+      requiresApprovalForNewMembers: entradaPorSolicitacao,
       allowsInviteLink: entradaPorLink,
-      allowsJoinRequests: entradaPorSolicitacao,
       changeReason: 'Configurações atualizadas pelo usuário'
     });
   };

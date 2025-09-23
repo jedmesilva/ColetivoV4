@@ -577,20 +577,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const defaultSettings = {
           isOpenForNewMembers: true,
           requiresApprovalForNewMembers: false,
-          allowsInviteLink: true,
-          allowsJoinRequests: false
+          allowsInviteLink: true
         };
         return res.status(200).json(defaultSettings);
       }
 
-      // Map database fields to UI expectations
-      const uiSettings = {
-        ...settings,
-        // Map join requests flag from requiresApproval
-        allowsJoinRequests: settings.requiresApprovalForNewMembers
-      };
-      
-      res.status(200).json(uiSettings);
+      res.status(200).json(settings);
     } catch (error) {
       console.error("Error fetching fund access settings:", error);
       res.status(500).json({ message: "Failed to fetch fund access settings" });
@@ -602,13 +594,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: fundId } = req.params;
       const { changeReason, allowsJoinRequests, ...settingsData } = req.body;
-      
-      // Map UI fields to database fields
-      const mappedSettings = {
-        ...settingsData,
-        // Map UI logic: if allowsJoinRequests is true, then requires approval
-        requiresApprovalForNewMembers: allowsJoinRequests === true
-      };
       
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
@@ -623,7 +608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fundId,
         changedBy: userId, // Secure: derived from server-side session
         changeReason: changeReason || "Configurações atualizadas via interface",
-        ...mappedSettings
+        ...settingsData
       });
 
       const updatedSettings = await storage.updateFundAccessSettings(validatedData);

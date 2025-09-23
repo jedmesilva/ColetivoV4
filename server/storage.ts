@@ -1331,7 +1331,7 @@ class SupabaseStorage implements IStorage {
       allowsInviteLink: insertSettings.allowsInviteLink ?? true,
       maxMembers: insertSettings.maxMembers ?? null,
       isActive: true,
-      changedBy: insertSettings.changedBy,
+      changedBy: insertSettings.changedBy ?? null,
       changeReason: insertSettings.changeReason ?? 'Updated via API',
       createdAt: new Date()
     };
