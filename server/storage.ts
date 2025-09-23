@@ -309,25 +309,15 @@ class SupabaseStorage implements IStorage {
 
     if (error) throw new Error(error.message);
 
-    // Map usando apenas os campos disponíveis e valores padrão para os removidos
+    // Map usando apenas os campos que existem na tabela simplificada
     return (data || []).map(fund => ({
       id: fund.id,
       name: fund.name,
       objective: fund.objective,
-      contributionRate: '100.00', // Valor padrão
-      retributionRate: '100.00', // Valor padrão
-      isOpenForNewMembers: true, // Valor padrão
-      requiresApprovalForNewMembers: false, // Valor padrão
       createdBy: fund.created_by,
       fundImageType: fund.fund_image_type,
       fundImageValue: fund.fund_image_value,
       isActive: fund.is_active,
-      governanceType: 'quorum', // Valor padrão
-      quorumPercentage: '60.00', // Valor padrão
-      votingRestriction: 'all_members', // Valor padrão
-      proposalExpiryHours: 168, // Valor padrão
-      allowMemberProposals: true, // Valor padrão
-      autoExecuteApproved: true, // Valor padrão
       createdAt: fund.created_at,
       updatedAt: fund.updated_at
     })) as Fund[];
@@ -344,25 +334,15 @@ class SupabaseStorage implements IStorage {
 
     if (error || !data) return undefined;
 
-    // Map usando apenas os campos disponíveis e valores padrão para os removidos
+    // Map usando apenas os campos que existem na tabela simplificada
     return {
       id: data.id,
       name: data.name,
       objective: data.objective,
-      contributionRate: '100.00', // Valor padrão
-      retributionRate: '100.00', // Valor padrão
-      isOpenForNewMembers: true, // Valor padrão
-      requiresApprovalForNewMembers: false, // Valor padrão
       createdBy: data.created_by,
       fundImageType: data.fund_image_type,
       fundImageValue: data.fund_image_value,
       isActive: data.is_active,
-      governanceType: 'quorum', // Valor padrão
-      quorumPercentage: '60.00', // Valor padrão
-      votingRestriction: 'all_members', // Valor padrão
-      proposalExpiryHours: 168, // Valor padrão
-      allowMemberProposals: true, // Valor padrão
-      autoExecuteApproved: true, // Valor padrão
       createdAt: data.created_at,
       updatedAt: data.updated_at
     } as Fund;
@@ -377,18 +357,8 @@ class SupabaseStorage implements IStorage {
       objective: insertFund.objective,
       fund_image_type: 'emoji' as const,
       fund_image_value: insertFund.fundImageValue || '💰',
-      contribution_rate: insertFund.contributionRate || '100.00',
-      retribution_rate: insertFund.retributionRate || '100.00',
-      is_open_for_new_members: insertFund.isOpenForNewMembers ?? true,
-      requires_approval_for_new_members: insertFund.requiresApprovalForNewMembers ?? false,
       created_by: userId,
       is_active: true,
-      governance_type: 'quorum' as const,
-      quorum_percentage: '60.00',
-      voting_restriction: 'all_members' as const,
-      proposal_expiry_hours: 168,
-      allow_member_proposals: true,
-      auto_execute_approved: true,
     };
 
     const { data, error } = await supabase
@@ -421,25 +391,15 @@ class SupabaseStorage implements IStorage {
       // Não falhar a criação do fundo por isso
     }
 
-    // Map snake_case to camelCase
+    // Map snake_case to camelCase usando apenas os campos da nova estrutura
     return {
       id: data.id,
       name: data.name,
       objective: data.objective,
-      contributionRate: data.contribution_rate,
-      retributionRate: data.retribution_rate,
-      isOpenForNewMembers: data.is_open_for_new_members,
-      requiresApprovalForNewMembers: data.requires_approval_for_new_members,
       createdBy: data.created_by,
       fundImageType: data.fund_image_type,
       fundImageValue: data.fund_image_value,
       isActive: data.is_active,
-      governanceType: data.governance_type,
-      quorumPercentage: data.quorum_percentage,
-      votingRestriction: data.voting_restriction,
-      proposalExpiryHours: data.proposal_expiry_hours,
-      allowMemberProposals: data.allow_member_proposals,
-      autoExecuteApproved: data.auto_execute_approved,
       createdAt: data.created_at,
       updatedAt: data.updated_at
     } as Fund;

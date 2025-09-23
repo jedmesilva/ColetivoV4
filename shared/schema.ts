@@ -78,20 +78,10 @@ export const funds = pgTable("funds", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }).notNull(),
   objective: text("objective"),
-  contributionRate: decimal("contribution_rate", { precision: 5, scale: 2 }).default("100.00"),
-  retributionRate: decimal("retribution_rate", { precision: 5, scale: 2 }).default("100.00"),
-  isOpenForNewMembers: boolean("is_open_for_new_members").default(true),
-  requiresApprovalForNewMembers: boolean("requires_approval_for_new_members").default(false),
   createdBy: uuid("created_by").references(() => accounts.id),
   fundImageType: fundImageTypeEnum("fund_image_type").default('emoji'),
   fundImageValue: varchar("fund_image_value", { length: 500 }).default('💰'),
   isActive: boolean("is_active").default(true),
-  governanceType: governanceTypeEnum("governance_type").default('quorum'),
-  quorumPercentage: decimal("quorum_percentage", { precision: 5, scale: 2 }).default("60.00"),
-  votingRestriction: votingRestrictionEnum("voting_restriction").default('all_members'),
-  proposalExpiryHours: integer("proposal_expiry_hours").default(168),
-  allowMemberProposals: boolean("allow_member_proposals").default(true),
-  autoExecuteApproved: boolean("auto_execute_approved").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -204,10 +194,6 @@ export const insertFundSchema = createInsertSchema(funds).pick({
   name: true,
   objective: true,
   fundImageValue: true,
-  contributionRate: true,
-  retributionRate: true,
-  isOpenForNewMembers: true,
-  requiresApprovalForNewMembers: true,
 });
 
 // Schemas para contributions (atualizado)
