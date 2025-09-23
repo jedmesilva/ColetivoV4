@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Settings, Users, Link, UserPlus, Info, Save } from 'lucide-react';
+import { ArrowLeft, Settings, Users, Link, UserPlus, Info } from 'lucide-react';
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -133,7 +133,6 @@ export default function FundMemberSettings() {
   const [permitirNovosMembros, setPermitirNovosMembros] = useState(true);
   const [entradaPorLink, setEntradaPorLink] = useState(true);
   const [entradaPorSolicitacao, setEntradaPorSolicitacao] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
 
   // Carregar configurações atuais
   const { data: settings, isLoading: isLoadingSettings } = useQuery({
@@ -141,7 +140,7 @@ export default function FundMemberSettings() {
     enabled: !!fundId,
   });
 
-  // Mutation para salvar configurações
+  // Mutation para salvar configurações automaticamente
   const saveSettingsMutation = useMutation({
     mutationFn: async (settingsData: any) => {
       const response = await fetch(`/api/funds/${fundId}/access-settings`, {
@@ -158,20 +157,29 @@ export default function FundMemberSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/funds/${fundId}/access-settings`] });
-      setHasChanges(false);
-      toast({
-        title: "Configurações salvas",
-        description: "As configurações de acesso foram atualizadas com sucesso.",
-      });
     },
     onError: () => {
       toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar as configurações. Tente novamente.",
+        title: "Erro ao salvar configuração",
+        description: "Não foi possível salvar. Recarregue a página e tente novamente.",
         variant: "destructive",
       });
     },
   });
+
+  // Função auxiliar para salvar as configurações atuais
+  const saveCurrentSettings = () => {
+    if (!user?.id) {
+      return;
+    }
+
+    saveSettingsMutation.mutate({
+      isOpenForNewMembers: permitirNovosMembros,
+      requiresApprovalForNewMembers: entradaPorSolicitacao,
+      allowsInviteLink: entradaPorLink,
+      changeReason: 'Configuração atualizada automaticamente'
+    });
+  };
 
   // Atualizar estados quando carregar as configurações
   useEffect(() => {
@@ -184,41 +192,27 @@ export default function FundMemberSettings() {
 
   const handlePermitirNovosMembrosChange = (value: boolean) => {
     setPermitirNovosMembros(value);
-    setHasChanges(true);
     
     // Se desativar a entrada de novos membros, desativa as opções específicas
     if (!value) {
       setEntradaPorLink(false);
       setEntradaPorSolicitacao(false);
     }
+    
+    // Salvar automaticamente após atualizar o estado
+    setTimeout(saveCurrentSettings, 0);
   };
 
   const handleEntradaPorLinkChange = (value: boolean) => {
     setEntradaPorLink(value);
-    setHasChanges(true);
+    // Salvar automaticamente após atualizar o estado
+    setTimeout(saveCurrentSettings, 0);
   };
 
   const handleEntradaPorSolicitacaoChange = (value: boolean) => {
     setEntradaPorSolicitacao(value);
-    setHasChanges(true);
-  };
-
-  const handleSaveSettings = () => {
-    if (!user?.id) {
-      toast({
-        title: "Erro",
-        description: "Você precisa estar logado para salvar as configurações.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    saveSettingsMutation.mutate({
-      isOpenForNewMembers: permitirNovosMembros,
-      requiresApprovalForNewMembers: entradaPorSolicitacao,
-      allowsInviteLink: entradaPorLink,
-      changeReason: 'Configurações atualizadas pelo usuário'
-    });
+    // Salvar automaticamente após atualizar o estado
+    setTimeout(saveCurrentSettings, 0);
   };
 
   return (
@@ -398,28 +392,6 @@ export default function FundMemberSettings() {
             </div>
           </div>
 
-          {/* Botão de Salvar - só aparece quando há mudanças */}
-          {hasChanges && (
-            <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-20">
-              <button
-                onClick={handleSaveSettings}
-                disabled={saveSettingsMutation.isPending || isLoadingSettings}
-                className="flex items-center gap-3 px-8 py-4 rounded-3xl font-semibold text-white text-lg shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100"
-                style={{ 
-                  background: 'linear-gradient(135deg, #ffc22f, #fa7653, #fd6b61)',
-                  boxShadow: '0 8px 32px rgba(255, 194, 47, 0.3)' 
-                }}
-                data-testid="button-save-settings"
-              >
-                {saveSettingsMutation.isPending ? (
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Save className="w-6 h-6" />
-                )}
-                {saveSettingsMutation.isPending ? 'Salvando...' : 'Salvar alterações'}
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>
