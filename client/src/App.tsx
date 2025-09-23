@@ -33,6 +33,8 @@ import RequestConfirmation from "@/pages/request-confirmation";
 import UserProfile from "@/pages/account";
 import Activities from "@/pages/activities";
 import NotFound from "@/pages/not-found";
+import HistoricoSolicitacoesFundo from "@/pages/historico-solicitacoes-fundo";
+import HistoricoContribuicoesFundo from "@/pages/historico-contribuicoes-fundo";
 
 // Componentes wrapper para rotas protegidas
 const ProtectedHome = () => <ProtectedRoute><Home /></ProtectedRoute>;
@@ -58,6 +60,8 @@ const ProtectedRequestPaymentPlan = () => <ProtectedRoute><RequestPaymentPlan />
 const ProtectedRequestConfirmation = () => <ProtectedRoute><RequestConfirmation /></ProtectedRoute>;
 const ProtectedUserProfile = () => <ProtectedRoute><UserProfile /></ProtectedRoute>;
 const ProtectedActivities = () => <ProtectedRoute><Activities /></ProtectedRoute>;
+const ProtectedHistoricoSolicitacoesFundo = () => <ProtectedRoute><HistoricoSolicitacoesFundo /></ProtectedRoute>;
+const ProtectedHistoricoContribuicoesFundo = () => <ProtectedRoute><HistoricoContribuicoesFundo /></ProtectedRoute>;
 
 function Router() {
   return (
@@ -92,6 +96,8 @@ function Router() {
       <Route path="/request/confirmation" component={ProtectedRequestConfirmation} />
       <Route path="/account" component={ProtectedUserProfile} />
       <Route path="/activities" component={ProtectedActivities} />
+      <Route path="/fund/:id/historico-solicitacoes" component={ProtectedHistoricoSolicitacoesFundo} />
+      <Route path="/fund/:id/historico-contribuicoes" component={ProtectedHistoricoContribuicoesFundo} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -307,15 +307,8 @@ export default function FundDetail() {
               {/* Botão Contribuir */}
               <button 
                 onClick={() => {
-                  // Salvar a página atual antes de navegar
-                  sessionStorage.setItem('lastPath', `/fund/${fund.id}`);
-                  // Pré-selecionar o fundo atual para contribuição
-                  updateContributionCache({
-                    fundId: fund.id.toString(),
-                    fundName: fund.name,
-                    fundEmoji: fund.fundImageValue || "💰"
-                  });
-                  setLocation('/contribute/amount');
+                  // Navegar para a tela de histórico de contribuições
+                  setLocation(`/fund/${fund.id}/historico-contribuicoes`);
                 }}
                 className="rounded-3xl p-6 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] gradient-primary text-creme"
                 data-testid="button-contribute"
@@ -334,15 +327,8 @@ export default function FundDetail() {
               {/* Botão Solicitar */}
               <button 
                 onClick={() => {
-                  // Salvar a página atual antes de navegar
-                  sessionStorage.setItem('lastPath', `/fund/${fund.id}`);
-                  // Pré-selecionar o fundo atual para solicitação
-                  updateRequestCache({
-                    fundId: fund.id.toString(),
-                    fundName: fund.name,
-                    fundEmoji: fund.fundImageValue || "💰"
-                  });
-                  setLocation('/request/amount');
+                  // Navegar para a tela de histórico de solicitações
+                  setLocation(`/fund/${fund.id}/historico-solicitacoes`);
                 }}
                 className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-creme border-dark-light"
                 data-testid="button-request"
