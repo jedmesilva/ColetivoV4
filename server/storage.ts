@@ -5,10 +5,14 @@ import {
   type Account, type Fund, type Contribution, type FundMember, type AccountTransaction, type Retribution,
   type InsertAccount, type InsertFund, type InsertContribution, type InsertFundMember, type InsertRetribution,
   type CapitalRequest, type InsertCapitalRequestWithPlan, type RetributionPlan,
+  type FundAccessSettings, type InsertFundAccessSettings,
   // Maintain compatibility
   type User, type InsertUser
 } from "@shared/schema";
 import bcrypt from "bcrypt";
+
+// In-memory fallback for fund access settings when Supabase is unavailable
+const fundAccessSettingsMemory = new Map<string, FundAccessSettings>();
 
 // Account balance interface
 export interface AccountBalance {
@@ -57,6 +61,10 @@ export interface IStorage {
     capitalRequest: CapitalRequest;
     transaction: AccountTransaction;
   }>;
+
+  // Fund configuration operations
+  getFundAccessSettings(fundId: string): Promise<FundAccessSettings | undefined>;
+  updateFundAccessSettings(insertSettings: InsertFundAccessSettings): Promise<FundAccessSettings>;
 }
 
 // Supabase storage implementation
@@ -1207,6 +1215,129 @@ class SupabaseStorage implements IStorage {
       capitalRequest: mappedCapitalRequest,
       transaction: mappedTransaction
     };
+  }
+
+  // Fund configuration operations
+  async getFundAccessSettings(fundId: string): Promise<FundAccessSettings | undefined> {
+    try {
+      const { data, error } = await supabase
+        .from('fund_access_settings')
+        .select('*')
+        .eq('fund_id', fundId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        // Fallback to in-memory storage
+        return fundAccessSettingsMemory.get(fundId);
+      }
+
+      return {
+        id: data.id,
+        fundId: data.fund_id,
+        isOpenForNewMembers: data.is_open_for_new_members,
+        requiresApprovalForNewMembers: data.requires_approval_for_new_members,
+        allowsInviteLink: data.allows_invite_link,
+        maxMembers: data.max_members,
+        isActive: data.is_active,
+        changedBy: data.changed_by,
+        changeReason: data.change_reason,
+        createdAt: data.created_at
+      } as FundAccessSettings;
+    } catch (error) {
+      // If Supabase is unavailable, use in-memory storage
+      return fundAccessSettingsMemory.get(fundId);
+    }
+  }
+
+  async updateFundAccessSettings(insertSettings: InsertFundAccessSettings): Promise<FundAccessSettings> {
+    try {
+      // Try Supabase first - Primeiro, desativar as configurações atuais
+      await supabase
+        .from('fund_access_settings')
+        .update({ is_active: false })
+        .eq('fund_id', insertSettings.fundId)
+        .eq('is_active', true);
+
+      // Preparar dados para inserção
+      const insertData: any = {
+        fund_id: insertSettings.fundId,
+        is_open_for_new_members: insertSettings.isOpenForNewMembers,
+        requires_approval_for_new_members: insertSettings.requiresApprovalForNewMembers,
+        max_members: insertSettings.maxMembers,
+        changed_by: insertSettings.changedBy,
+        change_reason: insertSettings.changeReason,
+        is_active: true
+      };
+
+      // Adicionar allows_invite_link se fornecido
+      if (insertSettings.allowsInviteLink !== undefined) {
+        insertData.allows_invite_link = insertSettings.allowsInviteLink;
+      }
+
+      // Inserir as novas configurações
+      let { data, error } = await supabase
+        .from('fund_access_settings')
+        .insert(insertData)
+        .select()
+        .single();
+
+      // Se falhar por causa do allows_invite_link, tentar sem ele
+      if (error && error.message.includes('allows_invite_link')) {
+        console.log('Coluna allows_invite_link não existe, tentando sem ela...');
+        
+        const { allows_invite_link, ...dataWithoutAllowsInviteLink } = insertData;
+        const result = await supabase
+          .from('fund_access_settings')
+          .insert(dataWithoutAllowsInviteLink)
+          .select()
+          .single();
+        
+        data = result.data;
+        error = result.error;
+      }
+
+      if (error) {
+        console.log('Supabase insertion failed, using fallback:', error.message);
+        throw new Error(`Supabase insertion failed: ${error.message}`);
+      }
+
+      if (data) {
+        return {
+          id: data.id,
+          fundId: data.fund_id,
+          isOpenForNewMembers: data.is_open_for_new_members,
+          requiresApprovalForNewMembers: data.requires_approval_for_new_members,
+          allowsInviteLink: data.allows_invite_link,
+          maxMembers: data.max_members,
+          isActive: data.is_active,
+          changedBy: data.changed_by,
+          changeReason: data.change_reason,
+          createdAt: data.created_at
+        } as FundAccessSettings;
+      }
+    } catch (error) {
+      console.log('Supabase unavailable, using in-memory fallback:', (error as Error).message);
+    }
+
+    // Fallback to in-memory storage
+    const newSettings: FundAccessSettings = {
+      id: crypto.randomUUID(),
+      fundId: insertSettings.fundId,
+      isOpenForNewMembers: insertSettings.isOpenForNewMembers ?? true,
+      requiresApprovalForNewMembers: insertSettings.requiresApprovalForNewMembers ?? false,
+      allowsInviteLink: insertSettings.allowsInviteLink ?? true,
+      maxMembers: insertSettings.maxMembers ?? null,
+      isActive: true,
+      changedBy: insertSettings.changedBy,
+      changeReason: insertSettings.changeReason ?? 'Updated via API',
+      createdAt: new Date()
+    };
+
+    fundAccessSettingsMemory.set(insertSettings.fundId, newSettings);
+    return newSettings;
   }
 }
 

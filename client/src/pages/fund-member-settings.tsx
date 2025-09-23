@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Settings, Users, Link, UserPlus, Info } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Settings, Users, Link, UserPlus, Info, Save } from 'lucide-react';
 import { useRoute, useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 // Componente Toggle Switch
 interface ToggleSwitchProps {
@@ -123,18 +127,99 @@ export default function FundMemberSettings() {
   const [, params] = useRoute("/fund/:id/member-settings");
   const fundId = params?.id;
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
   const [permitirNovosMembros, setPermitirNovosMembros] = useState(true);
   const [entradaPorLink, setEntradaPorLink] = useState(true);
   const [entradaPorSolicitacao, setEntradaPorSolicitacao] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Carregar configurações atuais
+  const { data: settings, isLoading: isLoadingSettings } = useQuery({
+    queryKey: [`/api/funds/${fundId}/access-settings`],
+    enabled: !!fundId,
+  });
+
+  // Mutation para salvar configurações
+  const saveSettingsMutation = useMutation({
+    mutationFn: async (settingsData: any) => {
+      const response = await fetch(`/api/funds/${fundId}/access-settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settingsData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save settings');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/funds/${fundId}/access-settings`] });
+      setHasChanges(false);
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações de acesso foram atualizadas com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações. Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Atualizar estados quando carregar as configurações
+  useEffect(() => {
+    if (settings && typeof settings === 'object') {
+      setPermitirNovosMembros((settings as any).isOpenForNewMembers ?? true);
+      setEntradaPorLink((settings as any).allowsInviteLink ?? true);
+      setEntradaPorSolicitacao((settings as any).allowsJoinRequests ?? false);
+    }
+  }, [settings]);
 
   const handlePermitirNovosMembrosChange = (value: boolean) => {
     setPermitirNovosMembros(value);
+    setHasChanges(true);
     
     // Se desativar a entrada de novos membros, desativa as opções específicas
     if (!value) {
       setEntradaPorLink(false);
       setEntradaPorSolicitacao(false);
     }
+  };
+
+  const handleEntradaPorLinkChange = (value: boolean) => {
+    setEntradaPorLink(value);
+    setHasChanges(true);
+  };
+
+  const handleEntradaPorSolicitacaoChange = (value: boolean) => {
+    setEntradaPorSolicitacao(value);
+    setHasChanges(true);
+  };
+
+  const handleSaveSettings = () => {
+    if (!user?.id) {
+      toast({
+        title: "Erro",
+        description: "Você precisa estar logado para salvar as configurações.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    saveSettingsMutation.mutate({
+      isOpenForNewMembers: permitirNovosMembros,
+      requiresApprovalForNewMembers: entradaPorSolicitacao, // Solicitação implica aprovação
+      allowsInviteLink: entradaPorLink,
+      allowsJoinRequests: entradaPorSolicitacao,
+      changeReason: 'Configurações atualizadas pelo usuário'
+    });
   };
 
   return (
@@ -273,7 +358,7 @@ export default function FundMemberSettings() {
                 description="Permite que novos membros entrem no fundo através de links de convite gerados pelos administradores."
                 icon={Link}
                 enabled={entradaPorLink}
-                onChange={setEntradaPorLink}
+                onChange={handleEntradaPorLinkChange}
                 disabled={!permitirNovosMembros}
               />
 
@@ -282,7 +367,7 @@ export default function FundMemberSettings() {
                 description="Permite que pessoas interessadas solicitem entrada no fundo. As solicitações precisam ser aprovadas pelos administradores."
                 icon={UserPlus}
                 enabled={entradaPorSolicitacao}
-                onChange={setEntradaPorSolicitacao}
+                onChange={handleEntradaPorSolicitacaoChange}
                 disabled={!permitirNovosMembros}
               />
             </div>
@@ -313,6 +398,29 @@ export default function FundMemberSettings() {
               </p>
             </div>
           </div>
+
+          {/* Botão de Salvar - só aparece quando há mudanças */}
+          {hasChanges && (
+            <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-20">
+              <button
+                onClick={handleSaveSettings}
+                disabled={saveSettingsMutation.isPending || isLoadingSettings}
+                className="flex items-center gap-3 px-8 py-4 rounded-3xl font-semibold text-white text-lg shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100"
+                style={{ 
+                  background: 'linear-gradient(135deg, #ffc22f, #fa7653, #fd6b61)',
+                  boxShadow: '0 8px 32px rgba(255, 194, 47, 0.3)' 
+                }}
+                data-testid="button-save-settings"
+              >
+                {saveSettingsMutation.isPending ? (
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Save className="w-6 h-6" />
+                )}
+                {saveSettingsMutation.isPending ? 'Salvando...' : 'Salvar alterações'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

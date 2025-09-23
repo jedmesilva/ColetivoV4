@@ -176,6 +176,72 @@ export const retributions = pgTable("retributions", {
 });
 
 // ============================================================================
+// TABELAS DE CONFIGURAÇÃO DE FUNDOS (com versionamento temporal)
+// ============================================================================
+
+// Configurações de acesso e membros (estrutura real do Supabase)
+export const fundAccessSettings = pgTable("fund_access_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id).notNull(),
+  isOpenForNewMembers: boolean("is_open_for_new_members").default(true),
+  requiresApprovalForNewMembers: boolean("requires_approval_for_new_members").default(false),
+  allowsInviteLink: boolean("allows_invite_link").default(true), // Permite entrada por link de convite
+  maxMembers: integer("max_members"),
+  isActive: boolean("is_active").default(true),
+  changedBy: uuid("changed_by").references(() => accounts.id),
+  changeReason: text("change_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Histórico de taxas de contribuição
+export const fundContributionRates = pgTable("fund_contribution_rates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id).notNull(),
+  contributionRate: decimal("contribution_rate", { precision: 5, scale: 4 }).notNull(), // Ex: 0.0500 para 5%
+  isActive: boolean("is_active").default(true),
+  changedBy: uuid("changed_by").references(() => accounts.id).notNull(),
+  changeReason: text("change_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Histórico de taxas de retribuição
+export const fundRetributionRates = pgTable("fund_retribution_rates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id).notNull(),
+  retributionRate: decimal("retribution_rate", { precision: 5, scale: 4 }).notNull(), // Ex: 0.1000 para 10%
+  isActive: boolean("is_active").default(true),
+  changedBy: uuid("changed_by").references(() => accounts.id).notNull(),
+  changeReason: text("change_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Configurações de governança e quorum
+export const fundQuorumSettings = pgTable("fund_quorum_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id).notNull(),
+  governanceType: governanceTypeEnum("governance_type").default('quorum'),
+  quorumPercentage: decimal("quorum_percentage", { precision: 5, scale: 2 }).default("50.00"), // Ex: 50.00 para 50%
+  votingRestriction: votingRestrictionEnum("voting_restriction").default('all_members'),
+  isActive: boolean("is_active").default(true),
+  changedBy: uuid("changed_by").references(() => accounts.id).notNull(),
+  changeReason: text("change_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Configurações de propostas e votações
+export const fundProposalSettings = pgTable("fund_proposal_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id).notNull(),
+  proposalExpiryHours: integer("proposal_expiry_hours").default(168), // Default: 7 dias
+  allowMemberProposals: boolean("allow_member_proposals").default(true),
+  autoExecuteApproved: boolean("auto_execute_approved").default(false),
+  isActive: boolean("is_active").default(true),
+  changedBy: uuid("changed_by").references(() => accounts.id).notNull(),
+  changeReason: text("change_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ============================================================================
 // SCHEMAS DE INSERÇÃO E TIPOS
 // ============================================================================
 
@@ -257,6 +323,57 @@ export const insertRetributionSchema = createInsertSchema(retributions).pick({
 });
 
 // ============================================================================
+// SCHEMAS PARA CONFIGURAÇÕES DE FUNDOS
+// ============================================================================
+
+// Schema para configurações de acesso e membros
+export const insertFundAccessSettingsSchema = createInsertSchema(fundAccessSettings).pick({
+  fundId: true,
+  isOpenForNewMembers: true,
+  requiresApprovalForNewMembers: true,
+  allowsInviteLink: true,
+  maxMembers: true,
+  changedBy: true,
+  changeReason: true,
+});
+
+// Schema para taxas de contribuição
+export const insertFundContributionRatesSchema = createInsertSchema(fundContributionRates).pick({
+  fundId: true,
+  contributionRate: true,
+  changedBy: true,
+  changeReason: true,
+});
+
+// Schema para taxas de retribuição
+export const insertFundRetributionRatesSchema = createInsertSchema(fundRetributionRates).pick({
+  fundId: true,
+  retributionRate: true,
+  changedBy: true,
+  changeReason: true,
+});
+
+// Schema para configurações de quorum
+export const insertFundQuorumSettingsSchema = createInsertSchema(fundQuorumSettings).pick({
+  fundId: true,
+  governanceType: true,
+  quorumPercentage: true,
+  votingRestriction: true,
+  changedBy: true,
+  changeReason: true,
+});
+
+// Schema para configurações de propostas
+export const insertFundProposalSettingsSchema = createInsertSchema(fundProposalSettings).pick({
+  fundId: true,
+  proposalExpiryHours: true,
+  allowMemberProposals: true,
+  autoExecuteApproved: true,
+  changedBy: true,
+  changeReason: true,
+});
+
+// ============================================================================
 // TIPOS TYPESCRIPT
 // ============================================================================
 
@@ -283,6 +400,22 @@ export type InsertRetribution = z.infer<typeof insertRetributionSchema>;
 export type Retribution = typeof retributions.$inferSelect;
 
 export type AccountTransaction = typeof accountTransactions.$inferSelect;
+
+// Tipos para as configurações de fundos
+export type InsertFundAccessSettings = z.infer<typeof insertFundAccessSettingsSchema>;
+export type FundAccessSettings = typeof fundAccessSettings.$inferSelect;
+
+export type InsertFundContributionRates = z.infer<typeof insertFundContributionRatesSchema>;
+export type FundContributionRates = typeof fundContributionRates.$inferSelect;
+
+export type InsertFundRetributionRates = z.infer<typeof insertFundRetributionRatesSchema>;
+export type FundRetributionRates = typeof fundRetributionRates.$inferSelect;
+
+export type InsertFundQuorumSettings = z.infer<typeof insertFundQuorumSettingsSchema>;
+export type FundQuorumSettings = typeof fundQuorumSettings.$inferSelect;
+
+export type InsertFundProposalSettings = z.infer<typeof insertFundProposalSettingsSchema>;
+export type FundProposalSettings = typeof fundProposalSettings.$inferSelect;
 
 // ============================================================================
 // TIPOS DE COMPATIBILIDADE (para manter a API existente)

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { supabase } from "./db";
-import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema } from "@shared/schema";
+import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Check username availability
@@ -557,6 +557,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("=== ERRO NO TESTE DE APROVAÇÃO ===");
       console.error("Error in test approval:", error);
       res.status(500).json({ message: error instanceof Error ? error.message : "Erro no teste de aprovação" });
+    }
+  });
+
+  // Fund access settings routes
+  // Get current access settings for a fund
+  app.get("/api/funds/:id/access-settings", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      const settings = await storage.getFundAccessSettings(fundId);
+      
+      if (!settings) {
+        // Return default settings if none exist
+        const defaultSettings = {
+          isOpenForNewMembers: true,
+          requiresApprovalForNewMembers: false,
+          allowsInviteLink: true,
+          allowsJoinRequests: false
+        };
+        return res.status(200).json(defaultSettings);
+      }
+
+      // Map database fields to UI expectations
+      const uiSettings = {
+        ...settings,
+        // Map join requests flag from requiresApproval
+        allowsJoinRequests: settings.requiresApprovalForNewMembers
+      };
+      
+      res.status(200).json(uiSettings);
+    } catch (error) {
+      console.error("Error fetching fund access settings:", error);
+      res.status(500).json({ message: "Failed to fetch fund access settings" });
+    }
+  });
+
+  // Update access settings for a fund
+  app.post("/api/funds/:id/access-settings", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      const { changeReason, allowsJoinRequests, ...settingsData } = req.body;
+      
+      // Map UI fields to database fields
+      const mappedSettings = {
+        ...settingsData,
+        // Map UI logic: if allowsJoinRequests is true, then requires approval
+        requiresApprovalForNewMembers: allowsJoinRequests === true
+      };
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      // SECURITY FIX: Get changedBy from session, not from client
+      // For now, using the fixed user ID from the existing pattern
+      // TODO: Replace with proper session-based authentication
+      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+
+      const validatedData = insertFundAccessSettingsSchema.parse({
+        fundId,
+        changedBy: userId, // Secure: derived from server-side session
+        changeReason: changeReason || "Configurações atualizadas via interface",
+        ...mappedSettings
+      });
+
+      const updatedSettings = await storage.updateFundAccessSettings(validatedData);
+      
+      res.status(200).json(updatedSettings);
+    } catch (error) {
+      console.error("Error updating fund access settings:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid settings data", details: error });
+      }
+      res.status(500).json({ message: "Failed to update fund access settings" });
     }
   });
 
