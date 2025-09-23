@@ -361,6 +361,16 @@ export const insertFundQuorumSettingsSchema = createInsertSchema(fundQuorumSetti
   votingRestriction: true,
   changedBy: true,
   changeReason: true,
+}).refine((data) => {
+  // VALIDAÇÃO DE SEGURANÇA: Se for governança unânime, deve ser exatamente 100%
+  if (data.governanceType === 'unanimous') {
+    const percentage = parseFloat(data.quorumPercentage || '0');
+    return percentage === 100;
+  }
+  return true;
+}, {
+  message: "Governança unânime deve ter quórum de exatamente 100%",
+  path: ["quorumPercentage"]
 });
 
 // Schema para configurações de propostas

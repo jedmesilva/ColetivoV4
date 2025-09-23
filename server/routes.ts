@@ -666,11 +666,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // TODO: Replace with proper session-based authentication
       const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
 
+      // VALIDAÇÃO DE SEGURANÇA: Se for governança unânime, sempre forçar 100%
+      const secureSettingsData = {
+        ...settingsData,
+        quorumPercentage: settingsData.governanceType === 'unanimous' ? '100.00' : settingsData.quorumPercentage
+      };
+
       const validatedData = insertFundQuorumSettingsSchema.parse({
         fundId,
         changedBy: userId, // Secure: derived from server-side session
         changeReason: changeReason || "Configurações de governança atualizadas",
-        ...settingsData
+        ...secureSettingsData
       });
 
       const updatedSettings = await storage.updateFundQuorumSettings(validatedData);

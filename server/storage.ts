@@ -1378,6 +1378,11 @@ class SupabaseStorage implements IStorage {
 
   async updateFundQuorumSettings(insertSettings: InsertFundQuorumSettings): Promise<FundQuorumSettings> {
     try {
+      // VALIDAÇÃO DE SEGURANÇA FINAL: Se for unânime, garantir 100%
+      const secureQuorumPercentage = insertSettings.governanceType === 'unanimous' 
+        ? '100.00' 
+        : insertSettings.quorumPercentage;
+
       // Primeiro, desativar as configurações atuais
       await supabase
         .from('fund_quorum_settings')
@@ -1385,11 +1390,11 @@ class SupabaseStorage implements IStorage {
         .eq('fund_id', insertSettings.fundId)
         .eq('is_active', true);
 
-      // Preparar dados para inserção
+      // Preparar dados para inserção com validação de segurança
       const insertData = {
         fund_id: insertSettings.fundId,
         governance_type: insertSettings.governanceType,
-        quorum_percentage: insertSettings.quorumPercentage,
+        quorum_percentage: secureQuorumPercentage,
         voting_restriction: insertSettings.votingRestriction,
         changed_by: insertSettings.changedBy,
         change_reason: insertSettings.changeReason,
