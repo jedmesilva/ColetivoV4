@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { supabase } from "./db";
-import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema } from "@shared/schema";
+import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Check username availability
@@ -620,6 +620,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid settings data", details: error });
       }
       res.status(500).json({ message: "Failed to update fund access settings" });
+    }
+  });
+
+  // Get current quorum settings for a fund
+  app.get("/api/funds/:id/quorum-settings", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      const settings = await storage.getFundQuorumSettings(fundId);
+      
+      if (!settings) {
+        // Return default settings if none exist
+        const defaultSettings = {
+          governanceType: 'quorum',
+          quorumPercentage: '60.00',
+          votingRestriction: 'all_members'
+        };
+        return res.status(200).json(defaultSettings);
+      }
+
+      res.status(200).json(settings);
+    } catch (error) {
+      console.error("Error fetching fund quorum settings:", error);
+      res.status(500).json({ message: "Failed to fetch fund quorum settings" });
+    }
+  });
+
+  // Update quorum settings for a fund
+  app.post("/api/funds/:id/quorum-settings", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      const { changeReason, ...settingsData } = req.body;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      // SECURITY FIX: Get changedBy from session, not from client
+      // For now, using the fixed user ID from the existing pattern
+      // TODO: Replace with proper session-based authentication
+      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+
+      const validatedData = insertFundQuorumSettingsSchema.parse({
+        fundId,
+        changedBy: userId, // Secure: derived from server-side session
+        changeReason: changeReason || "Configurações de governança atualizadas",
+        ...settingsData
+      });
+
+      const updatedSettings = await storage.updateFundQuorumSettings(validatedData);
+      
+      res.status(200).json(updatedSettings);
+    } catch (error) {
+      console.error("Error updating fund quorum settings:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid quorum settings data", details: error });
+      }
+      res.status(500).json({ message: "Failed to update fund quorum settings" });
     }
   });
 

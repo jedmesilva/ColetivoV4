@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRoute, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Check, Users, Shield, Vote, Info, ArrowLeft } from 'lucide-react';
 import { Fund } from "@shared/schema";
+import { queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuorumSliderProps {
   value: number;
@@ -84,6 +87,8 @@ export default function FundGovernance() {
   const [, params] = useRoute("/fund/:id/governance");
   const fundId = params?.id;
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
+  const { toast } = useToast();
   
   const [selectedGovernance, setSelectedGovernance] = useState('quorum');
   const [quorumValue, setQuorumValue] = useState(60);
@@ -93,6 +98,76 @@ export default function FundGovernance() {
     queryKey: ['/api/funds', fundId],
     enabled: !!fundId,
   });
+
+  // Carregar configurações atuais de quorum
+  const { data: quorumSettings, isLoading: isLoadingQuorum } = useQuery({
+    queryKey: [`/api/funds/${fundId}/quorum-settings`],
+    enabled: !!fundId,
+  });
+
+  // Mutation para salvar configurações de governança
+  const saveQuorumMutation = useMutation({
+    mutationFn: async (settingsData: any) => {
+      const response = await fetch(`/api/funds/${fundId}/quorum-settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settingsData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save quorum settings');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/funds/${fundId}/quorum-settings`] });
+      toast({
+        title: "Configurações salvas!",
+        description: "As definições de governança foram atualizadas com sucesso.",
+        variant: "default",
+      });
+      setLocation(`/fund/${fundId}/settings`);
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao salvar configurações",
+        description: "Não foi possível salvar as definições. Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Atualizar estados quando carregar as configurações
+  useEffect(() => {
+    if (quorumSettings && typeof quorumSettings === 'object') {
+      const settings = quorumSettings as any;
+      setSelectedGovernance(settings.governanceType || 'quorum');
+      setQuorumValue(parseFloat(settings.quorumPercentage) || 60);
+      setOnlyAdminsVote(settings.votingRestriction === 'admins_only');
+    }
+  }, [quorumSettings]);
+
+  // Função para salvar as configurações
+  const handleSaveGovernance = () => {
+    if (!user?.id) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para salvar as configurações.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const changeReason = `Atualizou governança: ${selectedGovernance === 'quorum' ? `Quórum ${quorumValue}%` : 'Unânime'}, votantes: ${onlyAdminsVote ? 'apenas admins' : 'todos os membros'}`;
+
+    saveQuorumMutation.mutate({
+      governanceType: selectedGovernance,
+      quorumPercentage: quorumValue.toString(),
+      votingRestriction: onlyAdminsVote ? 'admins_only' : 'all_members',
+      changeReason: changeReason
+    });
+  };
 
   const governanceOptions = [
     {
@@ -452,12 +527,13 @@ export default function FundGovernance() {
         <div className="max-w-lg mx-auto">
           <button 
             className="w-full rounded-3xl p-4 text-creme font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] gradient-primary"
-            onClick={() => setLocation(`/fund/${fundId}/settings`)}
+            onClick={handleSaveGovernance}
+            disabled={saveQuorumMutation.isPending}
             data-testid="button-save-governance"
           >
             <div className="flex items-center justify-center gap-2">
               <Check className="w-5 h-5" />
-              <span>Salvar configuração</span>
+              <span>{saveQuorumMutation.isPending ? 'Salvando...' : 'Salvar configuração'}</span>
             </div>
           </button>
         </div>

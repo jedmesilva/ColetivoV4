@@ -6,6 +6,7 @@ import {
   type InsertAccount, type InsertFund, type InsertContribution, type InsertFundMember, type InsertRetribution,
   type CapitalRequest, type InsertCapitalRequestWithPlan, type RetributionPlan,
   type FundAccessSettings, type InsertFundAccessSettings,
+  type FundQuorumSettings, type InsertFundQuorumSettings,
   // Maintain compatibility
   type User, type InsertUser
 } from "@shared/schema";
@@ -65,6 +66,10 @@ export interface IStorage {
   // Fund configuration operations
   getFundAccessSettings(fundId: string): Promise<FundAccessSettings | undefined>;
   updateFundAccessSettings(insertSettings: InsertFundAccessSettings): Promise<FundAccessSettings>;
+  
+  // Fund governance operations
+  getFundQuorumSettings(fundId: string): Promise<FundQuorumSettings | undefined>;
+  updateFundQuorumSettings(insertSettings: InsertFundQuorumSettings): Promise<FundQuorumSettings>;
 }
 
 // Supabase storage implementation
@@ -1338,6 +1343,90 @@ class SupabaseStorage implements IStorage {
 
     fundAccessSettingsMemory.set(insertSettings.fundId, newSettings);
     return newSettings;
+  }
+
+  // Fund governance operations
+  async getFundQuorumSettings(fundId: string): Promise<FundQuorumSettings | undefined> {
+    try {
+      const { data, error } = await supabase
+        .from('fund_quorum_settings')
+        .select('*')
+        .eq('fund_id', fundId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) return undefined;
+
+      return {
+        id: data.id,
+        fundId: data.fund_id,
+        governanceType: data.governance_type,
+        quorumPercentage: data.quorum_percentage,
+        votingRestriction: data.voting_restriction,
+        isActive: data.is_active,
+        changedBy: data.changed_by,
+        changeReason: data.change_reason,
+        createdAt: data.created_at
+      } as FundQuorumSettings;
+    } catch (error) {
+      console.error('Error fetching fund quorum settings:', error);
+      return undefined;
+    }
+  }
+
+  async updateFundQuorumSettings(insertSettings: InsertFundQuorumSettings): Promise<FundQuorumSettings> {
+    try {
+      // Primeiro, desativar as configurações atuais
+      await supabase
+        .from('fund_quorum_settings')
+        .update({ is_active: false })
+        .eq('fund_id', insertSettings.fundId)
+        .eq('is_active', true);
+
+      // Preparar dados para inserção
+      const insertData = {
+        fund_id: insertSettings.fundId,
+        governance_type: insertSettings.governanceType,
+        quorum_percentage: insertSettings.quorumPercentage,
+        voting_restriction: insertSettings.votingRestriction,
+        changed_by: insertSettings.changedBy,
+        change_reason: insertSettings.changeReason,
+        is_active: true
+      };
+
+      // Inserir as novas configurações
+      const { data, error } = await supabase
+        .from('fund_quorum_settings')
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase insertion failed:', error.message);
+        throw new Error(`Supabase insertion failed: ${error.message}`);
+      }
+
+      if (data) {
+        return {
+          id: data.id,
+          fundId: data.fund_id,
+          governanceType: data.governance_type,
+          quorumPercentage: data.quorum_percentage,
+          votingRestriction: data.voting_restriction,
+          isActive: data.is_active,
+          changedBy: data.changed_by,
+          changeReason: data.change_reason,
+          createdAt: data.created_at
+        } as FundQuorumSettings;
+      }
+    } catch (error) {
+      console.error('Error updating fund quorum settings:', error);
+      throw error;
+    }
+
+    throw new Error('Failed to update fund quorum settings');
   }
 }
 
