@@ -182,7 +182,7 @@ export default function FundMemberSettings() {
   };
 
   // Função para salvar configurações com valores específicos
-  const saveSettingsWithValues = (newPermitirNovosMembros: boolean, newEntradaPorLink: boolean, newEntradaPorSolicitacao: boolean) => {
+  const saveSettingsWithValues = (newPermitirNovosMembros: boolean, newEntradaPorLink: boolean, newEntradaPorSolicitacao: boolean, changeReason: string) => {
     if (!user?.id) {
       return;
     }
@@ -191,7 +191,7 @@ export default function FundMemberSettings() {
       isOpenForNewMembers: newPermitirNovosMembros,
       requiresApprovalForNewMembers: newEntradaPorSolicitacao,
       allowsInviteLink: newEntradaPorLink,
-      changeReason: 'Configuração atualizada automaticamente'
+      changeReason: changeReason
     });
   };
 
@@ -216,20 +216,23 @@ export default function FundMemberSettings() {
       setEntradaPorSolicitacao(false);
     }
     
-    // Salvar com os novos valores
-    saveSettingsWithValues(value, newEntradaPorLink, newEntradaPorSolicitacao);
+    // Salvar com os novos valores e razão específica
+    const changeReason = value ? "Ativou Permitir novos membros" : "Desativou Permitir novos membros";
+    saveSettingsWithValues(value, newEntradaPorLink, newEntradaPorSolicitacao, changeReason);
   };
 
   const handleEntradaPorLinkChange = (value: boolean) => {
     setEntradaPorLink(value);
-    // Salvar com os novos valores
-    saveSettingsWithValues(permitirNovosMembros, value, entradaPorSolicitacao);
+    // Salvar com os novos valores e razão específica
+    const changeReason = value ? "Ativou Entrada por link de convite" : "Desativou Entrada por link de convite";
+    saveSettingsWithValues(permitirNovosMembros, value, entradaPorSolicitacao, changeReason);
   };
 
   const handleEntradaPorSolicitacaoChange = (value: boolean) => {
     setEntradaPorSolicitacao(value);
-    // Salvar com os novos valores
-    saveSettingsWithValues(permitirNovosMembros, entradaPorLink, value);
+    // Salvar com os novos valores e razão específica
+    const changeReason = value ? "Ativou Entrada por solicitação" : "Desativou Entrada por solicitação";
+    saveSettingsWithValues(permitirNovosMembros, entradaPorLink, value, changeReason);
   };
 
   return (
