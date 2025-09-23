@@ -427,9 +427,7 @@ class SupabaseStorage implements IStorage {
           id,
           email,
           full_name,
-          profile_picture_url,
-          phone,
-          cpf
+          profile_picture_url
         )
       `)
       .eq('fund_id', fundId)
