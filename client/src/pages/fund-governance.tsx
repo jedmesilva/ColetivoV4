@@ -159,11 +159,14 @@ export default function FundGovernance() {
       return;
     }
 
-    const changeReason = `Atualizou governança: ${selectedGovernance === 'quorum' ? `Quórum ${quorumValue}%` : 'Unânime'}, votantes: ${onlyAdminsVote ? 'apenas admins' : 'todos os membros'}`;
+    // Se for aprovação unânime, sempre usar 100%
+    const finalQuorumValue = selectedGovernance === 'unanimous' ? 100 : quorumValue;
+    
+    const changeReason = `Atualizou governança: ${selectedGovernance === 'quorum' ? `Quórum ${finalQuorumValue}%` : 'Unânime'}, votantes: ${onlyAdminsVote ? 'apenas admins' : 'todos os membros'}`;
 
     saveQuorumMutation.mutate({
       governanceType: selectedGovernance,
-      quorumPercentage: quorumValue.toString(),
+      quorumPercentage: finalQuorumValue.toString(),
       votingRestriction: onlyAdminsVote ? 'admins_only' : 'all_members',
       changeReason: changeReason
     });
@@ -509,8 +512,8 @@ export default function FundGovernance() {
                                 return `Fundo com 10 membros: se ${scenario1Voters} votarem, ${scenario1Needed} ${scenario1Needed === 1 ? 'precisa votar' : 'precisam votar'} a favor. Se todos os ${scenario2Voters} votarem, ${scenario2Needed} ${scenario2Needed === 1 ? 'precisa votar' : 'precisam votar'} a favor.`;
                               })()
                           : onlyAdminsVote
-                            ? 'Fundo com 3 administradores: todos votantes precisam votar a favor. Se 2 votarem, ambos devem votar a favor.'
-                            : 'Fundo com 10 membros: todos votantes precisam votar a favor. Se 7 votarem, todos os 7 devem votar a favor.'
+                            ? 'Fundo com 3 administradores: TODOS os votantes precisam votar a favor (100%). Se 2 votarem, ambos devem votar a favor.'
+                            : 'Fundo com 10 membros: TODOS os votantes precisam votar a favor (100%). Se 7 votarem, todos os 7 devem votar a favor.'
                         }
                       </p>
                     </div>
