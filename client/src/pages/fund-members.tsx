@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Users, Search, Plus, Link, Copy, Check, X, UserPlus, MoreVertical, Shield, UserMinus, AlertTriangle, ShieldAlert, Crown, Settings } from 'lucide-react';
 import { useRoute, useLocation } from "wouter";
+import { useQuery } from '@tanstack/react-query';
 
 interface Membro {
-  id: number;
+  id: string;
   nome: string;
   username: string;
+  email: string;
   isAdmin: boolean;
   isCurrentUser: boolean;
+  totalContributed?: string;
+  totalReceived?: string;
+  joinedAt?: string;
 }
 
 interface MembroCardProps {
@@ -151,20 +156,65 @@ export default function FundMembers() {
   const [linkConvite, setLinkConvite] = useState('');
   const [linkCopiado, setLinkCopiado] = useState(false);
 
-  // Dados simulados de membros
-  const [membros, setMembros] = useState([
-    { id: 1, nome: 'Você', username: 'voce.admin', isAdmin: true, isCurrentUser: true },
-    { id: 2, nome: 'Maria Silva', username: 'maria.silva', isAdmin: true, isCurrentUser: false },
-    { id: 3, nome: 'João Santos', username: 'joao.santos', isAdmin: false, isCurrentUser: false },
-    { id: 4, nome: 'Ana Oliveira', username: 'ana.oliveira', isAdmin: false, isCurrentUser: false },
-    { id: 5, nome: 'Pedro Costa', username: 'pedro.costa', isAdmin: false, isCurrentUser: false },
-    { id: 6, nome: 'Carla Ferreira', username: 'carla.ferreira', isAdmin: false, isCurrentUser: false },
-  ]);
+  // Buscar dados reais dos membros do fundo
+  const { data: membersData, isLoading, error } = useQuery({
+    queryKey: ['/api/funds', fundId, 'members'],
+    enabled: !!fundId
+  });
+
+  // Transformar dados da API para o formato do componente
+  const membros: Membro[] = React.useMemo(() => {
+    if (!membersData || !Array.isArray(membersData)) return [];
+    
+    // ID do usuário atual (temporário - deve vir da autenticação)
+    const currentUserId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+    
+    return membersData.map((member: any) => ({
+      id: member.id,
+      nome: member.accounts?.full_name || 'Usuário',
+      username: member.accounts?.email?.split('@')[0] || 'usuario',
+      email: member.accounts?.email || '',
+      isAdmin: member.role === 'admin',
+      isCurrentUser: member.account_id === currentUserId,
+      totalContributed: member.total_contributed,
+      totalReceived: member.total_received,
+      joinedAt: member.joined_at
+    }));
+  }, [membersData]);
+
+  // Estado de loading e erro
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#fffdfa' }}>
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando membros...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#fffdfa' }}>
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Erro ao carregar membros do fundo</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Filtrar membros pela busca
   const membrosFiltrados = membros.filter(membro => 
     membro.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    membro.username.toLowerCase().includes(searchTerm.toLowerCase())
+    membro.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    membro.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Separar admins e membros

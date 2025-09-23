@@ -418,15 +418,26 @@ class SupabaseStorage implements IStorage {
   }
 
   // Fund member operations
-  async getFundMembers(fundId: string): Promise<FundMember[]> {
+  async getFundMembers(fundId: string): Promise<any[]> {
     const { data, error } = await supabase
       .from('fund_members')
-      .select('*')
+      .select(`
+        *,
+        accounts:account_id (
+          id,
+          email,
+          full_name,
+          profile_picture_url,
+          phone,
+          cpf
+        )
+      `)
       .eq('fund_id', fundId)
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .order('joined_at', { ascending: true });
 
     if (error) throw new Error(error.message);
-    return data as FundMember[];
+    return data || [];
   }
 
   async addFundMember(insertMember: InsertFundMember): Promise<FundMember> {

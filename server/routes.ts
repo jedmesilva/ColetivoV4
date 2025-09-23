@@ -182,6 +182,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get members for a fund
+  app.get("/api/funds/:id/members", async (req, res) => {
+    try {
+      const members = await storage.getFundMembers(req.params.id);
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching fund members:", error);
+      res.status(500).json({ message: "Failed to fetch fund members" });
+    }
+  });
+
   // Get contributions for a fund
   app.get("/api/funds/:id/contributions", async (req, res) => {
     try {
