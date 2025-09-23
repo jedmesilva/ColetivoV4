@@ -181,6 +181,20 @@ export default function FundMemberSettings() {
     });
   };
 
+  // Função para salvar configurações com valores específicos
+  const saveSettingsWithValues = (newPermitirNovosMembros: boolean, newEntradaPorLink: boolean, newEntradaPorSolicitacao: boolean) => {
+    if (!user?.id) {
+      return;
+    }
+
+    saveSettingsMutation.mutate({
+      isOpenForNewMembers: newPermitirNovosMembros,
+      requiresApprovalForNewMembers: newEntradaPorSolicitacao,
+      allowsInviteLink: newEntradaPorLink,
+      changeReason: 'Configuração atualizada automaticamente'
+    });
+  };
+
   // Atualizar estados quando carregar as configurações
   useEffect(() => {
     if (settings && typeof settings === 'object') {
@@ -191,6 +205,9 @@ export default function FundMemberSettings() {
   }, [settings]);
 
   const handlePermitirNovosMembrosChange = (value: boolean) => {
+    const newEntradaPorLink = value ? entradaPorLink : false;
+    const newEntradaPorSolicitacao = value ? entradaPorSolicitacao : false;
+    
     setPermitirNovosMembros(value);
     
     // Se desativar a entrada de novos membros, desativa as opções específicas
@@ -199,20 +216,20 @@ export default function FundMemberSettings() {
       setEntradaPorSolicitacao(false);
     }
     
-    // Salvar automaticamente após atualizar o estado
-    setTimeout(saveCurrentSettings, 0);
+    // Salvar com os novos valores
+    saveSettingsWithValues(value, newEntradaPorLink, newEntradaPorSolicitacao);
   };
 
   const handleEntradaPorLinkChange = (value: boolean) => {
     setEntradaPorLink(value);
-    // Salvar automaticamente após atualizar o estado
-    setTimeout(saveCurrentSettings, 0);
+    // Salvar com os novos valores
+    saveSettingsWithValues(permitirNovosMembros, value, entradaPorSolicitacao);
   };
 
   const handleEntradaPorSolicitacaoChange = (value: boolean) => {
     setEntradaPorSolicitacao(value);
-    // Salvar automaticamente após atualizar o estado
-    setTimeout(saveCurrentSettings, 0);
+    // Salvar com os novos valores
+    saveSettingsWithValues(permitirNovosMembros, entradaPorLink, value);
   };
 
   return (
