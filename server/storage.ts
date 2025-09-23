@@ -299,16 +299,8 @@ class SupabaseStorage implements IStorage {
     const { data, error } = await supabase
       .from('funds')
       .select(`
-        id, name, objective,
-        contribution_rate, retribution_rate,
-        is_open_for_new_members, requires_approval_for_new_members,
-        created_by, fund_image_type, fund_image_value, is_active,
-        governance_type, quorum_percentage, voting_restriction,
-        proposal_expiry_hours, allow_member_proposals, auto_execute_approved,
-        created_at, updated_at,
-        fund_members!inner (
-          account_id, status, role
-        )
+        id, name, objective, created_by, fund_image_type, fund_image_value, is_active, created_at, updated_at,
+        fund_members!inner (account_id, status, role)
       `)
       .eq('is_active', true)
       .eq('fund_members.account_id', accountId)
@@ -317,25 +309,25 @@ class SupabaseStorage implements IStorage {
 
     if (error) throw new Error(error.message);
 
-    // Map snake_case to camelCase for each fund
+    // Map usando apenas os campos disponíveis e valores padrão para os removidos
     return (data || []).map(fund => ({
       id: fund.id,
       name: fund.name,
       objective: fund.objective,
-      contributionRate: fund.contribution_rate,
-      retributionRate: fund.retribution_rate,
-      isOpenForNewMembers: fund.is_open_for_new_members,
-      requiresApprovalForNewMembers: fund.requires_approval_for_new_members,
+      contributionRate: '100.00', // Valor padrão
+      retributionRate: '100.00', // Valor padrão
+      isOpenForNewMembers: true, // Valor padrão
+      requiresApprovalForNewMembers: false, // Valor padrão
       createdBy: fund.created_by,
       fundImageType: fund.fund_image_type,
       fundImageValue: fund.fund_image_value,
       isActive: fund.is_active,
-      governanceType: fund.governance_type,
-      quorumPercentage: fund.quorum_percentage,
-      votingRestriction: fund.voting_restriction,
-      proposalExpiryHours: fund.proposal_expiry_hours,
-      allowMemberProposals: fund.allow_member_proposals,
-      autoExecuteApproved: fund.auto_execute_approved,
+      governanceType: 'quorum', // Valor padrão
+      quorumPercentage: '60.00', // Valor padrão
+      votingRestriction: 'all_members', // Valor padrão
+      proposalExpiryHours: 168, // Valor padrão
+      allowMemberProposals: true, // Valor padrão
+      autoExecuteApproved: true, // Valor padrão
       createdAt: fund.created_at,
       updatedAt: fund.updated_at
     })) as Fund[];
