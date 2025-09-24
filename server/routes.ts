@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { supabase } from "./db";
-import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema } from "@shared/schema";
+import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema, insertFundContributionRatesSchema, insertFundRetributionRatesSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Check username availability
@@ -688,6 +688,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid quorum settings data", details: error });
       }
       res.status(500).json({ message: "Failed to update fund quorum settings" });
+    }
+  });
+
+  // Get contribution rates for a fund
+  app.get("/api/funds/:id/contribution-rates", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      const rates = await storage.getFundContributionRates(fundId);
+      
+      if (!rates) {
+        // Return default rates if none exist
+        const defaultRates = {
+          contributionRate: '0.5000' // 50% default
+        };
+        return res.status(200).json(defaultRates);
+      }
+
+      res.status(200).json(rates);
+    } catch (error) {
+      console.error("Error fetching fund contribution rates:", error);
+      res.status(500).json({ message: "Failed to fetch fund contribution rates" });
+    }
+  });
+
+  // Update contribution rates for a fund
+  app.post("/api/funds/:id/contribution-rates", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      const { changeReason, contributionRate } = req.body;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      // SECURITY: Get changedBy from session - using fixed user ID for now
+      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+
+      const validatedData = insertFundContributionRatesSchema.parse({
+        fundId,
+        contributionRate: contributionRate.toString(),
+        changedBy: userId,
+        changeReason: changeReason || "Taxa de contribuição atualizada"
+      });
+
+      const updatedRates = await storage.updateFundContributionRates(validatedData);
+      
+      res.status(200).json(updatedRates);
+    } catch (error) {
+      console.error("Error updating fund contribution rates:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid contribution rates data", details: error });
+      }
+      res.status(500).json({ message: "Failed to update fund contribution rates" });
+    }
+  });
+
+  // Get retribution rates for a fund
+  app.get("/api/funds/:id/retribution-rates", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      const rates = await storage.getFundRetributionRates(fundId);
+      
+      if (!rates) {
+        // Return default rates if none exist
+        const defaultRates = {
+          retributionRate: '1.0000' // 100% default
+        };
+        return res.status(200).json(defaultRates);
+      }
+
+      res.status(200).json(rates);
+    } catch (error) {
+      console.error("Error fetching fund retribution rates:", error);
+      res.status(500).json({ message: "Failed to fetch fund retribution rates" });
+    }
+  });
+
+  // Update retribution rates for a fund
+  app.post("/api/funds/:id/retribution-rates", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      const { changeReason, retributionRate } = req.body;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      // SECURITY: Get changedBy from session - using fixed user ID for now
+      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+
+      const validatedData = insertFundRetributionRatesSchema.parse({
+        fundId,
+        retributionRate: retributionRate.toString(),
+        changedBy: userId,
+        changeReason: changeReason || "Taxa de retribuição atualizada"
+      });
+
+      const updatedRates = await storage.updateFundRetributionRates(validatedData);
+      
+      res.status(200).json(updatedRates);
+    } catch (error) {
+      console.error("Error updating fund retribution rates:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid retribution rates data", details: error });
+      }
+      res.status(500).json({ message: "Failed to update fund retribution rates" });
     }
   });
 
