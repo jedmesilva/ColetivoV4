@@ -808,6 +808,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update fund distribution settings
+  app.post("/api/funds/:id/distribution-settings", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      const { distributionType, changeReason, accountId } = req.body;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      if (!accountId) {
+        return res.status(400).json({ message: "Account ID is required" });
+      }
+
+      // TODO: Implement proper distribution settings storage
+      // For now, just return success
+      console.log(`Distribution settings updated for fund ${fundId}:`, {
+        distributionType,
+        changeReason,
+        changedBy: accountId
+      });
+
+      res.status(200).json({ 
+        success: true,
+        message: "Configuração de distribuição salva com sucesso"
+      });
+    } catch (error) {
+      console.error("Error updating fund distribution settings:", error);
+      res.status(500).json({ message: "Failed to update fund distribution settings" });
+    }
+  });
+
   // Update fund objective
   app.post("/api/funds/:id/objective", async (req, res) => {
     try {

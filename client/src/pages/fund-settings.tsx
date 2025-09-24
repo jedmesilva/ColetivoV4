@@ -9,7 +9,7 @@ export default function FundSettings() {
   const fundId = params?.id;
   const [activeNav, setActiveNav] = useState<string | null>(null);
   const [, setLocation] = useLocation();
-  
+
   const { data: fund, isLoading } = useQuery<Fund>({
     queryKey: ['/api/funds', fundId],
     enabled: !!fundId,
@@ -49,34 +49,34 @@ export default function FundSettings() {
       <div className="relative overflow-hidden">
         {/* Gradiente Base */}
         <div className="absolute inset-0 gradient-base" />
-        
+
         {/* Gradiente Invertido - Diagonal Oposta */}
         <div className="absolute inset-0 opacity-70 gradient-overlay-1" />
-        
+
         {/* Gradiente Radial do Centro */}
         <div className="absolute inset-0 opacity-60 gradient-overlay-2" />
-        
+
         {/* Gradiente Horizontal Invertido */}
         <div className="absolute inset-0 opacity-50 gradient-overlay-3" />
-        
+
         {/* Gradiente Vertical */}
         <div className="absolute inset-0 opacity-40 gradient-overlay-4" />
-        
+
         {/* Gradiente Radial Superior Esquerdo */}
         <div className="absolute inset-0 opacity-45 gradient-overlay-5" />
-        
+
         {/* Gradiente Radial Inferior Direito */}
         <div className="absolute inset-0 opacity-35 gradient-overlay-6" />
-        
+
         {/* Gradiente Diagonal 45 graus */}
         <div className="absolute inset-0 opacity-30 gradient-overlay-7" />
-        
+
         {/* Gradiente Cônico */}
         <div className="absolute inset-0 opacity-25 gradient-overlay-8" />
-        
+
         {/* Camada para suavizar o centro */}
         <div className="absolute inset-0 gradient-center-soften" />
-        
+
         {/* Camada de mistura para suavizar */}
         <div className="absolute inset-0 gradient-blend-overlay" />
 
@@ -106,7 +106,7 @@ export default function FundSettings() {
               >
                 <Settings className="w-7 h-7 text-dark" />
               </div>
-              
+
               {/* Título e descrição */}
               <div>
                 <h1 className="text-2xl font-bold mb-0.5 text-creme" data-testid="fund-name-settings">
@@ -133,7 +133,7 @@ export default function FundSettings() {
 
             {/* Grid de Cards de Configuração */}
             <div className="grid grid-cols-1 gap-4">
-              
+
               {/* Card 1: Membros */}
               <button 
                 className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] w-full bg-creme border-dark-light"
@@ -304,7 +304,7 @@ export default function FundSettings() {
                     <p className="text-2xl font-bold text-dark">R$ 3.200</p>
                   </div>
                 </div>
-                
+
                 {/* Coluna Direita */}
                 <div className="space-y-4">
                   <div>

@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/protected-route";
 import Home from "@/pages/home";
 import FundDetail from "@/pages/fund-detail";
 import FundSettings from "@/pages/fund-settings";
+import FundDistributionSettings from "@/pages/fund-distribution-settings";
 import FundReciprocatIonRate from "@/pages/fund-reciprocation-rate";
 import FundContributionRate from "@/pages/fund-contribution-rate";
 import FundGovernance from "@/pages/fund-governance";
@@ -42,6 +43,7 @@ import EditFundObjective from "@/pages/edit-fund-objective";
 const ProtectedHome = () => <ProtectedRoute><Home /></ProtectedRoute>;
 const ProtectedFundDetail = () => <ProtectedRoute><FundDetail /></ProtectedRoute>;
 const ProtectedFundSettings = () => <ProtectedRoute><FundSettings /></ProtectedRoute>;
+const ProtectedFundDistributionSettings = () => <ProtectedRoute><FundDistributionSettings /></ProtectedRoute>;
 const ProtectedFundReciprocatIonRate = () => <ProtectedRoute><FundReciprocatIonRate /></ProtectedRoute>;
 const ProtectedFundContributionRate = () => <ProtectedRoute><FundContributionRate /></ProtectedRoute>;
 const ProtectedFundGovernance = () => <ProtectedRoute><FundGovernance /></ProtectedRoute>;
@@ -80,6 +82,7 @@ function Router() {
       <Route path="/" component={ProtectedHome} />
       <Route path="/fund/:id" component={ProtectedFundDetail} />
       <Route path="/fund/:id/settings" component={ProtectedFundSettings} />
+      <Route path="/fund/:id/distribution-settings" component={ProtectedFundDistributionSettings} />
       <Route path="/fund/:id/reciprocation-rate" component={ProtectedFundReciprocatIonRate} />
       <Route path="/fund/:id/contribution-rate" component={ProtectedFundContributionRate} />
       <Route path="/fund/:id/governance" component={ProtectedFundGovernance} />
