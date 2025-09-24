@@ -7,6 +7,8 @@ import {
   type CapitalRequest, type InsertCapitalRequestWithPlan, type RetributionPlan,
   type FundAccessSettings, type InsertFundAccessSettings,
   type FundQuorumSettings, type InsertFundQuorumSettings,
+  type FundContributionRates, type InsertFundContributionRates,
+  type FundRetributionRates, type InsertFundRetributionRates,
   // Maintain compatibility
   type User, type InsertUser
 } from "@shared/schema";
@@ -70,6 +72,14 @@ export interface IStorage {
   // Fund governance operations
   getFundQuorumSettings(fundId: string): Promise<FundQuorumSettings | undefined>;
   updateFundQuorumSettings(insertSettings: InsertFundQuorumSettings): Promise<FundQuorumSettings>;
+
+  // Fund contribution rate operations
+  getFundContributionRates(fundId: string): Promise<FundContributionRates | undefined>;
+  updateFundContributionRates(insertSettings: InsertFundContributionRates): Promise<FundContributionRates>;
+
+  // Fund retribution rate operations
+  getFundRetributionRates(fundId: string): Promise<FundRetributionRates | undefined>;
+  updateFundRetributionRates(insertSettings: InsertFundRetributionRates): Promise<FundRetributionRates>;
 }
 
 // Supabase storage implementation
@@ -1430,6 +1440,162 @@ class SupabaseStorage implements IStorage {
       throw new Error('No data returned from insertion');
     } catch (error) {
       console.error('Error updating fund quorum settings:', error);
+      throw error;
+    }
+  }
+
+  // Fund contribution rate operations
+  async getFundContributionRates(fundId: string): Promise<FundContributionRates | undefined> {
+    try {
+      const { data, error } = await supabase
+        .from('fund_contribution_rates')
+        .select('*')
+        .eq('fund_id', fundId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) return undefined;
+
+      return {
+        id: data.id,
+        fundId: data.fund_id,
+        contributionRate: data.contribution_rate,
+        isActive: data.is_active,
+        changedBy: data.changed_by,
+        changeReason: data.change_reason,
+        createdAt: data.created_at
+      } as FundContributionRates;
+    } catch (error) {
+      console.error('Error fetching fund contribution rates:', error);
+      return undefined;
+    }
+  }
+
+  async updateFundContributionRates(insertSettings: InsertFundContributionRates): Promise<FundContributionRates> {
+    try {
+      // Primeiro, desativar as configurações atuais
+      await supabase
+        .from('fund_contribution_rates')
+        .update({ is_active: false })
+        .eq('fund_id', insertSettings.fundId)
+        .eq('is_active', true);
+
+      // Preparar dados para inserção
+      const insertData = {
+        fund_id: insertSettings.fundId,
+        contribution_rate: insertSettings.contributionRate,
+        changed_by: insertSettings.changedBy,
+        change_reason: insertSettings.changeReason,
+        is_active: true
+      };
+
+      // Inserir as novas configurações
+      const { data, error } = await supabase
+        .from('fund_contribution_rates')
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase insertion failed:', error.message);
+        throw new Error(`Supabase insertion failed: ${error.message}`);
+      }
+
+      if (data) {
+        return {
+          id: data.id,
+          fundId: data.fund_id,
+          contributionRate: data.contribution_rate,
+          isActive: data.is_active,
+          changedBy: data.changed_by,
+          changeReason: data.change_reason,
+          createdAt: data.created_at
+        } as FundContributionRates;
+      }
+
+      throw new Error('No data returned from insertion');
+    } catch (error) {
+      console.error('Error updating fund contribution rates:', error);
+      throw error;
+    }
+  }
+
+  // Fund retribution rate operations
+  async getFundRetributionRates(fundId: string): Promise<FundRetributionRates | undefined> {
+    try {
+      const { data, error } = await supabase
+        .from('fund_retribution_rates')
+        .select('*')
+        .eq('fund_id', fundId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) return undefined;
+
+      return {
+        id: data.id,
+        fundId: data.fund_id,
+        retributionRate: data.retribution_rate,
+        isActive: data.is_active,
+        changedBy: data.changed_by,
+        changeReason: data.change_reason,
+        createdAt: data.created_at
+      } as FundRetributionRates;
+    } catch (error) {
+      console.error('Error fetching fund retribution rates:', error);
+      return undefined;
+    }
+  }
+
+  async updateFundRetributionRates(insertSettings: InsertFundRetributionRates): Promise<FundRetributionRates> {
+    try {
+      // Primeiro, desativar as configurações atuais
+      await supabase
+        .from('fund_retribution_rates')
+        .update({ is_active: false })
+        .eq('fund_id', insertSettings.fundId)
+        .eq('is_active', true);
+
+      // Preparar dados para inserção
+      const insertData = {
+        fund_id: insertSettings.fundId,
+        retribution_rate: insertSettings.retributionRate,
+        changed_by: insertSettings.changedBy,
+        change_reason: insertSettings.changeReason,
+        is_active: true
+      };
+
+      // Inserir as novas configurações
+      const { data, error } = await supabase
+        .from('fund_retribution_rates')
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase insertion failed:', error.message);
+        throw new Error(`Supabase insertion failed: ${error.message}`);
+      }
+
+      if (data) {
+        return {
+          id: data.id,
+          fundId: data.fund_id,
+          retributionRate: data.retribution_rate,
+          isActive: data.is_active,
+          changedBy: data.changed_by,
+          changeReason: data.change_reason,
+          createdAt: data.created_at
+        } as FundRetributionRates;
+      }
+
+      throw new Error('No data returned from insertion');
+    } catch (error) {
+      console.error('Error updating fund retribution rates:', error);
       throw error;
     }
   }
