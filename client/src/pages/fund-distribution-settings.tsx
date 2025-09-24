@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Check } from 'lucide-react';
+import { ArrowLeft, Check, TrendingUp, Users } from 'lucide-react';
 import { Fund } from '@shared/schema';
 import ComplexGradientBackground from '@/components/ui/complex-gradient-background';
 import DistributionOptionCard from '@/components/ui/distribution-option-card';
@@ -242,13 +242,9 @@ function DistributionExampleCard({ option }: { option: typeof distributionOption
           }}
         >
           {option.icon === 'TrendingUp' ? (
-            <svg className="w-8 h-8" style={{ color: isProportional ? '#fffdfa' : '#303030' }} fill="currentColor" viewBox="0 0 24 24">
-              <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
-            </svg>
+            <TrendingUp className="w-8 h-8" style={{ color: isProportional ? '#fffdfa' : '#303030' }} />
           ) : (
-            <svg className="w-8 h-8" style={{ color: '#303030' }} fill="currentColor" viewBox="0 0 24 24">
-              <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A2.994 2.994 0 0 0 17.08 6H16c-.8 0-1.54.37-2.03.97L12 9.5l-5.07-5.07A2.994 2.994 0 0 0 4.84 3.5H3c-1.66 0-3 1.34-3 3v15h2V6.5h1.84L8 10.66V22h2v-9.34l2-2.34L14.5 18H12v4h8z"/>
-            </svg>
+            <Users className="w-8 h-8" style={{ color: '#303030' }} />
           )}
         </div>
         <div className="flex-1">
