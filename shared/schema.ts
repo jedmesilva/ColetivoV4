@@ -383,6 +383,14 @@ export const insertFundProposalSettingsSchema = createInsertSchema(fundProposalS
   changeReason: true,
 });
 
+// Schema para atualização de objetivo do fundo
+export const updateFundObjectiveSchema = z.object({
+  fundId: z.string().uuid(),
+  objective: z.string().min(1, "Objetivo é obrigatório").max(1000, "Objetivo muito longo"),
+  changedBy: z.string().uuid(),
+  changeReason: z.string().optional(),
+});
+
 // ============================================================================
 // TIPOS TYPESCRIPT
 // ============================================================================
@@ -426,6 +434,8 @@ export type FundQuorumSettings = typeof fundQuorumSettings.$inferSelect;
 
 export type InsertFundProposalSettings = z.infer<typeof insertFundProposalSettingsSchema>;
 export type FundProposalSettings = typeof fundProposalSettings.$inferSelect;
+
+export type UpdateFundObjective = z.infer<typeof updateFundObjectiveSchema>;
 
 // ============================================================================
 // TIPOS DE COMPATIBILIDADE (para manter a API existente)

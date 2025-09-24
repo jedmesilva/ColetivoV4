@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { supabase } from "./db";
-import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema, insertFundContributionRatesSchema, insertFundRetributionRatesSchema } from "@shared/schema";
+import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema, insertFundContributionRatesSchema, insertFundRetributionRatesSchema, updateFundObjectiveSchema } from "@shared/schema";
 import { Client } from "pg";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -805,6 +805,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid retribution rates data", details: error });
       }
       res.status(500).json({ message: "Failed to update fund retribution rates" });
+    }
+  });
+
+  // Update fund objective
+  app.post("/api/funds/:id/objective", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      const { changeReason, objective } = req.body;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      // SECURITY: Get changedBy from session - using fixed user ID for now
+      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+
+      const validatedData = updateFundObjectiveSchema.parse({
+        fundId,
+        objective,
+        changedBy: userId,
+        changeReason: changeReason || "Objetivo do fundo atualizado"
+      });
+
+      // Update fund objective using the generic updateFund method
+      const updatedFund = await storage.updateFund(fundId, {
+        objective: validatedData.objective,
+        updatedAt: new Date()
+      });
+      
+      if (!updatedFund) {
+        return res.status(404).json({ message: "Fund not found" });
+      }
+
+      res.status(200).json(updatedFund);
+    } catch (error) {
+      console.error("Error updating fund objective:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid objective data", details: error });
+      }
+      res.status(500).json({ message: "Failed to update fund objective" });
     }
   });
 
