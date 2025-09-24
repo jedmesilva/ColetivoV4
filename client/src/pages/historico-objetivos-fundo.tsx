@@ -148,8 +148,7 @@ export default function HistoricoObjetivosFundoScreen() {
   const objetivosAnteriores = objetivos.filter(obj => !obj.isCurrent);
 
   const handleEditarObjetivo = () => {
-    console.log('Editar objetivo atual');
-    // Aqui seria a navegação para tela de edição de objetivo
+    setLocation(`/fund/${fundId}/edit-objective`);
   };
 
   const handleVoltar = () => {
