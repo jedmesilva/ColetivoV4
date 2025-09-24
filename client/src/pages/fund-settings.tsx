@@ -256,6 +256,7 @@ export default function FundSettings() {
               <button 
                 className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] w-full bg-creme border-dark-light"
                 data-testid="button-fund-objective"
+                onClick={() => setLocation(`/fund/${fundId}/historico-objetivos`)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
