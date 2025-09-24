@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { supabase } from "./db";
 import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema, insertFundContributionRatesSchema, insertFundRetributionRatesSchema } from "@shared/schema";
+import { Client } from "pg";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Check username availability
@@ -807,6 +808,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // TEMPORARY ENDPOINT: Create missing tables if they don't exist
+  app.post("/api/admin/create-rate-tables", async (req, res) => {
+    const client = new Client({
+      connectionString: process.env.DATABASE_URL,
+    });
+
+    try {
+      await client.connect();
+      console.log('Connected to PostgreSQL successfully');
+
+      const results = [];
+
+      // Check if fund_contribution_rates table exists
+      const contributionTableCheck = await client.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'fund_contribution_rates'
+      `);
+
+      // Check if fund_retribution_rates table exists
+      const retributionTableCheck = await client.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'fund_retribution_rates'
+      `);
+
+      // Create fund_contribution_rates if it doesn't exist
+      if (contributionTableCheck.rows.length === 0) {
+        try {
+          await client.query(`
+            CREATE TABLE fund_contribution_rates (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              fund_id UUID NOT NULL REFERENCES funds(id),
+              contribution_rate DECIMAL(5,4) NOT NULL,
+              is_active BOOLEAN DEFAULT true,
+              changed_by UUID NOT NULL REFERENCES accounts(id),
+              change_reason TEXT,
+              created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+            );
+          `);
+          results.push({ table: 'fund_contribution_rates', status: 'created' });
+        } catch (createError1) {
+          console.error('Error creating fund_contribution_rates:', createError1);
+          results.push({ table: 'fund_contribution_rates', status: 'error', message: createError1.message });
+        }
+      } else {
+        results.push({ table: 'fund_contribution_rates', status: 'exists' });
+      }
+
+      // Create fund_retribution_rates if it doesn't exist
+      if (retributionTableCheck.rows.length === 0) {
+        try {
+          await client.query(`
+            CREATE TABLE fund_retribution_rates (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              fund_id UUID NOT NULL REFERENCES funds(id),
+              retribution_rate DECIMAL(5,4) NOT NULL,
+              is_active BOOLEAN DEFAULT true,
+              changed_by UUID NOT NULL REFERENCES accounts(id),
+              change_reason TEXT,
+              created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+            );
+          `);
+          results.push({ table: 'fund_retribution_rates', status: 'created' });
+        } catch (createError2) {
+          console.error('Error creating fund_retribution_rates:', createError2);
+          results.push({ table: 'fund_retribution_rates', status: 'error', message: createError2.message });
+        }
+      } else {
+        results.push({ table: 'fund_retribution_rates', status: 'exists' });
+      }
+
+      res.status(200).json({
+        message: 'Table creation process completed',
+        results: results
+      });
+
+    } catch (error) {
+      console.error('Error in table creation:', error);
+      res.status(500).json({ message: 'Failed to create tables', error: error.message });
+    } finally {
+      await client.end();
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
