@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { Users, Cog, Percent, Target, ChevronRight, Settings, Edit, ArrowLeft } from "lucide-react";
+import { Users, Cog, Percent, Target, ChevronRight, Settings, Edit, ArrowLeft, TrendingUp } from "lucide-react";
 import { Fund } from "@shared/schema";
 
 export default function FundSettings() {
@@ -214,22 +214,26 @@ export default function FundSettings() {
                 </div>
               </button>
 
-              {/* Card 5: % de distribuição */}
+              {/* Card 5: Distribuição - ATUALIZADO */}
               <button 
-                className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] w-full bg-creme border-dark-light"
-                data-testid="button-distribution-percentage"
+                className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] w-full"
+                style={{ backgroundColor: '#fffdfa', borderColor: 'rgba(48, 48, 48, 0.1)' }}
+                data-testid="button-distribution"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-bege-transparent">
-                      <Percent className="w-7 h-7 text-dark" />
+                    <div 
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                      style={{ backgroundColor: 'rgba(255, 229, 189, 0.3)' }}
+                    >
+                      <TrendingUp className="w-7 h-7" style={{ color: '#303030' }} />
                     </div>
                     <div className="text-left">
-                      <h3 className="text-xl font-bold mb-1 text-dark">% de distribuição</h3>
-                      <p className="text-sm text-dark opacity-70">Definir regra de distribuição</p>
+                      <h3 className="text-xl font-bold mb-1" style={{ color: '#303030' }}>Distribuição</h3>
+                      <p className="text-sm" style={{ color: '#303030', opacity: 0.7 }}>Definir tipo de distribuição</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-6 h-6 text-dark" />
+                  <ChevronRight className="w-6 h-6" style={{ color: '#303030' }} />
                 </div>
               </button>
 
