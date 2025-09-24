@@ -1,19 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRoute, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Check, X, Info, ArrowLeft } from 'lucide-react';
 import { Fund } from "@shared/schema";
+import { queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface RateComponentProps {
   title: string;
   initialValue?: number;
+  onRateChange: (value: number) => void;
 }
 
-function RateComponent({ title, initialValue = 50 }: RateComponentProps) {
+function RateComponent({ title, initialValue = 50, onRateChange }: RateComponentProps) {
   const [isInputMode, setIsInputMode] = useState(false);
   const [sliderValue, setSliderValue] = useState(initialValue);
   const [inputValue, setInputValue] = useState('');
   const [currentRate, setCurrentRate] = useState(initialValue);
+
+  // Update initial values when prop changes
+  useEffect(() => {
+    setCurrentRate(initialValue);
+    if (initialValue <= 100) {
+      setSliderValue(initialValue);
+    }
+  }, [initialValue]);
 
   const handlePlusClick = () => {
     setInputValue(currentRate.toString());
@@ -24,6 +36,7 @@ function RateComponent({ title, initialValue = 50 }: RateComponentProps) {
     const numValue = parseFloat(inputValue);
     if (!isNaN(numValue) && numValue >= 0) {
       setCurrentRate(numValue);
+      onRateChange(numValue);
       if (numValue <= 100) {
         setSliderValue(numValue);
       }
@@ -40,6 +53,7 @@ function RateComponent({ title, initialValue = 50 }: RateComponentProps) {
     const value = parseInt(e.target.value);
     setSliderValue(value);
     setCurrentRate(value);
+    onRateChange(value);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,11 +200,91 @@ export default function FundContributionRate() {
   const [, params] = useRoute("/fund/:id/contribution-rate");
   const fundId = params?.id;
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
+  const { toast } = useToast();
   
+  const [contributionRate, setContributionRate] = useState(50); // Default 50%
+
   const { data: fund, isLoading } = useQuery<Fund>({
     queryKey: ['/api/funds', fundId],
     enabled: !!fundId,
   });
+
+  // Load current contribution rates
+  const { data: contributionRates, isLoading: isLoadingRates } = useQuery({
+    queryKey: [`/api/funds/${fundId}/contribution-rates`],
+    enabled: !!fundId,
+  });
+
+  // Mutation to save contribution rates
+  const saveContributionMutation = useMutation({
+    mutationFn: async (rateData: any) => {
+      const response = await fetch(`/api/funds/${fundId}/contribution-rates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rateData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save contribution rates');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/funds/${fundId}/contribution-rates`] });
+      toast({
+        title: "Configurações salvas!",
+        description: "A taxa de contribuição foi atualizada com sucesso.",
+        variant: "default",
+      });
+      setLocation(`/fund/${fundId}/settings`);
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao salvar configurações",
+        description: "Não foi possível salvar a taxa. Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update state when loading contribution rates
+  useEffect(() => {
+    if (contributionRates && typeof contributionRates === 'object') {
+      const rates = contributionRates as any;
+      // Convert from decimal to percentage (0.5000 -> 50)
+      const ratePercentage = parseFloat(rates.contributionRate || '0.5000') * 100;
+      setContributionRate(ratePercentage);
+    }
+  }, [contributionRates]);
+
+  // Handle rate changes from the component
+  const handleRateChange = (value: number) => {
+    setContributionRate(value);
+  };
+
+  // Save the contribution rate
+  const handleSaveContributionRate = () => {
+    if (!user?.id) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para salvar as configurações.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Convert from percentage to decimal (50 -> 0.5000)
+    const rateDecimal = (contributionRate / 100).toFixed(4);
+    
+    const changeReason = `Atualizou taxa de contribuição para ${contributionRate}%`;
+
+    saveContributionMutation.mutate({
+      contributionRate: rateDecimal,
+      changeReason: changeReason
+    });
+  };
 
   if (isLoading) {
     return (
@@ -280,7 +374,7 @@ export default function FundContributionRate() {
           </div>
 
           <div className="space-y-6">
-            <RateComponent title="Taxa de contribuição" initialValue={50} />
+            <RateComponent title="Taxa de contribuição" initialValue={contributionRate} onRateChange={handleRateChange} />
           </div>
 
           {/* Explicação sobre a taxa de contribuição */}
@@ -385,12 +479,13 @@ export default function FundContributionRate() {
         <div className="max-w-lg mx-auto">
           <button 
             className="w-full rounded-3xl p-4 text-creme font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] gradient-primary"
-            onClick={() => setLocation(`/fund/${fundId}/settings`)}
+            onClick={handleSaveContributionRate}
+            disabled={saveContributionMutation.isPending}
             data-testid="button-save-contribution-rate"
           >
             <div className="flex items-center justify-center gap-2">
               <Check className="w-5 h-5" />
-              <span>Salvar configuração</span>
+              <span>{saveContributionMutation.isPending ? 'Salvando...' : 'Salvar configuração'}</span>
             </div>
           </button>
         </div>
