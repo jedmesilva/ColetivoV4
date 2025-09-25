@@ -1027,6 +1027,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get data history for a fund (name and image changes)
+  app.get("/api/funds/:id/data/history", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      // Verificar se o fundo existe
+      const fund = await storage.getFund(fundId);
+      if (!fund) {
+        return res.status(404).json({ message: "Fund not found" });
+      }
+
+      const history = await storage.getFundDataHistory(fundId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching fund data history:", error);
+      res.status(500).json({ message: "Failed to fetch fund data history" });
+    }
+  });
+
+  // Create initial fund data history entry (for new funds or manual trigger)
+  app.post("/api/funds/:id/data/history", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      const { changeReason } = req.body;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      // Verificar se o fundo existe e obter dados atuais
+      const fund = await storage.getFund(fundId);
+      if (!fund) {
+        return res.status(404).json({ message: "Fund not found" });
+      }
+
+      // Criar entrada no histórico com dados atuais do fundo
+      const historyEntry = await storage.createFundDataHistoryEntry(
+        fundId,
+        fund.name,
+        fund.fundImageType || 'emoji',
+        fund.fundImageValue || '💰',
+        '8a1d8a0f-04c4-405d-beeb-7aa75690b32e', // TODO: Obter usuário autenticado
+        changeReason || 'Entrada inicial no histórico de dados'
+      );
+
+      res.status(201).json(historyEntry);
+    } catch (error) {
+      console.error("Error creating fund data history entry:", error);
+      if (error instanceof Error && error.message.includes('validation')) {
+        return res.status(400).json({ message: "Invalid data", details: error.message });
+      }
+      res.status(500).json({ message: "Failed to create fund data history entry" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
