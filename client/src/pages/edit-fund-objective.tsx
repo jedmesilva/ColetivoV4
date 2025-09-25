@@ -18,22 +18,40 @@ export default function EditFundObjective() {
 
   // Mutation para atualizar objetivo
   const updateObjectiveMutation = useMutation({
-    mutationFn: async (objective: string) => {
+    mutationFn: async (objectiveData: { type: 'standard' | 'custom'; objectiveOptionId?: string; customObjective?: string }) => {
       if (!fundId) throw new Error('Fund ID is required');
       
-      return apiRequest(
-        'POST',
-        `/api/funds/${fundId}/objective`,
-        {
-          objective,
-          changeReason: 'Objetivo atualizado pelo usuário'
-        }
-      );
+      if (objectiveData.type === 'standard' && objectiveData.objectiveOptionId) {
+        // Usar API para objetivo padrão
+        return apiRequest(
+          'POST',
+          `/api/funds/${fundId}/objective/standard`,
+          {
+            objectiveOptionId: objectiveData.objectiveOptionId,
+            changeReason: 'Objetivo padrão definido pelo usuário'
+          }
+        );
+      } else if (objectiveData.type === 'custom' && objectiveData.customObjective) {
+        // Usar API para objetivo personalizado
+        return apiRequest(
+          'POST',
+          `/api/funds/${fundId}/objective/custom`,
+          {
+            customObjective: objectiveData.customObjective,
+            customIcon: 'Target', // Ícone padrão para objetivos personalizados
+            changeReason: 'Objetivo personalizado definido pelo usuário'
+          }
+        );
+      }
+      
+      throw new Error('Dados de objetivo inválidos');
     },
     onSuccess: () => {
-      // Invalidar cache do fundo para refletir mudanças
+      // Invalidar cache do fundo e histórico de objetivos para refletir mudanças
       queryClient.invalidateQueries({ queryKey: ['/api/funds', fundId] });
       queryClient.invalidateQueries({ queryKey: ['/api/funds'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/funds', fundId, 'current-objective'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/funds', fundId, 'objective-history'] });
       
       // Voltar para histórico de objetivos
       setLocation(`/fund/${fundId}/historico-objetivos`);
@@ -48,8 +66,8 @@ export default function EditFundObjective() {
     setLocation(`/fund/${fundId}/historico-objetivos`);
   };
 
-  const handleSubmit = (objective: string) => {
-    updateObjectiveMutation.mutate(objective);
+  const handleSubmit = (objectiveData: { type: 'standard' | 'custom'; objectiveOptionId?: string; customObjective?: string }) => {
+    updateObjectiveMutation.mutate(objectiveData);
   };
 
   if (isLoading) {
