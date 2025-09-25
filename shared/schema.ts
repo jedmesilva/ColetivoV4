@@ -257,6 +257,34 @@ export const fundProposalSettings = pgTable("fund_proposal_settings", {
 });
 
 // ============================================================================
+// TABELAS DE OBJETIVOS DOS FUNDOS
+// ============================================================================
+
+// Opções de objetivos padronizados disponíveis para seleção
+export const fundObjectiveOptions = pgTable("fund_objective_options", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: varchar("title", { length: 255 }).notNull().unique(),
+  description: text("description"),
+  icon: varchar("icon", { length: 100 }),
+  isActive: boolean("is_active").default(true),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Histórico de objetivos definidos para cada fundo
+export const fundObjectiveHistory = pgTable("fund_objective_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id, { onDelete: 'cascade' }),
+  objectiveOptionId: uuid("objective_option_id").references(() => fundObjectiveOptions.id),
+  customObjective: text("custom_objective"),
+  customIcon: varchar("custom_icon", { length: 100 }),
+  isActive: boolean("is_active").default(true),
+  changedBy: uuid("changed_by").references(() => accounts.id),
+  changeReason: text("change_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ============================================================================
 // SCHEMAS DE INSERÇÃO E TIPOS
 // ============================================================================
 
@@ -406,10 +434,44 @@ export const insertFundProposalSettingsSchema = createInsertSchema(fundProposalS
   changeReason: true,
 });
 
-// Schema para atualização de objetivo do fundo
+// Schema para atualização de objetivo do fundo (mantido para compatibilidade)
 export const updateFundObjectiveSchema = z.object({
   fundId: z.string().uuid(),
   objective: z.string().min(1, "Objetivo é obrigatório").max(1000, "Objetivo muito longo"),
+  changedBy: z.string().uuid(),
+  changeReason: z.string().optional(),
+});
+
+// Schemas para as novas tabelas de objetivos
+export const insertFundObjectiveOptionSchema = createInsertSchema(fundObjectiveOptions).pick({
+  title: true,
+  description: true,
+  icon: true,
+  displayOrder: true,
+});
+
+export const insertFundObjectiveHistorySchema = createInsertSchema(fundObjectiveHistory).pick({
+  fundId: true,
+  objectiveOptionId: true,
+  customObjective: true,
+  customIcon: true,
+  changedBy: true,
+  changeReason: true,
+});
+
+// Schema para definir objetivo padronizado
+export const setStandardObjectiveSchema = z.object({
+  fundId: z.string().uuid(),
+  objectiveOptionId: z.string().uuid(),
+  changedBy: z.string().uuid(),
+  changeReason: z.string().optional(),
+});
+
+// Schema para definir objetivo personalizado
+export const setCustomObjectiveSchema = z.object({
+  fundId: z.string().uuid(),
+  customObjective: z.string().min(1, "Objetivo personalizado é obrigatório").max(1000, "Objetivo muito longo"),
+  customIcon: z.string().optional(),
   changedBy: z.string().uuid(),
   changeReason: z.string().optional(),
 });
@@ -462,6 +524,26 @@ export type InsertFundProposalSettings = z.infer<typeof insertFundProposalSettin
 export type FundProposalSettings = typeof fundProposalSettings.$inferSelect;
 
 export type UpdateFundObjective = z.infer<typeof updateFundObjectiveSchema>;
+
+// Tipos para as novas tabelas de objetivos
+export type InsertFundObjectiveOption = z.infer<typeof insertFundObjectiveOptionSchema>;
+export type FundObjectiveOption = typeof fundObjectiveOptions.$inferSelect;
+
+export type InsertFundObjectiveHistory = z.infer<typeof insertFundObjectiveHistorySchema>;
+export type FundObjectiveHistory = typeof fundObjectiveHistory.$inferSelect;
+
+export type SetStandardObjective = z.infer<typeof setStandardObjectiveSchema>;
+export type SetCustomObjective = z.infer<typeof setCustomObjectiveSchema>;
+
+// Tipo para objetivo atual de um fundo (view combinada)
+export type CurrentFundObjective = {
+  fundId: string;
+  currentObjective: string;
+  currentIcon?: string;
+  objectiveType: 'standard' | 'custom';
+  definedAt: string;
+  changedByName?: string;
+};
 
 // ============================================================================
 // TIPOS DE COMPATIBILIDADE (para manter a API existente)
