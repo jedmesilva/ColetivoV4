@@ -242,6 +242,7 @@ export default function FundSettings() {
               <button 
                 className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] w-full bg-creme border-dark-light"
                 data-testid="button-fund-data"
+                onClick={() => setLocation(`/fund/${fundId}/historico-dados`)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -321,7 +322,7 @@ export default function FundSettings() {
                         WebkitTextFillColor: 'transparent',
                         backgroundClip: 'text'
                       }}
-                    >+{fund.growthPercentage}%</p>
+                    >+0%</p>
                   </div>
                 </div>
               </div>
