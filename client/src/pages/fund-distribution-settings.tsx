@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { ArrowLeft, Check, TrendingUp, Users } from 'lucide-react';
-import { Fund } from '@shared/schema';
+import { Fund, FundDistributionSettings as DistributionSettings } from '@shared/schema';
 import ComplexGradientBackground from '@/components/ui/complex-gradient-background';
 import DistributionOptionCard from '@/components/ui/distribution-option-card';
 import InfoCard from '@/components/ui/info-card';
@@ -39,6 +40,19 @@ export default function FundDistributionSettings() {
     enabled: !!fundId,
   });
 
+  // Query para buscar as configurações de distribuição atuais
+  const { data: distributionSettings, isLoading: distributionLoading } = useQuery<DistributionSettings>({
+    queryKey: ['/api/funds', fundId, 'distribution-settings'],
+    enabled: !!fundId,
+  });
+
+  // Atualiza o selectedDistribution quando os dados chegam
+  React.useEffect(() => {
+    if (distributionSettings?.distributionType) {
+      setSelectedDistribution(distributionSettings.distributionType);
+    }
+  }, [distributionSettings]);
+
   const saveDistributionMutation = useMutation({
     mutationFn: async ({ distributionType, changeReason }: { distributionType: string; changeReason: string }) => {
       const response = await fetch(`/api/funds/${fundId}/distribution-settings`, {
@@ -60,6 +74,9 @@ export default function FundDistributionSettings() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidar o cache para refletir as mudanças
+      queryClient.invalidateQueries({ queryKey: ['/api/funds', fundId, 'distribution-settings'] });
+      
       toast({
         title: "Sucesso!",
         description: "Configuração de distribuição salva com sucesso.",
@@ -95,7 +112,7 @@ export default function FundDistributionSettings() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || distributionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-creme">
         <div className="text-xl text-dark">Carregando...</div>
