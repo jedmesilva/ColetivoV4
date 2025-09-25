@@ -95,6 +95,10 @@ export interface IStorage {
   setStandardObjective(data: SetStandardObjective): Promise<FundObjectiveHistory>;
   setCustomObjective(data: SetCustomObjective): Promise<FundObjectiveHistory>;
   getFundObjectiveHistory(fundId: string): Promise<FundObjectiveHistory[]>;
+
+  // Fund data history operations  
+  getFundDataHistory(fundId: string): Promise<any[]>;
+  createFundDataHistoryEntry(fundId: string, name: string, fundImageType: string, fundImageValue: string, changedBy: string, changeReason?: string): Promise<any>;
 }
 
 // Supabase storage implementation
@@ -1866,6 +1870,103 @@ class SupabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error in getFundObjectiveHistory:', error);
       return [];
+    }
+  }
+
+  // Fund data history operations
+  async getFundDataHistory(fundId: string): Promise<any[]> {
+    try {
+      // Buscar histórico de dados ordenado por data (mais recente primeiro)
+      const { data: history, error } = await supabase
+        .from('fund_data_history')
+        .select(`
+          *,
+          accounts!fund_data_history_changed_by_fkey(full_name)
+        `)
+        .eq('fund_id', fundId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching fund data history:', error);
+        return [];
+      }
+
+      // Transformar dados para o formato esperado pela UI
+      return (history || []).map((entry, index) => {
+        const isFirst = index === 0; // Primeiro item é o atual
+        const nextEntry = history?.[index + 1]; // Próximo item para definir dataFim
+        
+        return {
+          id: entry.id,
+          nome: entry.name,
+          imagem: entry.fund_image_value,
+          tipoImagem: entry.fund_image_type,
+          data: new Date(entry.created_at).toLocaleDateString('pt-BR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }),
+          dataFim: isFirst ? null : (nextEntry ? new Date(nextEntry.created_at).toLocaleDateString('pt-BR', {
+            day: 'numeric',
+            month: 'long', 
+            year: 'numeric'
+          }) : null),
+          alteradoPor: entry.accounts?.full_name || 'Sistema',
+          isCurrent: isFirst
+        };
+      });
+
+    } catch (error) {
+      console.error('Error in getFundDataHistory:', error);
+      return [];
+    }
+  }
+
+  async createFundDataHistoryEntry(
+    fundId: string, 
+    name: string, 
+    fundImageType: string, 
+    fundImageValue: string, 
+    changedBy: string, 
+    changeReason?: string
+  ): Promise<any> {
+    try {
+      // Marcar entrada atual como inativa
+      const { error: updateError } = await supabase
+        .from('fund_data_history')
+        .update({ is_active: false })
+        .eq('fund_id', fundId)
+        .eq('is_active', true);
+
+      if (updateError) {
+        console.error('Error deactivating current fund data entry:', updateError);
+      }
+
+      // Criar nova entrada no histórico
+      const { data, error } = await supabase
+        .from('fund_data_history')
+        .insert({
+          fund_id: fundId,
+          name: name,
+          fund_image_type: fundImageType,
+          fund_image_value: fundImageValue,
+          changed_by: changedBy,
+          change_reason: changeReason || 'Dados do fundo alterados',
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating fund data history entry:', error);
+        throw error;
+      }
+
+      return data;
+
+    } catch (error) {
+      console.error('Error in createFundDataHistoryEntry:', error);
+      throw error;
     }
   }
 }
