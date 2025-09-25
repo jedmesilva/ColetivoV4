@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { supabase } from "./db";
-import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema, insertFundContributionRatesSchema, insertFundRetributionRatesSchema, insertFundDistributionSettingsSchema, updateFundObjectiveSchema } from "@shared/schema";
+import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema, insertFundContributionRatesSchema, insertFundRetributionRatesSchema, insertFundDistributionSettingsSchema, updateFundObjectiveSchema, setStandardObjectiveSchema, setCustomObjectiveSchema } from "@shared/schema";
 import { Client } from "pg";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -908,6 +908,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================================
+  // FUND OBJECTIVE ROUTES (NEW STRUCTURE)
+  // ============================================================================
+
+  // Get all available objective options
+  app.get("/api/fund-objectives/options", async (req, res) => {
+    try {
+      const options = await storage.getFundObjectiveOptions();
+      res.json(options);
+    } catch (error) {
+      console.error("Error fetching fund objective options:", error);
+      res.status(500).json({ message: "Failed to fetch objective options" });
+    }
+  });
+
+  // Get current objective for a specific fund
+  app.get("/api/funds/:id/current-objective", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      const currentObjective = await storage.getCurrentFundObjective(fundId);
+      
+      if (!currentObjective) {
+        return res.status(404).json({ message: "Fund not found or no objective set" });
+      }
+
+      res.json(currentObjective);
+    } catch (error) {
+      console.error("Error fetching fund objective:", error);
+      res.status(500).json({ message: "Failed to fetch fund objective" });
+    }
+  });
+
+  // Set standard objective for a fund
+  app.post("/api/funds/:id/objective/standard", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      const { objectiveOptionId, changeReason } = req.body;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      // SECURITY: Get changedBy from session - using fixed user for now
+      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+
+      const validatedData = setStandardObjectiveSchema.parse({
+        fundId,
+        objectiveOptionId,
+        changedBy: userId,
+        changeReason: changeReason || "Objetivo padrão definido"
+      });
+
+      const result = await storage.setStandardObjective(validatedData);
+      
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error setting standard objective:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid objective data", details: error });
+      }
+      res.status(500).json({ message: "Failed to set standard objective" });
+    }
+  });
+
+  // Set custom objective for a fund
+  app.post("/api/funds/:id/objective/custom", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      const { customObjective, customIcon, changeReason } = req.body;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      // SECURITY: Get changedBy from session - using fixed user for now
+      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+
+      const validatedData = setCustomObjectiveSchema.parse({
+        fundId,
+        customObjective,
+        customIcon: customIcon || 'Target',
+        changedBy: userId,
+        changeReason: changeReason || "Objetivo personalizado definido"
+      });
+
+      const result = await storage.setCustomObjective(validatedData);
+      
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error setting custom objective:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid objective data", details: error });
+      }
+      res.status(500).json({ message: "Failed to set custom objective" });
+    }
+  });
+
+  // Get objective history for a fund
+  app.get("/api/funds/:id/objective/history", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      const history = await storage.getFundObjectiveHistory(fundId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching objective history:", error);
+      res.status(500).json({ message: "Failed to fetch objective history" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
