@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { supabase } from "./db";
-import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema, insertFundContributionRatesSchema, insertFundRetributionRatesSchema, updateFundObjectiveSchema } from "@shared/schema";
+import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema, insertFundContributionRatesSchema, insertFundRetributionRatesSchema, insertFundDistributionSettingsSchema, updateFundObjectiveSchema } from "@shared/schema";
 import { Client } from "pg";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -808,6 +808,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get distribution settings for a fund
+  app.get("/api/funds/:id/distribution-settings", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      const settings = await storage.getFundDistributionSettings(fundId);
+      
+      if (!settings) {
+        // Return default settings if none exist
+        const defaultSettings = {
+          distributionType: 'proportional' // Default to proportional
+        };
+        return res.status(200).json(defaultSettings);
+      }
+
+      res.status(200).json(settings);
+    } catch (error) {
+      console.error("Error fetching fund distribution settings:", error);
+      res.status(500).json({ message: "Failed to fetch fund distribution settings" });
+    }
+  });
+
   // Update fund distribution settings
   app.post("/api/funds/:id/distribution-settings", async (req, res) => {
     try {
@@ -822,20 +848,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Account ID is required" });
       }
 
-      // TODO: Implement proper distribution settings storage
-      // For now, just return success
-      console.log(`Distribution settings updated for fund ${fundId}:`, {
+      // Validate the request data using the schema
+      const validatedData = insertFundDistributionSettingsSchema.parse({
+        fundId,
         distributionType,
-        changeReason,
-        changedBy: accountId
+        changedBy: accountId,
+        changeReason: changeReason || "Configuração de distribuição atualizada"
       });
 
-      res.status(200).json({ 
-        success: true,
-        message: "Configuração de distribuição salva com sucesso"
-      });
+      const updatedSettings = await storage.updateFundDistributionSettings(validatedData);
+      
+      res.status(200).json(updatedSettings);
     } catch (error) {
       console.error("Error updating fund distribution settings:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid distribution settings data", details: error });
+      }
       res.status(500).json({ message: "Failed to update fund distribution settings" });
     }
   });

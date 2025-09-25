@@ -9,6 +9,7 @@ import {
   type FundQuorumSettings, type InsertFundQuorumSettings,
   type FundContributionRates, type InsertFundContributionRates,
   type FundRetributionRates, type InsertFundRetributionRates,
+  type FundDistributionSettings, type InsertFundDistributionSettings,
   // Maintain compatibility
   type User, type InsertUser
 } from "@shared/schema";
@@ -80,6 +81,10 @@ export interface IStorage {
   // Fund retribution rate operations
   getFundRetributionRates(fundId: string): Promise<FundRetributionRates | undefined>;
   updateFundRetributionRates(insertSettings: InsertFundRetributionRates): Promise<FundRetributionRates>;
+
+  // Fund distribution settings operations
+  getFundDistributionSettings(fundId: string): Promise<FundDistributionSettings | undefined>;
+  updateFundDistributionSettings(insertSettings: InsertFundDistributionSettings): Promise<FundDistributionSettings>;
 }
 
 // Supabase storage implementation
@@ -1596,6 +1601,84 @@ class SupabaseStorage implements IStorage {
       throw new Error('No data returned from insertion');
     } catch (error) {
       console.error('Error updating fund retribution rates:', error);
+      throw error;
+    }
+  }
+
+  // Fund distribution settings operations
+  async getFundDistributionSettings(fundId: string): Promise<FundDistributionSettings | undefined> {
+    try {
+      const { data, error } = await supabase
+        .from('fund_distribution_settings')
+        .select('*')
+        .eq('fund_id', fundId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) return undefined;
+
+      return {
+        id: data.id,
+        fundId: data.fund_id,
+        distributionType: data.distribution_type,
+        isActive: data.is_active,
+        changedBy: data.changed_by,
+        changeReason: data.change_reason,
+        createdAt: data.created_at
+      } as FundDistributionSettings;
+    } catch (error) {
+      console.error('Error fetching fund distribution settings:', error);
+      return undefined;
+    }
+  }
+
+  async updateFundDistributionSettings(insertSettings: InsertFundDistributionSettings): Promise<FundDistributionSettings> {
+    try {
+      // Primeiro, desativar as configurações atuais
+      await supabase
+        .from('fund_distribution_settings')
+        .update({ is_active: false })
+        .eq('fund_id', insertSettings.fundId)
+        .eq('is_active', true);
+
+      // Preparar dados para inserção
+      const insertData = {
+        fund_id: insertSettings.fundId,
+        distribution_type: insertSettings.distributionType,
+        changed_by: insertSettings.changedBy,
+        change_reason: insertSettings.changeReason,
+        is_active: true
+      };
+
+      // Inserir as novas configurações
+      const { data, error } = await supabase
+        .from('fund_distribution_settings')
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase insertion failed:', error.message);
+        throw new Error(`Supabase insertion failed: ${error.message}`);
+      }
+
+      if (data) {
+        return {
+          id: data.id,
+          fundId: data.fund_id,
+          distributionType: data.distribution_type,
+          isActive: data.is_active,
+          changedBy: data.changed_by,
+          changeReason: data.change_reason,
+          createdAt: data.created_at
+        } as FundDistributionSettings;
+      }
+
+      throw new Error('No data returned from insertion');
+    } catch (error) {
+      console.error('Error updating fund distribution settings:', error);
       throw error;
     }
   }

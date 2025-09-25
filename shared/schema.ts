@@ -52,6 +52,10 @@ export const retributionPlanStatusEnum = pgEnum('retribution_plan_status_enum', 
   'active', 'completed', 'overdue', 'cancelled'
 ]);
 
+export const distributionTypeEnum = pgEnum('distribution_type_enum', [
+  'proportional', 'equal'
+]);
+
 // ============================================================================
 // TABELAS PRINCIPAIS
 // ============================================================================
@@ -215,6 +219,17 @@ export const fundRetributionRates = pgTable("fund_retribution_rates", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Histórico de definições de distribuição
+export const fundDistributionSettings = pgTable("fund_distribution_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id).notNull(),
+  distributionType: distributionTypeEnum("distribution_type").notNull(),
+  isActive: boolean("is_active").default(true),
+  changedBy: uuid("changed_by").references(() => accounts.id).notNull(),
+  changeReason: text("change_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Configurações de governança e quorum
 export const fundQuorumSettings = pgTable("fund_quorum_settings", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -353,6 +368,14 @@ export const insertFundRetributionRatesSchema = createInsertSchema(fundRetributi
   changeReason: true,
 });
 
+// Schema para definições de distribuição
+export const insertFundDistributionSettingsSchema = createInsertSchema(fundDistributionSettings).pick({
+  fundId: true,
+  distributionType: true,
+  changedBy: true,
+  changeReason: true,
+});
+
 // Schema para configurações de quorum
 export const insertFundQuorumSettingsSchema = createInsertSchema(fundQuorumSettings).pick({
   fundId: true,
@@ -428,6 +451,9 @@ export type FundContributionRates = typeof fundContributionRates.$inferSelect;
 
 export type InsertFundRetributionRates = z.infer<typeof insertFundRetributionRatesSchema>;
 export type FundRetributionRates = typeof fundRetributionRates.$inferSelect;
+
+export type InsertFundDistributionSettings = z.infer<typeof insertFundDistributionSettingsSchema>;
+export type FundDistributionSettings = typeof fundDistributionSettings.$inferSelect;
 
 export type InsertFundQuorumSettings = z.infer<typeof insertFundQuorumSettingsSchema>;
 export type FundQuorumSettings = typeof fundQuorumSettings.$inferSelect;
