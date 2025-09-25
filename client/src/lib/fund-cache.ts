@@ -94,7 +94,7 @@ export async function createFundFromCache(): Promise<any> {
     try {
       if (cached.objective.type === 'standard' && cached.objective.objectiveOptionId) {
         // Definir objetivo padrão
-        await fetch(`/api/funds/${fund.id}/objective/standard`, {
+        const response = await fetch(`/api/funds/${fund.id}/objective/standard`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -104,9 +104,12 @@ export async function createFundFromCache(): Promise<any> {
             changeReason: 'Objetivo definido durante a criação do fundo'
           }),
         });
+        if (!response.ok) {
+          console.error('Failed to set standard objective:', await response.text());
+        }
       } else if (cached.objective.type === 'custom' && cached.objective.customObjective) {
         // Definir objetivo personalizado
-        await fetch(`/api/funds/${fund.id}/objective/custom`, {
+        const response = await fetch(`/api/funds/${fund.id}/objective/custom`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -117,6 +120,9 @@ export async function createFundFromCache(): Promise<any> {
             changeReason: 'Objetivo personalizado definido durante a criação do fundo'
           }),
         });
+        if (!response.ok) {
+          console.error('Failed to set custom objective:', await response.text());
+        }
       }
       console.log('Fund objective set successfully using new structure');
     } catch (objectiveError) {

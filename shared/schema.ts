@@ -284,6 +284,19 @@ export const fundObjectiveHistory = pgTable("fund_objective_history", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Histórico de dados do fundo (nome e imagem)
+export const fundDataHistory = pgTable("fund_data_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id, { onDelete: 'cascade' }),
+  name: varchar("name", { length: 255 }).notNull(),
+  fundImageType: fundImageTypeEnum("fund_image_type").default('emoji'),
+  fundImageValue: varchar("fund_image_value", { length: 500 }),
+  isActive: boolean("is_active").default(true),
+  changedBy: uuid("changed_by").references(() => accounts.id),
+  changeReason: text("change_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ============================================================================
 // SCHEMAS DE INSERÇÃO E TIPOS
 // ============================================================================
@@ -459,6 +472,16 @@ export const insertFundObjectiveHistorySchema = createInsertSchema(fundObjective
   changeReason: true,
 });
 
+// Schemas para fund data history  
+export const insertFundDataHistorySchema = createInsertSchema(fundDataHistory).pick({
+  fundId: true,
+  name: true,
+  fundImageType: true,
+  fundImageValue: true,
+  changedBy: true,
+  changeReason: true,
+});
+
 // Schema para definir objetivo padronizado
 export const setStandardObjectiveSchema = z.object({
   fundId: z.string().uuid(),
@@ -531,6 +554,9 @@ export type FundObjectiveOption = typeof fundObjectiveOptions.$inferSelect;
 
 export type InsertFundObjectiveHistory = z.infer<typeof insertFundObjectiveHistorySchema>;
 export type FundObjectiveHistory = typeof fundObjectiveHistory.$inferSelect;
+
+export type InsertFundDataHistory = z.infer<typeof insertFundDataHistorySchema>;
+export type FundDataHistory = typeof fundDataHistory.$inferSelect;
 
 export type SetStandardObjective = z.infer<typeof setStandardObjectiveSchema>;
 export type SetCustomObjective = z.infer<typeof setCustomObjectiveSchema>;
