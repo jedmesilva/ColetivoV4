@@ -121,7 +121,7 @@ export default function HistoricoObjetivosFundoScreen() {
 
   // Buscar histórico de objetivos
   const { data: objectiveHistory = [], isLoading: historyLoading } = useQuery<FundObjectiveHistory[]>({
-    queryKey: ['/api/funds', fundId, 'objective-history'],
+    queryKey: ['/api/funds', fundId, 'objective', 'history'],
     enabled: !!fundId,
   });
 

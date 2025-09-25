@@ -51,7 +51,7 @@ export default function EditFundObjective() {
       queryClient.invalidateQueries({ queryKey: ['/api/funds', fundId] });
       queryClient.invalidateQueries({ queryKey: ['/api/funds'] });
       queryClient.invalidateQueries({ queryKey: ['/api/funds', fundId, 'current-objective'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/funds', fundId, 'objective-history'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/funds', fundId, 'objective', 'history'] });
       
       // Voltar para histórico de objetivos
       setLocation(`/fund/${fundId}/historico-objetivos`);
