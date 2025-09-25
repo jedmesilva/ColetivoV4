@@ -1,5 +1,7 @@
 import { ArrowLeft, Target, Check, ShoppingCart, Plane, Home, Users, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { FundObjectiveOption } from "@shared/schema";
 
 // Interface para as props do componente
 interface FundObjectiveFormProps {
@@ -9,22 +11,36 @@ interface FundObjectiveFormProps {
   backButtonText?: string;
   submitButtonText?: string;
   onBack: () => void;
-  onSubmit: (objective: string) => void;
+  onSubmit: (objectiveData: { type: 'standard' | 'custom'; objectiveOptionId?: string; customObjective?: string }) => void;
   isLoading?: boolean;
 }
+
+// Mapeamento de ícones para os objetivos
+const iconMap: Record<string, React.ComponentType<any>> = {
+  'ShoppingCart': ShoppingCart,
+  'Plane': Plane,
+  'Home': Home,
+  'Users': Users,
+  'AlertCircle': AlertCircle,
+  'Target': Target,
+};
 
 // Componente IconCard
 interface IconCardProps {
   option: {
     id: string;
-    name: string;
-    icon: React.ComponentType<any>;
+    title: string;
+    icon?: string | null;
   };
   isSelected?: boolean;
   onSelect?: (id: string) => void;
 }
 
 function IconCard({ option, isSelected = false, onSelect }: IconCardProps) {
+  // Use emoji if available, otherwise fallback to Target icon  
+  const isEmoji = option.icon && option.icon.length <= 4 && !/^[a-zA-Z]/.test(option.icon);
+  const IconComponent = !isEmoji && option.icon ? iconMap[option.icon] || Target : Target;
+  
   return (
     <button
       onClick={() => onSelect && onSelect(option.id)}
@@ -58,12 +74,18 @@ function IconCard({ option, isSelected = false, onSelect }: IconCardProps) {
               'rgba(255, 229, 189, 0.3)' 
           }}
         >
-          <option.icon className="w-7 h-7" style={{ color: '#303030' }} />
+          {isEmoji ? (
+            <span className="text-2xl" role="img" aria-label={option.title}>
+              {option.icon}
+            </span>
+          ) : (
+            <IconComponent className="w-7 h-7" style={{ color: '#303030' }} />
+          )}
         </div>
         
         {/* Nome */}
         <h3 className="text-lg font-bold text-dark">
-          {option.name}
+          {option.title}
         </h3>
       </div>
     </button>
@@ -83,30 +105,27 @@ export default function FundObjectiveForm({
   const [objetivo, setObjetivo] = useState(initialObjective);
   const [objetivoSelecionado, setObjetivoSelecionado] = useState('');
 
-  // Objetivos pré-definidos
-  const objetivosPredefinidos = [
-    { id: 'compras', name: 'Compras', icon: ShoppingCart },
-    { id: 'viagens', name: 'Viagens', icon: Plane },
-    { id: 'aluguel', name: 'Aluguel', icon: Home },
-    { id: 'churrasco', name: 'Churrasco', icon: Users },
-    { id: 'emergencia', name: 'Emergência', icon: AlertCircle }
-  ];
+  // Buscar objetivos predefinidos da API
+  const { data: objetivosPredefinidos = [], isLoading: loadingOptions } = useQuery<FundObjectiveOption[]>({
+    queryKey: ['/api/fund-objectives/options'],
+    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
+  });
 
   // Inicializar seleção se o objetivo inicial corresponder a uma opção pré-definida
   useEffect(() => {
-    if (initialObjective) {
+    if (initialObjective && objetivosPredefinidos.length > 0) {
       setObjetivo(initialObjective);
-      const opcaoCorrespondente = objetivosPredefinidos.find(obj => obj.name === initialObjective);
+      const opcaoCorrespondente = objetivosPredefinidos.find(obj => obj.title === initialObjective);
       if (opcaoCorrespondente) {
         setObjetivoSelecionado(opcaoCorrespondente.id);
       }
     }
-  }, [initialObjective]);
+  }, [initialObjective, objetivosPredefinidos]);
 
   const handleObjetivoSelecionado = (id: string) => {
     const objetivoObj = objetivosPredefinidos.find(obj => obj.id === id);
     if (objetivoObj) {
-      setObjetivo(objetivoObj.name);
+      setObjetivo(objetivoObj.title);
       setObjetivoSelecionado(id);
     }
   };
@@ -114,18 +133,30 @@ export default function FundObjectiveForm({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setObjetivo(e.target.value);
     // Se o usuário digitar, limpar seleção dos cards
-    if (e.target.value !== objetivosPredefinidos.find(obj => obj.id === objetivoSelecionado)?.name) {
+    if (e.target.value !== objetivosPredefinidos.find(obj => obj.id === objetivoSelecionado)?.title) {
       setObjetivoSelecionado('');
     }
   };
 
   const handleSubmit = () => {
     if (objetivo.trim()) {
-      onSubmit(objetivo.trim());
+      if (objetivoSelecionado) {
+        // Objetivo padrão selecionado
+        onSubmit({
+          type: 'standard',
+          objectiveOptionId: objetivoSelecionado
+        });
+      } else {
+        // Objetivo personalizado
+        onSubmit({
+          type: 'custom',
+          customObjective: objetivo.trim()
+        });
+      }
     }
   };
 
-  const podeAvancar = objetivo.trim() && !isLoading;
+  const podeAvancar = objetivo.trim() && !isLoading && !loadingOptions;
 
   return (
     <div className="min-h-screen bg-creme">
@@ -234,17 +265,19 @@ export default function FundObjectiveForm({
                 ))}
               </div>
               
-              {/* Quinta opção centralizada */}
-              <div className="flex justify-center mt-4">
-                <div className="w-1/2">
-                  <IconCard
-                    key={objetivosPredefinidos[4].id}
-                    option={objetivosPredefinidos[4]}
-                    isSelected={objetivoSelecionado === objetivosPredefinidos[4].id}
-                    onSelect={isLoading ? undefined : handleObjetivoSelecionado}
-                  />
+              {/* Quinta opção centralizada se existir */}
+              {objetivosPredefinidos.length > 4 && (
+                <div className="flex justify-center mt-4">
+                  <div className="w-1/2">
+                    <IconCard
+                      key={objetivosPredefinidos[4].id}
+                      option={objetivosPredefinidos[4]}
+                      isSelected={objetivoSelecionado === objetivosPredefinidos[4].id}
+                      onSelect={isLoading ? undefined : handleObjetivoSelecionado}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
