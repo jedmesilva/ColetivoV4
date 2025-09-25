@@ -10,6 +10,9 @@ import {
   type FundContributionRates, type InsertFundContributionRates,
   type FundRetributionRates, type InsertFundRetributionRates,
   type FundDistributionSettings, type InsertFundDistributionSettings,
+  // Fund objectives
+  type FundObjectiveOption, type FundObjectiveHistory, type CurrentFundObjective,
+  type SetStandardObjective, type SetCustomObjective,
   // Maintain compatibility
   type User, type InsertUser
 } from "@shared/schema";
@@ -85,6 +88,13 @@ export interface IStorage {
   // Fund distribution settings operations
   getFundDistributionSettings(fundId: string): Promise<FundDistributionSettings | undefined>;
   updateFundDistributionSettings(insertSettings: InsertFundDistributionSettings): Promise<FundDistributionSettings>;
+
+  // Fund objective operations
+  getFundObjectiveOptions(): Promise<FundObjectiveOption[]>;
+  getCurrentFundObjective(fundId: string): Promise<CurrentFundObjective | null>;
+  setStandardObjective(data: SetStandardObjective): Promise<FundObjectiveHistory>;
+  setCustomObjective(data: SetCustomObjective): Promise<FundObjectiveHistory>;
+  getFundObjectiveHistory(fundId: string): Promise<FundObjectiveHistory[]>;
 }
 
 // Supabase storage implementation
@@ -1680,6 +1690,182 @@ class SupabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error updating fund distribution settings:', error);
       throw error;
+    }
+  }
+
+  // ============================================================================
+  // FUND OBJECTIVE OPERATIONS
+  // ============================================================================
+
+  async getFundObjectiveOptions(): Promise<FundObjectiveOption[]> {
+    try {
+      const { data, error } = await supabase
+        .from('fund_objective_options')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching fund objective options:', error);
+        // Return hardcoded options if table doesn't exist yet
+        return [
+          { id: 'temp-1', title: 'Compras', description: 'Compras em geral', icon: 'ShoppingCart', isActive: true, displayOrder: 1, createdAt: new Date() },
+          { id: 'temp-2', title: 'Viagens', description: 'Gastos com viagens', icon: 'Plane', isActive: true, displayOrder: 2, createdAt: new Date() },
+          { id: 'temp-3', title: 'Aluguel', description: 'Pagamento de aluguel', icon: 'Home', isActive: true, displayOrder: 3, createdAt: new Date() },
+          { id: 'temp-4', title: 'Churrasco', description: 'Eventos sociais', icon: 'Users', isActive: true, displayOrder: 4, createdAt: new Date() },
+          { id: 'temp-5', title: 'Emergência', description: 'Situações de emergência', icon: 'AlertCircle', isActive: true, displayOrder: 5, createdAt: new Date() }
+        ] as FundObjectiveOption[];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getFundObjectiveOptions:', error);
+      return [];
+    }
+  }
+
+  async getCurrentFundObjective(fundId: string): Promise<CurrentFundObjective | null> {
+    try {
+      // First try to get from new objective history table
+      const { data: historyData, error: historyError } = await supabase
+        .from('fund_objective_history')
+        .select(`
+          *,
+          fund_objective_options(*),
+          changed_by_account:accounts!changed_by(full_name)
+        `)
+        .eq('fund_id', fundId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!historyError && historyData) {
+        const isStandard = !!historyData.objective_option_id;
+        return {
+          fundId,
+          currentObjective: isStandard 
+            ? historyData.fund_objective_options?.title || 'Objetivo padrão'
+            : historyData.custom_objective || 'Objetivo personalizado',
+          currentIcon: isStandard 
+            ? historyData.fund_objective_options?.icon
+            : historyData.custom_icon,
+          objectiveType: isStandard ? 'standard' : 'custom',
+          definedAt: historyData.created_at,
+          changedByName: historyData.changed_by_account?.full_name
+        };
+      }
+
+      // Fallback: get from old fund.objective field
+      const { data: fundData, error: fundError } = await supabase
+        .from('funds')
+        .select('objective, created_at')
+        .eq('id', fundId)
+        .single();
+
+      if (fundError || !fundData) {
+        return null;
+      }
+
+      return {
+        fundId,
+        currentObjective: fundData.objective || 'Sem objetivo definido',
+        currentIcon: undefined,
+        objectiveType: 'custom',
+        definedAt: fundData.created_at
+      };
+    } catch (error) {
+      console.error('Error in getCurrentFundObjective:', error);
+      return null;
+    }
+  }
+
+  async setStandardObjective(data: SetStandardObjective): Promise<FundObjectiveHistory> {
+    try {
+      // Primeiro, desativar objetivo atual
+      await supabase
+        .from('fund_objective_history')
+        .update({ is_active: false })
+        .eq('fund_id', data.fundId)
+        .eq('is_active', true);
+
+      // Inserir novo objetivo
+      const { data: newObjective, error } = await supabase
+        .from('fund_objective_history')
+        .insert({
+          fund_id: data.fundId,
+          objective_option_id: data.objectiveOptionId,
+          changed_by: data.changedBy,
+          change_reason: data.changeReason || 'Objetivo definido'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to set standard objective: ${error.message}`);
+      }
+
+      return newObjective;
+    } catch (error) {
+      console.error('Error in setStandardObjective:', error);
+      throw error;
+    }
+  }
+
+  async setCustomObjective(data: SetCustomObjective): Promise<FundObjectiveHistory> {
+    try {
+      // Primeiro, desativar objetivo atual
+      await supabase
+        .from('fund_objective_history')
+        .update({ is_active: false })
+        .eq('fund_id', data.fundId)
+        .eq('is_active', true);
+
+      // Inserir novo objetivo personalizado
+      const { data: newObjective, error } = await supabase
+        .from('fund_objective_history')
+        .insert({
+          fund_id: data.fundId,
+          custom_objective: data.customObjective,
+          custom_icon: data.customIcon || 'Target',
+          changed_by: data.changedBy,
+          change_reason: data.changeReason || 'Objetivo personalizado definido'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to set custom objective: ${error.message}`);
+      }
+
+      return newObjective;
+    } catch (error) {
+      console.error('Error in setCustomObjective:', error);
+      throw error;
+    }
+  }
+
+  async getFundObjectiveHistory(fundId: string): Promise<FundObjectiveHistory[]> {
+    try {
+      const { data, error } = await supabase
+        .from('fund_objective_history')
+        .select(`
+          *,
+          fund_objective_options(*),
+          changed_by_account:accounts!changed_by(full_name)
+        `)
+        .eq('fund_id', fundId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching fund objective history:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getFundObjectiveHistory:', error);
+      return [];
     }
   }
 }
