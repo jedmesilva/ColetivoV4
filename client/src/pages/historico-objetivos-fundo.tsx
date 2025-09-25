@@ -1,61 +1,71 @@
 import { ArrowLeft, Target, Clock, Edit } from "lucide-react";
-import { useState } from "react";
 import { useLocation, useRoute } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import type { Fund, FundObjectiveHistory } from "@shared/schema";
+
+// Interface para o objetivo processado para exibição
+interface ProcessedObjective {
+  id: string;
+  description: string;
+  icon?: string;
+  type: 'standard' | 'custom';
+  createdAt: string;
+  changedByName?: string;
+  isActive: boolean;
+}
 
 // Componente para card de objetivo
 function ObjetivoCard({ 
-  objetivo, 
-  isCurrent = false, 
+  objective, 
+  isActive = false, 
   isEditable = false, 
   onEdit 
 }: {
-  objetivo: {
-    id: number;
-    descricao: string;
-    data: string;
-    dataFim?: string | null;
-    definidoPor?: string;
-    isCurrent: boolean;
-  };
-  isCurrent?: boolean;
+  objective: ProcessedObjective;
+  isActive?: boolean;
   isEditable?: boolean;
   onEdit?: () => void;
 }) {
   return (
     <div 
       className={`rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01] ${
-        isCurrent 
+        isActive 
           ? 'border-2 border-opacity-80' 
           : 'border border-dark-light'
       }`}
       style={{ 
-        backgroundColor: isCurrent ? 'rgba(255, 229, 189, 0.2)' : '#fffdfa',
-        borderColor: isCurrent ? 'rgba(255, 229, 189, 0.8)' : 'rgba(48, 48, 48, 0.1)'
+        backgroundColor: isActive ? 'rgba(255, 229, 189, 0.2)' : '#fffdfa',
+        borderColor: isActive ? 'rgba(255, 229, 189, 0.8)' : 'rgba(48, 48, 48, 0.1)'
       }}
-      data-testid={`card-objetivo-${objetivo.id}`}
+      data-testid={`card-objetivo-${objective.id}`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div 
             className="w-12 h-12 rounded-xl flex items-center justify-center"
             style={{ 
-              backgroundColor: isCurrent ? 
+              backgroundColor: isActive ? 
                 'rgba(255, 194, 47, 0.3)' : 
                 'rgba(255, 229, 189, 0.3)',
-              background: isCurrent ? 
+              background: isActive ? 
                 'linear-gradient(135deg, #ffc22f, #fa7653, #fd6b61)' :
                 'rgba(255, 229, 189, 0.3)'
             }}
-            data-testid={`icon-objetivo-${objetivo.id}`}
+            data-testid={`icon-objetivo-${objective.id}`}
           >
-            <Target className="w-6 h-6" style={{ color: isCurrent ? '#fffdfa' : '#303030' }} />
+            {/* Usar emoji se disponível, senão usar ícone Target */}
+            {objective.icon && objective.icon.length <= 4 && !/^[a-zA-Z]/.test(objective.icon) ? (
+              <span className="text-2xl">{objective.icon}</span>
+            ) : (
+              <Target className="w-6 h-6" style={{ color: isActive ? '#fffdfa' : '#303030' }} />
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-semibold text-lg text-dark" data-testid={`title-objetivo-${objetivo.id}`}>
-                {objetivo.descricao}
+              <h4 className="font-semibold text-lg text-dark" data-testid={`title-objetivo-${objective.id}`}>
+                {objective.description}
               </h4>
-              {isCurrent && (
+              {isActive && (
                 <span 
                   className="text-xs px-2 py-1 rounded-full font-medium text-white"
                   style={{ background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)' }}
@@ -67,13 +77,17 @@ function ObjetivoCard({
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-dark opacity-50" />
-              <p className="text-sm text-dark opacity-70" data-testid={`date-objetivo-${objetivo.id}`}>
-                {isCurrent ? `Definido em ${objetivo.data}` : `${objetivo.data} - ${objetivo.dataFim}`}
+              <p className="text-sm text-dark opacity-70" data-testid={`date-objetivo-${objective.id}`}>
+                Definido em {new Date(objective.createdAt).toLocaleDateString('pt-BR', {
+                  day: 'numeric',
+                  month: 'long', 
+                  year: 'numeric'
+                })}
               </p>
             </div>
-            {objetivo.definidoPor && (
-              <p className="text-xs mt-1 text-dark opacity-60" data-testid={`author-objetivo-${objetivo.id}`}>
-                Definido por {objetivo.definidoPor}
+            {objective.changedByName && (
+              <p className="text-xs mt-1 text-dark opacity-60" data-testid={`author-objetivo-${objective.id}`}>
+                Definido por {objective.changedByName}
               </p>
             )}
           </div>
@@ -99,53 +113,41 @@ export default function HistoricoObjetivosFundoScreen() {
   const fundId = params?.id;
   const [, setLocation] = useLocation();
 
-  // Dados simulados do histórico de objetivos
-  const [objetivos] = useState([
-    {
-      id: 1,
-      descricao: "Pagar os custos do time",
-      data: "15 de dezembro de 2024",
-      dataFim: null, // null indica que é o objetivo atual
-      definidoPor: "Lucas Junior",
-      isCurrent: true
-    },
-    {
-      id: 2,
-      descricao: "Comprar uniformes novos",
-      data: "22 de novembro de 2024",
-      dataFim: "14 de dezembro de 2024",
-      definidoPor: "Maria Silva",
-      isCurrent: false
-    },
-    {
-      id: 3,
-      descricao: "Equipamentos esportivos",
-      data: "10 de outubro de 2024",
-      dataFim: "21 de novembro de 2024",
-      definidoPor: "João Santos",
-      isCurrent: false
-    },
-    {
-      id: 4,
-      descricao: "Material de treinamento",
-      data: "03 de setembro de 2024",
-      dataFim: "09 de outubro de 2024",
-      definidoPor: "Carlos Mendes",
-      isCurrent: false
-    },
-    {
-      id: 5,
-      descricao: "Taxas de inscrição",
-      data: "15 de agosto de 2024",
-      dataFim: "02 de setembro de 2024",
-      definidoPor: "Ana Oliveira",
-      isCurrent: false
-    }
-  ]);
+  // Buscar dados do fundo
+  const { data: fund, isLoading: fundLoading } = useQuery<Fund>({
+    queryKey: ['/api/funds', fundId],
+    enabled: !!fundId,
+  });
 
-  const nomeFundo = 'Fundo do futebol';
-  const objetivoAtual = objetivos.find(obj => obj.isCurrent);
-  const objetivosAnteriores = objetivos.filter(obj => !obj.isCurrent);
+  // Buscar histórico de objetivos
+  const { data: objectiveHistory = [], isLoading: historyLoading } = useQuery<FundObjectiveHistory[]>({
+    queryKey: ['/api/funds', fundId, 'objective-history'],
+    enabled: !!fundId,
+  });
+
+  // Processar dados para exibição
+  const processedObjectives = objectiveHistory.map((item: any) => {
+    const isStandard = !!item.objective_option_id;
+    const description = isStandard 
+      ? item.fund_objective_options?.title || 'Objetivo padrão'
+      : item.custom_objective || 'Objetivo personalizado';
+    const icon = isStandard 
+      ? item.fund_objective_options?.icon
+      : item.custom_icon;
+    
+    return {
+      id: item.id,
+      description,
+      icon,
+      type: isStandard ? 'standard' : 'custom' as 'standard' | 'custom',
+      createdAt: item.created_at,
+      changedByName: item.changed_by_account?.full_name,
+      isActive: item.is_active
+    } as ProcessedObjective;
+  });
+
+  const currentObjective = processedObjectives.find(obj => obj.isActive);
+  const previousObjectives = processedObjectives.filter(obj => !obj.isActive);
 
   const handleEditarObjetivo = () => {
     setLocation(`/fund/${fundId}/edit-objective`);
@@ -154,6 +156,24 @@ export default function HistoricoObjetivosFundoScreen() {
   const handleVoltar = () => {
     setLocation(`/fund/${fundId}/settings`);
   };
+
+  // Loading state
+  if (fundLoading || historyLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-creme">
+        <div className="text-xl text-dark">Carregando histórico de objetivos...</div>
+      </div>
+    );
+  }
+
+  // Error state - fund not found
+  if (!fund) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-creme">
+        <div className="text-xl text-dark">Fundo não encontrado</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-creme">
@@ -210,7 +230,7 @@ export default function HistoricoObjetivosFundoScreen() {
               Objetivo do fundo
             </h1>
             <p className="text-lg opacity-90 text-creme" data-testid="page-subtitle">
-              Histórico de objetivos do <span className="font-bold">{nomeFundo}</span>
+              Histórico de objetivos do <span className="font-bold">{fund.name}</span>
             </p>
           </div>
         </div>
@@ -231,35 +251,66 @@ export default function HistoricoObjetivosFundoScreen() {
               </div>
             </div>
 
-            {objetivoAtual && (
+            {currentObjective && (
               <ObjetivoCard
-                objetivo={objetivoAtual}
-                isCurrent={true}
+                objective={currentObjective}
+                isActive={true}
                 isEditable={false}
               />
+            )}
+            
+            {!currentObjective && (
+              <div 
+                className="rounded-3xl p-6 border text-center"
+                style={{ backgroundColor: '#fffdfa', borderColor: 'rgba(48, 48, 48, 0.1)' }}
+                data-testid="no-current-objective"
+              >
+                <Target className="w-12 h-12 mx-auto mb-3 text-dark opacity-30" />
+                <p className="text-dark opacity-70">Nenhum objetivo atual definido</p>
+              </div>
             )}
           </div>
 
           {/* Seção Histórico de Objetivos */}
-          {objetivosAnteriores.length > 0 && (
+          {previousObjectives.length > 0 && (
             <div className="space-y-4">
               <div>
                 <h3 className="text-xl font-bold mb-2 text-dark" data-testid="section-anteriores">
-                  Objetivos anteriores ({objetivosAnteriores.length})
+                  Objetivos anteriores ({previousObjectives.length})
                 </h3>
                 <div className="w-12 h-1 rounded-full mb-6 gradient-bar"></div>
               </div>
 
               {/* Lista de Objetivos Anteriores */}
               <div className="space-y-4" data-testid="list-objetivos-anteriores">
-                {objetivosAnteriores.map((objetivo) => (
+                {previousObjectives.map((objective) => (
                   <ObjetivoCard
-                    key={objetivo.id}
-                    objetivo={objetivo}
-                    isCurrent={false}
+                    key={objective.id}
+                    objective={objective}
+                    isActive={false}
                     isEditable={false}
                   />
                 ))}
+              </div>
+            </div>
+          )}
+          
+          {previousObjectives.length === 0 && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-xl font-bold mb-2 text-dark" data-testid="section-anteriores">
+                  Objetivos anteriores
+                </h3>
+                <div className="w-12 h-1 rounded-full mb-6 gradient-bar"></div>
+              </div>
+              
+              <div 
+                className="rounded-3xl p-6 border text-center"
+                style={{ backgroundColor: '#fffdfa', borderColor: 'rgba(48, 48, 48, 0.1)' }}
+                data-testid="no-previous-objectives"
+              >
+                <Clock className="w-12 h-12 mx-auto mb-3 text-dark opacity-30" />
+                <p className="text-dark opacity-70">Ainda não há objetivos anteriores para este fundo</p>
               </div>
             </div>
           )}
