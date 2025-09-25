@@ -1,7 +1,11 @@
 // Cache local para criação de fundos
 export interface FundData {
   name: string;
-  objective: string;
+  objective: {
+    type: 'standard' | 'custom';
+    objectiveOptionId?: string;
+    customObjective?: string;
+  } | string; // Suporte para compatibilidade com string
   emoji: string;
   imageFile?: File;
   members: Array<{
@@ -22,7 +26,7 @@ export const updateFundCache = (data: Partial<FundData>) => {
   if (!fundCache) {
     fundCache = {
       name: '',
-      objective: '',
+      objective: { type: 'custom', customObjective: '' },
       emoji: '💰',
       members: [{
         id: 0,
@@ -48,6 +52,17 @@ export async function createFundFromCache(): Promise<any> {
 
   console.log('Creating fund from cache:', cached);
 
+  // Determinar objective como string para compatibilidade com API de criação
+  let objectiveString = '';
+  if (typeof cached.objective === 'string') {
+    objectiveString = cached.objective;
+  } else if (cached.objective.type === 'custom') {
+    objectiveString = cached.objective.customObjective || '';
+  } else {
+    // Para objetivo padrão, usar placeholder (será substituído pela nova estrutura)
+    objectiveString = 'Objetivo selecionado';
+  }
+
   // Criar o fundo
   const fundResponse = await fetch('/api/funds', {
     method: 'POST',
@@ -56,7 +71,7 @@ export async function createFundFromCache(): Promise<any> {
     },
     body: JSON.stringify({
       name: cached.name,
-      objective: cached.objective,
+      objective: objectiveString,
       fundImageValue: cached.emoji,
       contributionRate: '100.00',
       retributionRate: '100.00',
@@ -73,6 +88,42 @@ export async function createFundFromCache(): Promise<any> {
 
   const fund = await fundResponse.json();
   console.log('Fund created successfully:', fund);
+  
+  // Agora definir o objetivo usando a nova estrutura
+  if (typeof cached.objective === 'object' && fund.id) {
+    try {
+      if (cached.objective.type === 'standard' && cached.objective.objectiveOptionId) {
+        // Definir objetivo padrão
+        await fetch(`/api/funds/${fund.id}/objective/standard`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            objectiveOptionId: cached.objective.objectiveOptionId,
+            changeReason: 'Objetivo definido durante a criação do fundo'
+          }),
+        });
+      } else if (cached.objective.type === 'custom' && cached.objective.customObjective) {
+        // Definir objetivo personalizado
+        await fetch(`/api/funds/${fund.id}/objective/custom`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            customObjective: cached.objective.customObjective,
+            customIcon: 'Target',
+            changeReason: 'Objetivo personalizado definido durante a criação do fundo'
+          }),
+        });
+      }
+      console.log('Fund objective set successfully using new structure');
+    } catch (objectiveError) {
+      console.error('Error setting fund objective:', objectiveError);
+      // Não falhar a criação do fundo se houver erro ao definir objetivo
+    }
+  }
 
   // TODO: Adicionar membros ao fundo se houver no cache
   if (cached.members && cached.members.length > 1) {

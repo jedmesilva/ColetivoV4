@@ -19,16 +19,23 @@ export default function CreateFundObjective() {
     setLocation('/create-fund/name');
   };
 
-  const handleSubmit = (objective: string) => {
+  const handleSubmit = (objectiveData: { type: 'standard' | 'custom'; objectiveOptionId?: string; customObjective?: string }) => {
     // Salvar no cache
-    updateFundCache({ objective });
+    updateFundCache({ objective: objectiveData });
     // Navegar para a próxima tela
     setLocation('/create-fund/image');
   };
 
   const initialObjective = (() => {
     const cached = getFundCache();
-    return cached?.objective || '';
+    if (cached?.objective) {
+      if (typeof cached.objective === 'string') {
+        return cached.objective;
+      } else if (cached.objective.type === 'custom') {
+        return cached.objective.customObjective || '';
+      }
+    }
+    return '';
   })();
 
   return (
