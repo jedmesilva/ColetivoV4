@@ -157,9 +157,7 @@ export default function HistoricoDadosFundo() {
   };
 
   const handleEditarDados = () => {
-    console.log('Editar dados atuais');
-    // TODO: Implementar navegação para tela de edição de dados
-    // Pode mostrar um modal/sheet com opções: "Alterar nome" e "Alterar imagem"
+    setLocation(`/fund/${fundId}/edit-data`);
   };
 
   if (error) {
