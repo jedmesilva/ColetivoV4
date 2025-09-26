@@ -304,6 +304,12 @@ class SupabaseStorage implements IStorage {
         id, created_by, is_active, created_at, updated_at,
         fund_data!inner (
           name, image_type, image_value
+        ),
+        fund_objective_history!left (
+          custom_objective,
+          fund_objective_options (
+            title, description
+          )
         )
       `)
       .eq('is_active', true)
@@ -312,9 +318,26 @@ class SupabaseStorage implements IStorage {
 
     if (error) throw new Error(error.message);
 
-    // Map data from joined fund_data table
+    // Map data from joined fund_data and fund_objective_history tables
     return (data || []).map(fund => {
       const fundDataItem = Array.isArray(fund.fund_data) ? fund.fund_data[0] : fund.fund_data;
+      const objectiveHistoryItem = Array.isArray(fund.fund_objective_history) ? fund.fund_objective_history[0] : fund.fund_objective_history;
+      
+      // Get objective from fund_objective_history
+      let objective = null;
+      
+      // For now, return a placeholder since fund_objective_history may not have data yet
+      // TODO: This should be populated when objectives are created for existing funds
+      if (objectiveHistoryItem) {
+        if (objectiveHistoryItem.custom_objective) {
+          objective = objectiveHistoryItem.custom_objective;
+        } else if (objectiveHistoryItem.fund_objective_options) {
+          const optionItem = Array.isArray(objectiveHistoryItem.fund_objective_options) 
+            ? objectiveHistoryItem.fund_objective_options[0] 
+            : objectiveHistoryItem.fund_objective_options;
+          objective = optionItem?.title || optionItem?.description || null;
+        }
+      }
       
       return {
         id: fund.id,
@@ -324,6 +347,8 @@ class SupabaseStorage implements IStorage {
         updatedAt: fund.updated_at,
         // Data from fund_data table
         name: fundDataItem?.name || 'Fundo Sem Nome',
+        // Data from fund_objective_history table
+        objective: objective,
         imageType: fundDataItem?.image_type || 'emoji',
         imageValue: fundDataItem?.image_value || '💰'
       };
@@ -339,6 +364,12 @@ class SupabaseStorage implements IStorage {
         fund_data!inner (
           name, image_type, image_value
         ),
+        fund_objective_history!left (
+          custom_objective,
+          fund_objective_options (
+            title, description
+          )
+        ),
         fund_members!inner (account_id, status, role)
       `)
       .eq('is_active', true)
@@ -349,9 +380,26 @@ class SupabaseStorage implements IStorage {
 
     if (error) throw new Error(error.message);
 
-    // Map data from joined fund_data table
+    // Map data from joined fund_data and fund_objective_history tables
     return (data || []).map(fund => {
       const fundDataItem = Array.isArray(fund.fund_data) ? fund.fund_data[0] : fund.fund_data;
+      const objectiveHistoryItem = Array.isArray(fund.fund_objective_history) ? fund.fund_objective_history[0] : fund.fund_objective_history;
+      
+      // Get objective from fund_objective_history
+      let objective = null;
+      
+      // For now, return a placeholder since fund_objective_history may not have data yet
+      // TODO: This should be populated when objectives are created for existing funds
+      if (objectiveHistoryItem) {
+        if (objectiveHistoryItem.custom_objective) {
+          objective = objectiveHistoryItem.custom_objective;
+        } else if (objectiveHistoryItem.fund_objective_options) {
+          const optionItem = Array.isArray(objectiveHistoryItem.fund_objective_options) 
+            ? objectiveHistoryItem.fund_objective_options[0] 
+            : objectiveHistoryItem.fund_objective_options;
+          objective = optionItem?.title || optionItem?.description || null;
+        }
+      }
       
       return {
         id: fund.id,
@@ -361,6 +409,8 @@ class SupabaseStorage implements IStorage {
         updatedAt: fund.updated_at,
         // Data from fund_data table
         name: fundDataItem?.name || 'Fundo Sem Nome',
+        // Data from fund_objective_history table
+        objective: objective,
         imageType: fundDataItem?.image_type || 'emoji',
         imageValue: fundDataItem?.image_value || '💰'
       };
@@ -374,6 +424,12 @@ class SupabaseStorage implements IStorage {
         id, created_by, is_active, created_at, updated_at,
         fund_data!inner (
           name, image_type, image_value
+        ),
+        fund_objective_history!left (
+          custom_objective,
+          fund_objective_options (
+            title, description
+          )
         )
       `)
       .eq('id', id)
