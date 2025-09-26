@@ -438,6 +438,9 @@ class SupabaseStorage implements IStorage {
           fund_objective_options (
             title, description
           )
+        ),
+        creator_account:accounts!created_by (
+          full_name
         )
       `)
       .eq('id', id)
@@ -447,10 +450,12 @@ class SupabaseStorage implements IStorage {
     if (error || !data) return undefined;
 
     const fundDataItem = Array.isArray(data.fund_data) ? data.fund_data[0] : data.fund_data;
+    const creatorAccount = Array.isArray(data.creator_account) ? data.creator_account[0] : data.creator_account;
 
     return {
       id: data.id,
       createdBy: data.created_by,
+      createdByName: creatorAccount?.full_name || 'Usuário desconhecido',
       isActive: data.is_active,
       createdAt: data.created_at,
       updatedAt: data.updated_at,

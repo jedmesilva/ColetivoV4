@@ -507,6 +507,7 @@ export type Fund = typeof funds.$inferSelect & {
   objective?: string | null;
   imageType: string;
   imageValue: string;
+  createdByName?: string;
 };
 
 export type InsertFundData = z.infer<typeof insertFundDataSchema>;
