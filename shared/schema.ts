@@ -21,6 +21,7 @@ export const transactionStatusEnum = pgEnum('transaction_status_enum', [
 ]);
 
 export const fundImageTypeEnum = pgEnum('fund_image_type_enum', ['emoji', 'url']);
+export const fundDataImageTypeEnum = pgEnum('fund_data_image_type_enum', ['emoji', 'url']);
 export const governanceTypeEnum = pgEnum('governance_type_enum', ['quorum', 'unanimous']);
 export const votingRestrictionEnum = pgEnum('voting_restriction_enum', ['all_members', 'admins_only']);
 
@@ -80,14 +81,22 @@ export const accounts = pgTable("accounts", {
 // Fundos coletivos
 export const funds = pgTable("funds", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: varchar("name", { length: 255 }).notNull(),
-  objective: text("objective"),
   createdBy: uuid("created_by").references(() => accounts.id),
-  fundImageType: fundImageTypeEnum("fund_image_type").default('emoji'),
-  fundImageValue: varchar("fund_image_value", { length: 500 }).default('💰'),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Dados dos fundos (nome e imagem com histórico)
+export const fundData = pgTable("fund_data", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => funds.id, { onDelete: 'cascade' }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  imageType: fundDataImageTypeEnum("image_type").default('emoji').notNull(),
+  imageValue: varchar("image_value", { length: 500 }).default('💰').notNull(),
+  changedBy: uuid("changed_by").references(() => accounts.id).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Transações das contas
@@ -313,9 +322,16 @@ export const insertAccountSchema = createInsertSchema(accounts).pick({
 
 // Schemas para funds (atualizado para nova estrutura)
 export const insertFundSchema = createInsertSchema(funds).pick({
+  createdBy: true,
+});
+
+// Schema para dados do fundo (nome e imagem)
+export const insertFundDataSchema = createInsertSchema(fundData).pick({
+  fundId: true,
   name: true,
-  objective: true,
-  fundImageValue: true,
+  imageType: true,
+  imageValue: true,
+  changedBy: true,
 });
 
 // Schemas para contributions (atualizado)
@@ -508,6 +524,9 @@ export type Account = typeof accounts.$inferSelect;
 
 export type InsertFund = z.infer<typeof insertFundSchema>;
 export type Fund = typeof funds.$inferSelect;
+
+export type InsertFundData = z.infer<typeof insertFundDataSchema>;
+export type FundData = typeof fundData.$inferSelect;
 
 export type InsertContribution = z.infer<typeof insertContributionSchema>;
 export type Contribution = typeof contributions.$inferSelect;
