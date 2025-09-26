@@ -41,22 +41,19 @@ export default function FundSettings() {
   };
 
   const calculateGrowth = () => {
-    if (!financialSummary) return { value: 0, text: "0%" };
+    if (!financialSummary) return { value: 0, text: "R$ 0,00" };
     
     const contributions = parseFloat(financialSummary.totalContributions);
     const capitalRequests = parseFloat(financialSummary.totalCapitalRequests); 
     const retributions = parseFloat(financialSummary.totalRetributions);
     
-    // Saldo atual = contribuições - concessões + retribuições
-    const currentBalance = contributions - capitalRequests + retributions;
+    // Crescimento do fundo = contribuições - concessões + retribuições
+    const fundGrowth = contributions - capitalRequests + retributions;
     
-    // Crescimento = (saldo atual - contribuições) / contribuições * 100
-    if (contributions === 0) return { value: 0, text: "0%" };
+    // Formatar como moeda
+    const formattedGrowth = formatCurrency(fundGrowth);
     
-    const growth = ((currentBalance - contributions) / contributions) * 100;
-    const formattedGrowth = growth > 0 ? `+${growth.toFixed(1)}%` : `${growth.toFixed(1)}%`;
-    
-    return { value: growth, text: formattedGrowth };
+    return { value: fundGrowth, text: formattedGrowth };
   };
 
   if (isLoading) {
@@ -367,7 +364,7 @@ export default function FundSettings() {
                           WebkitTextFillColor: 'transparent',
                           backgroundClip: 'text'
                         }}
-                        data-testid="growth-percentage"
+                        data-testid="growth-value"
                       >
                         {calculateGrowth().text}
                       </p>
