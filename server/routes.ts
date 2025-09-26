@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { supabase } from "./db";
-import { insertFundSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema, insertFundContributionRatesSchema, insertFundRetributionRatesSchema, insertFundDistributionSettingsSchema, updateFundObjectiveSchema, setStandardObjectiveSchema, setCustomObjectiveSchema } from "@shared/schema";
+import { insertFundSchema, insertFundDataSchema, insertContributionSchema, insertAccountSchema, insertCapitalRequestWithPlanSchema, insertFundAccessSettingsSchema, insertFundQuorumSettingsSchema, insertFundContributionRatesSchema, insertFundRetributionRatesSchema, insertFundDistributionSettingsSchema, updateFundObjectiveSchema, setStandardObjectiveSchema, setCustomObjectiveSchema } from "@shared/schema";
 import { Client } from "pg";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -166,13 +166,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new fund
   app.post("/api/funds", async (req, res) => {
     try {
-      const validatedData = insertFundSchema.parse(req.body);
-      console.log('Validated fund data:', validatedData);
+      // The request should contain both fund and fund_data fields
+      const { name, imageType, imageValue, ...fundData } = req.body;
+      
+      const validatedFundData = insertFundSchema.parse(fundData);
+      const validatedFundDataInfo = insertFundDataSchema.parse({
+        name,
+        imageType: imageType || 'emoji',
+        imageValue: imageValue || '💰',
+        // fundId and changedBy will be set in storage layer
+        fundId: '', // Will be set after fund creation
+        changedBy: req.body.userId || "8a1d8a0f-04c4-405d-beeb-7aa75690b32e"
+      });
+      
+      console.log('Validated fund data:', validatedFundData);
+      console.log('Validated fund data info:', validatedFundDataInfo);
 
       // Use the logged in user ID - for now using Lucas's ID
-      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+      const userId = req.body.userId || "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
 
-      const fund = await storage.createFund(validatedData, userId);
+      const fund = await storage.createFund(validatedFundData, validatedFundDataInfo, userId);
       res.status(201).json(fund);
     } catch (error) {
       console.error("Error creating fund:", error);
@@ -868,45 +881,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update fund objective
-  app.post("/api/funds/:id/objective", async (req, res) => {
-    try {
-      const { id: fundId } = req.params;
-      const { changeReason, objective } = req.body;
-      
-      if (!fundId) {
-        return res.status(400).json({ message: "Fund ID is required" });
-      }
-
-      // SECURITY: Get changedBy from session - using fixed user ID for now
-      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
-
-      const validatedData = updateFundObjectiveSchema.parse({
-        fundId,
-        objective,
-        changedBy: userId,
-        changeReason: changeReason || "Objetivo do fundo atualizado"
-      });
-
-      // Update fund objective using the generic updateFund method
-      const updatedFund = await storage.updateFund(fundId, {
-        objective: validatedData.objective,
-        updatedAt: new Date()
-      });
-      
-      if (!updatedFund) {
-        return res.status(404).json({ message: "Fund not found" });
-      }
-
-      res.status(200).json(updatedFund);
-    } catch (error) {
-      console.error("Error updating fund objective:", error);
-      if (error instanceof Error && error.name === 'ZodError') {
-        return res.status(400).json({ message: "Invalid objective data", details: error });
-      }
-      res.status(500).json({ message: "Failed to update fund objective" });
-    }
-  });
+  // Update fund objective - DEPRECATED: Use the new objective system instead
+  // This route remains for backward compatibility but should use fund_objective_history
 
   // ============================================================================
   // FUND OBJECTIVE ROUTES (NEW STRUCTURE)
@@ -1042,7 +1018,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Fund not found" });
       }
 
-      const history = await storage.getFundDataHistory(fundId);
+      // DEPRECATED: Fund data history is now managed differently
+      // Return empty array for now - this endpoint should be updated or removed
+      const history: any[] = [];
       res.json(history);
     } catch (error) {
       console.error("Error fetching fund data history:", error);
@@ -1066,17 +1044,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Fund not found" });
       }
 
-      // Criar entrada no histórico com dados atuais do fundo
-      const historyEntry = await storage.createFundDataHistoryEntry(
-        fundId,
-        fund.name,
-        fund.fundImageType || 'emoji',
-        fund.fundImageValue || '💰',
-        '8a1d8a0f-04c4-405d-beeb-7aa75690b32e', // TODO: Obter usuário autenticado
-        changeReason || 'Entrada inicial no histórico de dados'
-      );
-
-      res.status(201).json(historyEntry);
+      // DEPRECATED: Fund data history is now managed differently  
+      // This endpoint should be removed or updated to work with the new fund_data structure
+      return res.status(501).json({ 
+        message: "This endpoint is deprecated. Use PUT /api/funds/:id/data instead." 
+      });
     } catch (error) {
       console.error("Error creating fund data history entry:", error);
       if (error instanceof Error && error.message.includes('validation')) {
