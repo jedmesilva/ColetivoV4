@@ -39,6 +39,7 @@ import HistoricoContribuicoesFundo from "@/pages/historico-contribuicoes-fundo";
 import HistoricoObjetivosFundo from "@/pages/historico-objetivos-fundo";
 import HistoricoDadosFundo from "@/pages/historico-dados-fundo";
 import EditFundObjective from "@/pages/edit-fund-objective";
+import EditFundData from "@/pages/edit-fund-data";
 
 // Componentes wrapper para rotas protegidas
 const ProtectedHome = () => <ProtectedRoute><Home /></ProtectedRoute>;
@@ -70,6 +71,7 @@ const ProtectedHistoricoContribuicoesFundo = () => <ProtectedRoute><HistoricoCon
 const ProtectedHistoricoObjetivosFundo = () => <ProtectedRoute><HistoricoObjetivosFundo /></ProtectedRoute>;
 const ProtectedHistoricoDadosFundo = () => <ProtectedRoute><HistoricoDadosFundo /></ProtectedRoute>;
 const ProtectedEditFundObjective = () => <ProtectedRoute><EditFundObjective /></ProtectedRoute>;
+const ProtectedEditFundData = () => <ProtectedRoute><EditFundData /></ProtectedRoute>;
 
 function Router() {
   return (
@@ -110,6 +112,7 @@ function Router() {
       <Route path="/fund/:id/historico-objetivos" component={ProtectedHistoricoObjetivosFundo} />
       <Route path="/fund/:id/historico-dados" component={ProtectedHistoricoDadosFundo} />
       <Route path="/fund/:id/edit-objective" component={ProtectedEditFundObjective} />
+      <Route path="/fund/:id/edit-data" component={ProtectedEditFundData} />
       <Route component={NotFound} />
     </Switch>
   );
