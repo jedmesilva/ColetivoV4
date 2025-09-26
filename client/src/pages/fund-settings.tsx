@@ -385,7 +385,7 @@ export default function FundSettings() {
               data-testid="creation-info"
             >
               <p className="text-sm text-dark opacity-70">
-                Criado em <span className="font-medium text-dark">{formatDate(fund.createdAt)}</span> • por <span className="font-medium text-dark">Lucas Junior</span>
+                Criado em <span className="font-medium text-dark">{formatDate(fund.createdAt)}</span> • por <span className="font-medium text-dark">{fund.createdByName || 'Usuário desconhecido'}</span>
               </p>
             </div>
           </div>
