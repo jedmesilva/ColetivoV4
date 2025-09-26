@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { Users, Cog, Percent, Target, ChevronRight, Settings, Edit, ArrowLeft, TrendingUp } from "lucide-react";
+import { Users, Cog, Percent, Target, ChevronRight, Settings, Info, ArrowLeft, TrendingUp } from "lucide-react";
 import { Fund } from "@shared/schema";
 
 export default function FundSettings() {
@@ -247,11 +247,11 @@ export default function FundSettings() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-bege-transparent">
-                      <Edit className="w-7 h-7 text-dark" />
+                      <Info className="w-7 h-7 text-dark" />
                     </div>
                     <div className="text-left">
                       <h3 className="text-xl font-bold mb-1 text-dark">Dados do fundo</h3>
-                      <p className="text-sm text-dark opacity-70">Alterar nome e imagem</p>
+                      <p className="text-sm text-dark opacity-70">Histórico de alterações</p>
                     </div>
                   </div>
                   <ChevronRight className="w-6 h-6 text-dark" />
