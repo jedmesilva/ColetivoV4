@@ -50,8 +50,10 @@ export default function FundSettings() {
     // Crescimento do fundo = contribuições - concessões + retribuições
     const fundGrowth = contributions - capitalRequests + retributions;
     
-    // Formatar como moeda
-    const formattedGrowth = formatCurrency(fundGrowth);
+    // Formatar como moeda com sinal de + quando positivo
+    const formattedGrowth = fundGrowth >= 0 
+      ? `+${formatCurrency(fundGrowth)}` 
+      : formatCurrency(fundGrowth);
     
     return { value: fundGrowth, text: formattedGrowth };
   };
