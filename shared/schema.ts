@@ -561,6 +561,13 @@ export type FundObjectiveHistory = typeof fundObjectiveHistory.$inferSelect;
 export type SetStandardObjective = z.infer<typeof setStandardObjectiveSchema>;
 export type SetCustomObjective = z.infer<typeof setCustomObjectiveSchema>;
 
+// Tipo para resumo financeiro do fundo
+export type FundFinancialSummary = {
+  totalContributions: string; // Total das contribuições
+  totalCapitalRequests: string; // Total das concessões aprovadas (status 'completed')  
+  totalRetributions: string; // Total das retribuições
+};
+
 // Tipo para objetivo atual de um fundo (view combinada)
 export type CurrentFundObjective = {
   fundId: string;
