@@ -13,6 +13,8 @@ import {
   // Fund objectives
   type FundObjectiveOption, type FundObjectiveHistory, type CurrentFundObjective,
   type SetStandardObjective, type SetCustomObjective,
+  // Fund financial summary
+  type FundFinancialSummary,
   // Maintain compatibility
   type User, type InsertUser
 } from "@shared/schema";
@@ -103,6 +105,9 @@ export interface IStorage {
 
   // Fund data history operations
   getFundDataHistory(fundId: string): Promise<FundData[]>;
+
+  // Fund financial summary
+  getFundFinancialSummary(fundId: string): Promise<FundFinancialSummary>;
 
 }
 
@@ -2045,6 +2050,67 @@ class SupabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error in getFundDataHistory:', error);
       return [];
+    }
+  }
+
+  async getFundFinancialSummary(fundId: string): Promise<FundFinancialSummary> {
+    try {
+      // 1. Buscar total das contribuições 
+      const { data: contributionsData, error: contributionsError } = await supabase
+        .from('contributions')
+        .select('amount')
+        .eq('fund_id', fundId)
+        .eq('status', 'completed');
+
+      if (contributionsError) {
+        console.error('Error fetching contributions:', contributionsError);
+      }
+
+      // 2. Buscar total das solicitações de capital aprovadas (status 'completed')
+      const { data: capitalRequestsData, error: capitalRequestsError } = await supabase
+        .from('capital_requests')
+        .select('amount')
+        .eq('fund_id', fundId)
+        .eq('status', 'completed');
+
+      if (capitalRequestsError) {
+        console.error('Error fetching capital requests:', capitalRequestsError);
+      }
+
+      // 3. Buscar total das retribuições
+      const { data: retributionsData, error: retributionsError } = await supabase
+        .from('retributions')
+        .select('amount')
+        .eq('fund_id', fundId)
+        .eq('status', 'completed');
+
+      if (retributionsError) {
+        console.error('Error fetching retributions:', retributionsError);
+      }
+
+      // Calcular totais
+      const totalContributions = (contributionsData || [])
+        .reduce((sum, item) => sum + parseFloat(item.amount || '0'), 0);
+
+      const totalCapitalRequests = (capitalRequestsData || [])
+        .reduce((sum, item) => sum + parseFloat(item.amount || '0'), 0);
+
+      const totalRetributions = (retributionsData || [])
+        .reduce((sum, item) => sum + parseFloat(item.amount || '0'), 0);
+
+      return {
+        totalContributions: totalContributions.toFixed(2),
+        totalCapitalRequests: totalCapitalRequests.toFixed(2),
+        totalRetributions: totalRetributions.toFixed(2)
+      };
+    } catch (error) {
+      console.error('Error in getFundFinancialSummary:', error);
+      // Return zeros if there's an error
+      return {
+        totalContributions: '0.00',
+        totalCapitalRequests: '0.00', 
+        totalRetributions: '0.00'
+      };
     }
   }
 }
