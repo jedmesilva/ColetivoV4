@@ -2,8 +2,8 @@
 
 import { supabase } from "./db";
 import {
-  type Account, type Fund, type Contribution, type FundMember, type AccountTransaction, type Retribution,
-  type InsertAccount, type InsertFund, type InsertContribution, type InsertFundMember, type InsertRetribution,
+  type Account, type Fund, type FundData, type Contribution, type FundMember, type AccountTransaction, type Retribution,
+  type InsertAccount, type InsertFund, type InsertFundData, type InsertContribution, type InsertFundMember, type InsertRetribution,
   type CapitalRequest, type InsertCapitalRequestWithPlan, type RetributionPlan,
   type FundAccessSettings, type InsertFundAccessSettings,
   type FundQuorumSettings, type InsertFundQuorumSettings,
@@ -41,8 +41,13 @@ export interface IStorage {
   getFunds(): Promise<Fund[]>;
   getFundsForUser(accountId: string): Promise<Fund[]>;
   getFund(id: string): Promise<Fund | undefined>;
-  createFund(insertFund: InsertFund, userId: string): Promise<Fund>;
+  createFund(insertFund: InsertFund, insertFundData: InsertFundData, userId: string): Promise<Fund>;
   updateFund(id: string, updates: Partial<Fund>): Promise<Fund | undefined>;
+  
+  // Fund data operations
+  createFundData(insertFundData: InsertFundData): Promise<FundData>;
+  getFundData(fundId: string): Promise<FundData | undefined>;
+  updateFundData(fundId: string, insertFundData: InsertFundData): Promise<FundData>;
 
   // Fund member operations
   getFundMembers(fundId: string): Promise<FundMember[]>;
@@ -96,9 +101,6 @@ export interface IStorage {
   setCustomObjective(data: SetCustomObjective): Promise<FundObjectiveHistory>;
   getFundObjectiveHistory(fundId: string): Promise<FundObjectiveHistory[]>;
 
-  // Fund data history operations  
-  getFundDataHistory(fundId: string): Promise<any[]>;
-  createFundDataHistoryEntry(fundId: string, name: string, fundImageType: string, fundImageValue: string, changedBy: string, changeReason?: string): Promise<any>;
 }
 
 // Supabase storage implementation
@@ -299,41 +301,33 @@ class SupabaseStorage implements IStorage {
     const { data, error } = await supabase
       .from('funds')
       .select(`
-        id, name, objective,
-        contribution_rate, retribution_rate,
-        is_open_for_new_members, requires_approval_for_new_members,
-        created_by, fund_image_type, fund_image_value, is_active,
-        governance_type, quorum_percentage, voting_restriction,
-        proposal_expiry_hours, allow_member_proposals, auto_execute_approved,
-        created_at, updated_at
+        id, created_by, is_active, created_at, updated_at,
+        fund_data!inner (
+          name, image_type, image_value
+        )
       `)
       .eq('is_active', true)
+      .eq('fund_data.is_active', true)
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
 
-    // Map snake_case to camelCase for each fund
-    return (data || []).map(fund => ({
-      id: fund.id,
-      name: fund.name,
-      objective: fund.objective,
-      contributionRate: fund.contribution_rate,
-      retributionRate: fund.retribution_rate,
-      isOpenForNewMembers: fund.is_open_for_new_members,
-      requiresApprovalForNewMembers: fund.requires_approval_for_new_members,
-      createdBy: fund.created_by,
-      fundImageType: fund.fund_image_type,
-      fundImageValue: fund.fund_image_value,
-      isActive: fund.is_active,
-      governanceType: fund.governance_type,
-      quorumPercentage: fund.quorum_percentage,
-      votingRestriction: fund.voting_restriction,
-      proposalExpiryHours: fund.proposal_expiry_hours,
-      allowMemberProposals: fund.allow_member_proposals,
-      autoExecuteApproved: fund.auto_execute_approved,
-      createdAt: fund.created_at,
-      updatedAt: fund.updated_at
-    })) as Fund[];
+    // Map data from joined fund_data table
+    return (data || []).map(fund => {
+      const fundDataItem = Array.isArray(fund.fund_data) ? fund.fund_data[0] : fund.fund_data;
+      
+      return {
+        id: fund.id,
+        createdBy: fund.created_by,
+        isActive: fund.is_active,
+        createdAt: fund.created_at,
+        updatedAt: fund.updated_at,
+        // Data from fund_data table
+        name: fundDataItem?.name || 'Fundo Sem Nome',
+        imageType: fundDataItem?.image_type || 'emoji',
+        imageValue: fundDataItem?.image_value || '💰'
+      };
+    }) as Fund[];
   }
 
   // Novo método para buscar fundos onde o usuário é membro ativo
@@ -341,110 +335,127 @@ class SupabaseStorage implements IStorage {
     const { data, error } = await supabase
       .from('funds')
       .select(`
-        id, name, objective, created_by, fund_image_type, fund_image_value, is_active, created_at, updated_at,
+        id, created_by, is_active, created_at, updated_at,
+        fund_data!inner (
+          name, image_type, image_value
+        ),
         fund_members!inner (account_id, status, role)
       `)
       .eq('is_active', true)
+      .eq('fund_data.is_active', true)
       .eq('fund_members.account_id', accountId)
       .eq('fund_members.status', 'active')
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
 
-    // Map usando apenas os campos que existem na tabela simplificada
-    return (data || []).map(fund => ({
-      id: fund.id,
-      name: fund.name,
-      objective: fund.objective,
-      createdBy: fund.created_by,
-      fundImageType: fund.fund_image_type,
-      fundImageValue: fund.fund_image_value,
-      isActive: fund.is_active,
-      createdAt: fund.created_at,
-      updatedAt: fund.updated_at
-    })) as Fund[];
+    // Map data from joined fund_data table
+    return (data || []).map(fund => {
+      const fundDataItem = Array.isArray(fund.fund_data) ? fund.fund_data[0] : fund.fund_data;
+      
+      return {
+        id: fund.id,
+        createdBy: fund.created_by,
+        isActive: fund.is_active,
+        createdAt: fund.created_at,
+        updatedAt: fund.updated_at,
+        // Data from fund_data table
+        name: fundDataItem?.name || 'Fundo Sem Nome',
+        imageType: fundDataItem?.image_type || 'emoji',
+        imageValue: fundDataItem?.image_value || '💰'
+      };
+    }) as Fund[];
   }
 
   async getFund(id: string): Promise<Fund | undefined> {
     const { data, error } = await supabase
       .from('funds')
       .select(`
-        id, name, objective, created_by, fund_image_type, fund_image_value, is_active, created_at, updated_at
+        id, created_by, is_active, created_at, updated_at,
+        fund_data!inner (
+          name, image_type, image_value
+        )
       `)
       .eq('id', id)
+      .eq('fund_data.is_active', true)
       .single();
 
     if (error || !data) return undefined;
 
-    // Map usando apenas os campos que existem na tabela simplificada
+    const fundDataItem = Array.isArray(data.fund_data) ? data.fund_data[0] : data.fund_data;
+
     return {
       id: data.id,
-      name: data.name,
-      objective: data.objective,
       createdBy: data.created_by,
-      fundImageType: data.fund_image_type,
-      fundImageValue: data.fund_image_value,
       isActive: data.is_active,
       createdAt: data.created_at,
-      updatedAt: data.updated_at
+      updatedAt: data.updated_at,
+      // Data from fund_data table
+      name: fundDataItem?.name || 'Fundo Sem Nome',
+      imageType: fundDataItem?.image_type || 'emoji',
+      imageValue: fundDataItem?.image_value || '💰'
     } as Fund;
   }
 
-  async createFund(insertFund: InsertFund, userId: string): Promise<Fund> {
-    console.log('Creating fund with data:', insertFund);
+  async createFund(insertFund: InsertFund, insertFundData: InsertFundData, userId: string): Promise<Fund> {
+    console.log('Creating fund with data:', insertFund, insertFundData);
     console.log('User ID:', userId);
 
-    const fundData = {
-      name: insertFund.name,
-      objective: insertFund.objective,
-      fund_image_type: 'emoji' as const,
-      fund_image_value: insertFund.fundImageValue || '💰',
-      created_by: userId,
-      is_active: true,
-    };
-
-    const { data, error } = await supabase
+    // 1. First create the fund record
+    const { data: fundRecord, error: fundError } = await supabase
       .from('funds')
-      .insert(fundData)
+      .insert({
+        created_by: userId,
+        is_active: true,
+      })
       .select()
       .single();
 
-    if (error) {
-      console.error('Error creating fund:', error);
-      throw new Error(error.message);
+    if (fundError || !fundRecord) {
+      console.error('Error creating fund:', fundError);
+      throw new Error(fundError?.message || 'Failed to create fund');
     }
 
-    if (!data) {
-      throw new Error('Failed to create fund - no data returned');
+    console.log('Fund record created:', fundRecord);
+
+    // 2. Then create the fund data record
+    try {
+      const fundDataRecord = await this.createFundData({
+        fundId: fundRecord.id,
+        name: insertFundData.name,
+        imageType: insertFundData.imageType || 'emoji',
+        imageValue: insertFundData.imageValue || '💰',
+        changedBy: userId
+      });
+
+      console.log('Fund data created:', fundDataRecord);
+    } catch (fundDataError) {
+      console.error('Error creating fund data:', fundDataError);
+      // If fund data creation fails, delete the fund record
+      await supabase.from('funds').delete().eq('id', fundRecord.id);
+      throw new Error('Failed to create fund data');
     }
 
-    console.log('Fund created successfully:', data);
-
-    // Adicionar o criador como admin do fundo
+    // 3. Add creator as admin
     try {
       await this.addFundMember({
-        fundId: data.id,
+        fundId: fundRecord.id,
         accountId: userId,
         role: 'admin'
       });
       console.log('Fund creator added as admin');
     } catch (memberError) {
       console.error('Error adding creator as fund member:', memberError);
-      // Não falhar a criação do fundo por isso
+      // Don't fail fund creation for this
     }
 
-    // Map snake_case to camelCase usando apenas os campos da nova estrutura
-    return {
-      id: data.id,
-      name: data.name,
-      objective: data.objective,
-      createdBy: data.created_by,
-      fundImageType: data.fund_image_type,
-      fundImageValue: data.fund_image_value,
-      isActive: data.is_active,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    } as Fund;
+    // 4. Return the fund with data from fund_data
+    const createdFund = await this.getFund(fundRecord.id);
+    if (!createdFund) {
+      throw new Error('Failed to retrieve created fund');
+    }
+
+    return createdFund;
   }
 
   async updateFund(id: string, updates: Partial<Fund>): Promise<Fund | undefined> {
@@ -1873,101 +1884,75 @@ class SupabaseStorage implements IStorage {
     }
   }
 
-  // Fund data history operations
-  async getFundDataHistory(fundId: string): Promise<any[]> {
-    try {
-      // Buscar histórico de dados ordenado por data (mais recente primeiro)
-      const { data: history, error } = await supabase
-        .from('fund_data_history')
-        .select(`
-          *,
-          accounts!fund_data_history_changed_by_fkey(full_name)
-        `)
-        .eq('fund_id', fundId)
-        .order('created_at', { ascending: false });
+  // Fund data operations
+  async createFundData(insertFundData: InsertFundData): Promise<FundData> {
+    const { data, error } = await supabase
+      .from('fund_data')
+      .insert({
+        fund_id: insertFundData.fundId,
+        name: insertFundData.name,
+        image_type: insertFundData.imageType,
+        image_value: insertFundData.imageValue,
+        changed_by: insertFundData.changedBy,
+        is_active: true
+      })
+      .select()
+      .single();
 
-      if (error) {
-        console.error('Error fetching fund data history:', error);
-        return [];
-      }
-
-      // Transformar dados para o formato esperado pela UI
-      return (history || []).map((entry, index) => {
-        const isFirst = index === 0; // Primeiro item é o atual
-        const nextEntry = history?.[index + 1]; // Próximo item para definir dataFim
-        
-        return {
-          id: entry.id,
-          nome: entry.name,
-          imagem: entry.fund_image_value,
-          tipoImagem: entry.fund_image_type,
-          data: new Date(entry.created_at).toLocaleDateString('pt-BR', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-          }),
-          dataFim: isFirst ? null : (nextEntry ? new Date(nextEntry.created_at).toLocaleDateString('pt-BR', {
-            day: 'numeric',
-            month: 'long', 
-            year: 'numeric'
-          }) : null),
-          alteradoPor: entry.accounts?.full_name || 'Sistema',
-          isCurrent: isFirst
-        };
-      });
-
-    } catch (error) {
-      console.error('Error in getFundDataHistory:', error);
-      return [];
+    if (error || !data) {
+      throw new Error(error?.message || 'Failed to create fund data');
     }
+
+    return {
+      id: data.id,
+      fundId: data.fund_id,
+      name: data.name,
+      imageType: data.image_type,
+      imageValue: data.image_value,
+      changedBy: data.changed_by,
+      isActive: data.is_active,
+      createdAt: data.created_at
+    } as FundData;
   }
 
-  async createFundDataHistoryEntry(
-    fundId: string, 
-    name: string, 
-    fundImageType: string, 
-    fundImageValue: string, 
-    changedBy: string, 
-    changeReason?: string
-  ): Promise<any> {
-    try {
-      // Marcar entrada atual como inativa
-      const { error: updateError } = await supabase
-        .from('fund_data_history')
-        .update({ is_active: false })
-        .eq('fund_id', fundId)
-        .eq('is_active', true);
+  async getFundData(fundId: string): Promise<FundData | undefined> {
+    const { data, error } = await supabase
+      .from('fund_data')
+      .select('*')
+      .eq('fund_id', fundId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
 
-      if (updateError) {
-        console.error('Error deactivating current fund data entry:', updateError);
-      }
+    if (error || !data) return undefined;
 
-      // Criar nova entrada no histórico
-      const { data, error } = await supabase
-        .from('fund_data_history')
-        .insert({
-          fund_id: fundId,
-          name: name,
-          fund_image_type: fundImageType,
-          fund_image_value: fundImageValue,
-          changed_by: changedBy,
-          change_reason: changeReason || 'Dados do fundo alterados',
-          is_active: true
-        })
-        .select()
-        .single();
+    return {
+      id: data.id,
+      fundId: data.fund_id,
+      name: data.name,
+      imageType: data.image_type,
+      imageValue: data.image_value,
+      changedBy: data.changed_by,
+      isActive: data.is_active,
+      createdAt: data.created_at
+    } as FundData;
+  }
 
-      if (error) {
-        console.error('Error creating fund data history entry:', error);
-        throw error;
-      }
+  async updateFundData(fundId: string, insertFundData: InsertFundData): Promise<FundData> {
+    // First deactivate current fund data
+    const { error: deactivateError } = await supabase
+      .from('fund_data')
+      .update({ is_active: false })
+      .eq('fund_id', fundId)
+      .eq('is_active', true);
 
-      return data;
-
-    } catch (error) {
-      console.error('Error in createFundDataHistoryEntry:', error);
-      throw error;
+    if (deactivateError) {
+      console.error('Error deactivating current fund data:', deactivateError);
     }
+
+    // Then create new fund data entry
+    return this.createFundData(insertFundData);
   }
 }
 
