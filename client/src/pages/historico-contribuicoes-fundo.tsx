@@ -23,30 +23,98 @@ export default function HistoricoContribuicoesFundoScreen() {
     metaMensal: 2000.00
   };
 
-  // Carregar contribuições reais do banco
-  const [contribuicoes, setContribuicoes] = useState([]);
-  const [carregandoContribuicoes, setCarregandoContribuicoes] = useState(true);
-
-  useEffect(() => {
-    const carregarContribuicoes = async () => {
-      try {
-        setCarregandoContribuicoes(true);
-        const response = await fetch(`/api/funds/${fundId}/contributions/history`);
-        if (response.ok) {
-          const data = await response.json();
-          setContribuicoes(data);
-        } else {
-          console.error('Erro ao carregar contribuições');
-        }
-      } catch (error) {
-        console.error('Erro ao carregar contribuições:', error);
-      } finally {
-        setCarregandoContribuicoes(false);
-      }
-    };
-
-    carregarContribuicoes();
-  }, [fundId]);
+  // Histórico de contribuições do fundo
+  const contribuicoes = [
+    {
+      id: 1,
+      contribuinte: 'Carlos Mendes',
+      avatarContribuinte: '👤',
+      valor: 200.00,
+      status: 'concluida',
+      metodoPagamento: 'PIX',
+      dataContribuicao: '2025-09-23T16:45:00',
+      dataContribuicaoFormatada: 'Hoje, 16:45',
+      idTransacao: 'TXN-20250923-001234'
+    },
+    {
+      id: 2,
+      contribuinte: 'Ana Silva',
+      avatarContribuinte: '👤',
+      valor: 150.00,
+      status: 'concluida',
+      metodoPagamento: 'Minha conta',
+      dataContribuicao: '2025-09-22T10:30:00',
+      dataContribuicaoFormatada: 'Ontem, 10:30',
+      idTransacao: 'TXN-20250922-005678'
+    },
+    {
+      id: 3,
+      contribuinte: 'João Oliveira',
+      avatarContribuinte: '👤',
+      valor: 100.00,
+      status: 'pendente',
+      metodoPagamento: 'PIX',
+      dataContribuicao: '2025-09-22T14:20:00',
+      dataContribuicaoFormatada: 'Ontem, 14:20',
+      idTransacao: null
+    },
+    {
+      id: 4,
+      contribuinte: 'Maria Santos',
+      avatarContribuinte: '👤',
+      valor: 75.00,
+      status: 'cancelada',
+      metodoPagamento: 'Minha conta',
+      dataContribuicao: '2025-09-21T11:15:00',
+      dataContribuicaoFormatada: '2 dias atrás, 11:15',
+      motivoCancelamento: 'Saldo insuficiente',
+      idTransacao: null
+    },
+    {
+      id: 5,
+      contribuinte: 'Pedro Santos',
+      avatarContribuinte: '👤',
+      valor: 300.00,
+      status: 'concluida',
+      metodoPagamento: 'PIX',
+      dataContribuicao: '2025-09-20T09:45:00',
+      dataContribuicaoFormatada: '3 dias atrás, 09:45',
+      idTransacao: 'TXN-20250920-009876'
+    },
+    {
+      id: 6,
+      contribuinte: 'Lucia Ferreira',
+      avatarContribuinte: '👤',
+      valor: 250.00,
+      status: 'concluida',
+      metodoPagamento: 'Minha conta',
+      dataContribuicao: '2025-09-19T15:30:00',
+      dataContribuicaoFormatada: '4 dias atrás, 15:30',
+      idTransacao: 'TXN-20250919-004321'
+    },
+    {
+      id: 7,
+      contribuinte: 'Roberto Lima',
+      avatarContribuinte: '👤',
+      valor: 120.00,
+      status: 'concluida',
+      metodoPagamento: 'PIX',
+      dataContribuicao: '2025-09-18T08:15:00',
+      dataContribuicaoFormatada: '5 dias atrás, 08:15',
+      idTransacao: 'TXN-20250918-007890'
+    },
+    {
+      id: 8,
+      contribuinte: 'Fernanda Costa',
+      avatarContribuinte: '👤',
+      valor: 180.00,
+      status: 'concluida',
+      metodoPagamento: 'Minha conta',
+      dataContribuicao: '2025-09-17T13:45:00',
+      dataContribuicaoFormatada: '6 dias atrás, 13:45',
+      idTransacao: 'TXN-20250917-002468'
+    }
+  ];
 
   // Filtrar contribuições baseado na busca e status
   const contribuicoesFiltradas = contribuicoes.filter(contribuicao => {
@@ -449,12 +517,7 @@ export default function HistoricoContribuicoesFundoScreen() {
               style={{ background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)' }}
             />
 
-            {carregandoContribuicoes ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                <p className="text-lg text-dark">Carregando contribuições...</p>
-              </div>
-            ) : contribuicoesFiltradas.length === 0 ? (
+            {contribuicoesFiltradas.length === 0 ? (
               <div 
                 className="rounded-3xl p-8 text-center"
                 style={{ backgroundColor: 'rgba(255, 229, 189, 0.1)' }}

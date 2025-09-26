@@ -218,20 +218,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get fund contributions history
-  app.get("/api/funds/:id/contributions/history", async (req, res) => {
-    try {
-      const fundId = req.params.id;
-
-      const contributions = await storage.getFundContributionsHistory(fundId);
-
-      res.json(contributions);
-    } catch (error) {
-      console.error('Error fetching fund contributions history:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
   // Get user's total contributions for a specific fund
   app.get("/api/funds/:fundId/contributions/user/:userId", async (req, res) => {
     try {
