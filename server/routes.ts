@@ -1040,6 +1040,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update fund data (name and image)
+  app.put("/api/funds/:id/data", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+      const { name, imageType, imageValue, changeReason } = req.body;
+
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      if (!name || !imageType || !imageValue) {
+        return res.status(400).json({ message: "Name, imageType, and imageValue are required" });
+      }
+
+      // Verificar se o fundo existe
+      const fund = await storage.getFund(fundId);
+      if (!fund) {
+        return res.status(404).json({ message: "Fund not found" });
+      }
+
+      // SECURITY: Get changedBy from session - using fixed user for now
+      const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
+
+      // Atualizar dados do fundo
+      const updatedFundData = await storage.updateFundData(fundId, {
+        fundId,
+        name: name.trim(),
+        imageType,
+        imageValue,
+        changedBy: userId
+      });
+
+      res.json(updatedFundData);
+    } catch (error) {
+      console.error("Error updating fund data:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid fund data", details: error });
+      }
+      res.status(500).json({ message: "Failed to update fund data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
