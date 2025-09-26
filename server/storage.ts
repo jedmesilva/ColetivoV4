@@ -580,6 +580,66 @@ class SupabaseStorage implements IStorage {
     return data as Contribution[];
   }
 
+  async getFundContributionsHistory(fundId: string): Promise<any[]> {
+    // Buscar contribuições com dados do contribuinte
+    const { data: contributions, error } = await supabase
+      .from('contributions')
+      .select(`
+        id,
+        amount,
+        description,
+        payment_method,
+        status,
+        transaction_id,
+        created_at,
+        processed_at,
+        accounts!contributions_account_id_fkey (
+          full_name
+        )
+      `)
+      .eq('fund_id', fundId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // Formatar dados para o frontend
+    return contributions?.map(contrib => {
+      const dataContribuicao = new Date(contrib.created_at);
+      const agora = new Date();
+      const diffHoras = Math.floor((agora.getTime() - dataContribuicao.getTime()) / (1000 * 60 * 60));
+      
+      let dataFormatada;
+      if (diffHoras < 1) {
+        dataFormatada = 'Agora mesmo';
+      } else if (diffHoras < 24) {
+        dataFormatada = `Hoje, ${dataContribuicao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      } else if (diffHoras < 48) {
+        dataFormatada = `Ontem, ${dataContribuicao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      } else {
+        const diffDias = Math.floor(diffHoras / 24);
+        dataFormatada = `${diffDias} dias atrás, ${dataContribuicao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      }
+
+      return {
+        id: contrib.id,
+        contribuinte: contrib.accounts?.full_name || 'Usuário',
+        avatarContribuinte: '👤',
+        valor: parseFloat(contrib.amount),
+        status: contrib.status === 'completed' ? 'concluida' : 
+                contrib.status === 'pending' ? 'pendente' : 
+                contrib.status === 'failed' ? 'cancelada' : contrib.status,
+        metodoPagamento: contrib.payment_method === 'account_balance' ? 'Minha conta' : 
+                        contrib.payment_method === 'pix' ? 'PIX' : 
+                        contrib.payment_method || 'Não informado',
+        dataContribuicao: contrib.created_at,
+        dataContribuicaoFormatada: dataFormatada,
+        idTransacao: contrib.transaction_id
+      };
+    }) || [];
+  }
+
   async getUserContributionTotal(fundId: string, accountId: string): Promise<number> {
     console.log('getUserContributionTotal called for fundId:', fundId, 'accountId:', accountId);
 
