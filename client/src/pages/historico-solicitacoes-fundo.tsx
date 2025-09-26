@@ -396,60 +396,6 @@ export default function HistoricoSolicitacoesFundoScreen() {
 
         </div>
 
-        {/* Filtros - Fora do container para ocupar toda largura */}
-        <div className="mb-6">
-          <div className="flex gap-2 overflow-x-auto pb-2 px-6">
-            <button
-              onClick={() => setFiltroStatus('todos')}
-              className="whitespace-nowrap px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 flex-shrink-0"
-              style={{ 
-                backgroundColor: filtroStatus === 'todos' ? 'rgba(255, 229, 189, 0.3)' : 'rgba(255, 229, 189, 0.1)',
-                color: '#303030',
-                border: filtroStatus === 'todos' ? '2px solid rgba(255, 229, 189, 0.8)' : '1px solid rgba(48, 48, 48, 0.1)'
-              }}
-              data-testid="filter-todos"
-            >
-              Todas ({estatisticas.totalSolicitacoes})
-            </button>
-            <button
-              onClick={() => setFiltroStatus('pendentes')}
-              className="whitespace-nowrap px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 flex-shrink-0"
-              style={{ 
-                backgroundColor: filtroStatus === 'pendentes' ? 'rgba(255, 229, 189, 0.3)' : 'rgba(255, 229, 189, 0.1)',
-                color: '#303030',
-                border: filtroStatus === 'pendentes' ? '2px solid rgba(255, 229, 189, 0.8)' : '1px solid rgba(48, 48, 48, 0.1)'
-              }}
-              data-testid="filter-pendentes"
-            >
-              Pendentes ({estatisticas.pendentes})
-            </button>
-            <button
-              onClick={() => setFiltroStatus('aprovadas')}
-              className="whitespace-nowrap px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 flex-shrink-0"
-              style={{ 
-                backgroundColor: filtroStatus === 'aprovadas' ? 'rgba(255, 229, 189, 0.3)' : 'rgba(255, 229, 189, 0.1)',
-                color: '#303030',
-                border: filtroStatus === 'aprovadas' ? '2px solid rgba(255, 229, 189, 0.8)' : '1px solid rgba(48, 48, 48, 0.1)'
-              }}
-              data-testid="filter-aprovadas"
-            >
-              Aprovadas ({estatisticas.aprovadas})
-            </button>
-            <button
-              onClick={() => setFiltroStatus('rejeitadas')}
-              className="whitespace-nowrap px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 flex-shrink-0"
-              style={{ 
-                backgroundColor: filtroStatus === 'rejeitadas' ? 'rgba(255, 229, 189, 0.3)' : 'rgba(255, 229, 189, 0.1)',
-                color: '#303030',
-                border: filtroStatus === 'rejeitadas' ? '2px solid rgba(255, 229, 189, 0.8)' : '1px solid rgba(48, 48, 48, 0.1)'
-              }}
-              data-testid="filter-rejeitadas"
-            >
-              Rejeitadas ({estatisticas.rejeitadas})
-            </button>
-          </div>
-        </div>
-
         <div className="px-6">
 
           {/* Lista de Solicitações */}
@@ -466,6 +412,60 @@ export default function HistoricoSolicitacoesFundoScreen() {
               className="w-12 h-1 rounded-full mb-6"
               style={{ background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)' }}
             />
+
+            {/* Filtros - Abaixo do título */}
+            <div className="mb-6 -mx-6">
+              <div className="flex gap-2 overflow-x-auto pb-2 px-6">
+                <button
+                  onClick={() => setFiltroStatus('todos')}
+                  className="whitespace-nowrap px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 flex-shrink-0"
+                  style={{ 
+                    backgroundColor: filtroStatus === 'todos' ? 'rgba(255, 229, 189, 0.3)' : 'rgba(255, 229, 189, 0.1)',
+                    color: '#303030',
+                    border: filtroStatus === 'todos' ? '2px solid rgba(255, 229, 189, 0.8)' : '1px solid rgba(48, 48, 48, 0.1)'
+                  }}
+                  data-testid="filter-todos"
+                >
+                  Todas ({estatisticas.totalSolicitacoes})
+                </button>
+                <button
+                  onClick={() => setFiltroStatus('pendentes')}
+                  className="whitespace-nowrap px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 flex-shrink-0"
+                  style={{ 
+                    backgroundColor: filtroStatus === 'pendentes' ? 'rgba(255, 229, 189, 0.3)' : 'rgba(255, 229, 189, 0.1)',
+                    color: '#303030',
+                    border: filtroStatus === 'pendentes' ? '2px solid rgba(255, 229, 189, 0.8)' : '1px solid rgba(48, 48, 48, 0.1)'
+                  }}
+                  data-testid="filter-pendentes"
+                >
+                  Pendentes ({estatisticas.pendentes})
+                </button>
+                <button
+                  onClick={() => setFiltroStatus('aprovadas')}
+                  className="whitespace-nowrap px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 flex-shrink-0"
+                  style={{ 
+                    backgroundColor: filtroStatus === 'aprovadas' ? 'rgba(255, 229, 189, 0.3)' : 'rgba(255, 229, 189, 0.1)',
+                    color: '#303030',
+                    border: filtroStatus === 'aprovadas' ? '2px solid rgba(255, 229, 189, 0.8)' : '1px solid rgba(48, 48, 48, 0.1)'
+                  }}
+                  data-testid="filter-aprovadas"
+                >
+                  Aprovadas ({estatisticas.aprovadas})
+                </button>
+                <button
+                  onClick={() => setFiltroStatus('rejeitadas')}
+                  className="whitespace-nowrap px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 flex-shrink-0"
+                  style={{ 
+                    backgroundColor: filtroStatus === 'rejeitadas' ? 'rgba(255, 229, 189, 0.3)' : 'rgba(255, 229, 189, 0.1)',
+                    color: '#303030',
+                    border: filtroStatus === 'rejeitadas' ? '2px solid rgba(255, 229, 189, 0.8)' : '1px solid rgba(48, 48, 48, 0.1)'
+                  }}
+                  data-testid="filter-rejeitadas"
+                >
+                  Rejeitadas ({estatisticas.rejeitadas})
+                </button>
+              </div>
+            </div>
 
             {solicitacoesFiltradas.length === 0 ? (
               <div 
