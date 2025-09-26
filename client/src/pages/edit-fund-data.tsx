@@ -76,7 +76,7 @@ export default function EditFundData() {
       title="Alterar dados do fundo"
       subtitle={`Atualize o nome e imagem do fundo ${fund.name}`}
       initialName={fund.name || ''}
-      initialImageType={fund.imageType || 'emoji'}
+      initialImageType={(fund.imageType as 'emoji' | 'url') || 'emoji'}
       initialImageValue={fund.imageValue || '💰'}
       backButtonText="Voltar"
       submitButtonText="Salvar alterações"
