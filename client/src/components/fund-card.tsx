@@ -51,8 +51,8 @@ export default function FundCard({ fund, balance, memberCount, onToggleBalance, 
           <h2 className="text-xl font-bold mb-1 text-dark" data-testid={`fund-name-${fund.id}`}>
             {fund.name}
           </h2>
-          <p className="text-sm text-dark" data-testid={`fund-description-${fund.id}`}>
-            {fund.objective || "Sem descrição"}
+          <p className="text-sm text-dark" data-testid={`fund-objective-${fund.id}`}>
+            {fund.objective || "Sem objetivo definido"}
           </p>
         </div>
         <button 

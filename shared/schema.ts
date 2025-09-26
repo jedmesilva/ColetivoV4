@@ -502,7 +502,12 @@ export type InsertAccount = z.infer<typeof insertAccountSchema>;
 export type Account = typeof accounts.$inferSelect;
 
 export type InsertFund = z.infer<typeof insertFundSchema>;
-export type Fund = typeof funds.$inferSelect;
+export type Fund = typeof funds.$inferSelect & {
+  name: string;
+  objective?: string | null;
+  imageType: string;
+  imageValue: string;
+};
 
 export type InsertFundData = z.infer<typeof insertFundDataSchema>;
 export type FundData = typeof fundData.$inferSelect;
