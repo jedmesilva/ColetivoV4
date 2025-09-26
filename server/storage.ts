@@ -101,6 +101,9 @@ export interface IStorage {
   setCustomObjective(data: SetCustomObjective): Promise<FundObjectiveHistory>;
   getFundObjectiveHistory(fundId: string): Promise<FundObjectiveHistory[]>;
 
+  // Fund data history operations
+  getFundDataHistory(fundId: string): Promise<FundData[]>;
+
 }
 
 // Supabase storage implementation
@@ -2009,6 +2012,40 @@ class SupabaseStorage implements IStorage {
 
     // Then create new fund data entry
     return this.createFundData(insertFundData);
+  }
+
+  async getFundDataHistory(fundId: string): Promise<FundData[]> {
+    try {
+      const { data, error } = await supabase
+        .from('fund_data')
+        .select(`
+          *,
+          changed_by_account:accounts!changed_by(full_name)
+        `)
+        .eq('fund_id', fundId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching fund data history:', error);
+        return [];
+      }
+
+      return (data || []).map(item => ({
+        id: item.id,
+        fundId: item.fund_id,
+        name: item.name,
+        imageType: item.image_type,
+        imageValue: item.image_value,
+        changedBy: item.changed_by,
+        isActive: item.is_active,
+        createdAt: item.created_at,
+        // Add additional fields for the UI
+        changedByName: item.changed_by_account?.full_name
+      })) as FundData[];
+    } catch (error) {
+      console.error('Error in getFundDataHistory:', error);
+      return [];
+    }
   }
 }
 

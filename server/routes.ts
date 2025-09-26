@@ -49,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/funds", async (req, res) => {
     try {
       const accountId = req.query.accountId as string;
-      
+
       if (!accountId) {
         return res.status(400).json({ message: "accountId é obrigatório" });
       }
@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // The request should contain both fund and fund_data fields
       const { name, imageType, imageValue, ...fundData } = req.body;
-      
+
       const validatedFundData = insertFundSchema.parse(fundData);
       const validatedFundDataInfo = insertFundDataSchema.parse({
         name,
@@ -178,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fundId: '', // Will be set after fund creation
         changedBy: req.body.userId || "8a1d8a0f-04c4-405d-beeb-7aa75690b32e"
       });
-      
+
       console.log('Validated fund data:', validatedFundData);
       console.log('Validated fund data info:', validatedFundDataInfo);
 
@@ -333,7 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = "8a1d8a0f-04c4-405d-beeb-7aa75690b32e";
 
       const result = await storage.processContribution(validatedData, userId);
-      
+
       if (result.success) {
         res.status(201).json(result);
       } else {
@@ -437,7 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/capital-requests", async (req, res) => {
     try {
       const { accountId, ...requestData } = req.body;
-      
+
       if (!accountId) {
         return res.status(400).json({ message: "accountId é obrigatório" });
       }
@@ -446,34 +446,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertCapitalRequestWithPlanSchema.parse(requestData);
 
       const result = await storage.createCapitalRequestWithPlan(validatedData, accountId);
-      
+
       res.status(201).json(result);
     } catch (error) {
       console.error("Error creating capital request:", error);
-      
+
       // Melhor tratamento de erros de validação Zod
       if (error instanceof Error && error.name === 'ZodError') {
         const zodError = error as any;
         const firstIssue = zodError.issues?.[0];
-        
+
         if (firstIssue && firstIssue.message.includes('Cada parcela deve ser de no mínimo R$ 0,01')) {
           return res.status(400).json({ 
             message: "Valor muito baixo para dividir em parcelas. Cada parcela deve ser de no mínimo R$ 0,01. Reduza o número de parcelas ou aumente o valor solicitado."
           });
         }
-        
+
         return res.status(400).json({ 
           message: "Dados inválidos: " + (firstIssue?.message || "Verifique os dados informados")
         });
       }
-      
+
       // Melhor tratamento para erros de constraint do banco
       if (error instanceof Error && error.message.includes('retributions_amount_check')) {
         return res.status(400).json({ 
           message: "Valor muito baixo para dividir em parcelas. Cada parcela deve ser de no mínimo R$ 0,01."
         });
       }
-      
+
       res.status(500).json({ message: error instanceof Error ? error.message : "Erro ao criar solicitação de capital" });
     }
   });
@@ -503,20 +503,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: requestId } = req.params;
       const { approverId } = req.body;
-      
+
       console.log(`=== INICIANDO APROVAÇÃO DE CAPITAL REQUEST ===`);
       console.log(`Request ID: ${requestId}`);
       console.log(`Approver ID: ${approverId}`);
-      
+
       if (!approverId) {
         return res.status(400).json({ message: "approverId é obrigatório" });
       }
 
       const result = await storage.approveCapitalRequest(requestId, approverId);
-      
+
       console.log(`=== APROVAÇÃO CONCLUÍDA COM SUCESSO ===`);
       console.log(`Transaction created: ${result.transaction.id}`);
-      
+
       res.status(200).json(result);
     } catch (error) {
       console.error("=== ERRO NA APROVAÇÃO ===");
@@ -530,9 +530,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/capital-requests/:id/approve-test", async (req, res) => {
     try {
       const { id: requestId } = req.params;
-      
+
       console.log(`=== TESTE DE APROVAÇÃO AUTOMÁTICA ===`);
-      
+
       // Buscar a solicitação para pegar os dados
       const { data: request, error: requestError } = await supabase
         .from('capital_requests')
@@ -545,7 +545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`Solicitação encontrada:`, request);
-      
+
       // Buscar um admin do fundo para usar como aprovador
       const { data: admins, error: adminError } = await supabase
         .from('fund_members')
@@ -563,9 +563,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Usando admin ${approverId} para aprovação`);
 
       const result = await storage.approveCapitalRequest(requestId, approverId);
-      
+
       console.log(`=== TESTE DE APROVAÇÃO CONCLUÍDO ===`);
-      
+
       res.status(200).json(result);
     } catch (error) {
       console.error("=== ERRO NO TESTE DE APROVAÇÃO ===");
@@ -579,13 +579,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/funds/:id/access-settings", async (req, res) => {
     try {
       const { id: fundId } = req.params;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
 
       const settings = await storage.getFundAccessSettings(fundId);
-      
+
       if (!settings) {
         // Return default settings if none exist
         const defaultSettings = {
@@ -608,7 +608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: fundId } = req.params;
       const { changeReason, allowsJoinRequests, ...settingsData } = req.body;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
@@ -626,7 +626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const updatedSettings = await storage.updateFundAccessSettings(validatedData);
-      
+
       res.status(200).json(updatedSettings);
     } catch (error) {
       console.error("Error updating fund access settings:", error);
@@ -641,13 +641,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/funds/:id/quorum-settings", async (req, res) => {
     try {
       const { id: fundId } = req.params;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
 
       const settings = await storage.getFundQuorumSettings(fundId);
-      
+
       if (!settings) {
         // Return default settings if none exist
         const defaultSettings = {
@@ -670,7 +670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: fundId } = req.params;
       const { changeReason, ...settingsData } = req.body;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
@@ -694,7 +694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const updatedSettings = await storage.updateFundQuorumSettings(validatedData);
-      
+
       res.status(200).json(updatedSettings);
     } catch (error) {
       console.error("Error updating fund quorum settings:", error);
@@ -709,13 +709,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/funds/:id/contribution-rates", async (req, res) => {
     try {
       const { id: fundId } = req.params;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
 
       const rates = await storage.getFundContributionRates(fundId);
-      
+
       if (!rates) {
         // Return default rates if none exist
         const defaultRates = {
@@ -736,7 +736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: fundId } = req.params;
       const { changeReason, contributionRate } = req.body;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
@@ -752,7 +752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const updatedRates = await storage.updateFundContributionRates(validatedData);
-      
+
       res.status(200).json(updatedRates);
     } catch (error) {
       console.error("Error updating fund contribution rates:", error);
@@ -767,13 +767,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/funds/:id/retribution-rates", async (req, res) => {
     try {
       const { id: fundId } = req.params;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
 
       const rates = await storage.getFundRetributionRates(fundId);
-      
+
       if (!rates) {
         // Return default rates if none exist
         const defaultRates = {
@@ -794,7 +794,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: fundId } = req.params;
       const { changeReason, retributionRate } = req.body;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
@@ -810,7 +810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const updatedRates = await storage.updateFundRetributionRates(validatedData);
-      
+
       res.status(200).json(updatedRates);
     } catch (error) {
       console.error("Error updating fund retribution rates:", error);
@@ -825,13 +825,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/funds/:id/distribution-settings", async (req, res) => {
     try {
       const { id: fundId } = req.params;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
 
       const settings = await storage.getFundDistributionSettings(fundId);
-      
+
       if (!settings) {
         // Return default settings if none exist
         const defaultSettings = {
@@ -852,7 +852,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: fundId } = req.params;
       const { distributionType, changeReason, accountId } = req.body;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
@@ -870,7 +870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const updatedSettings = await storage.updateFundDistributionSettings(validatedData);
-      
+
       res.status(200).json(updatedSettings);
     } catch (error) {
       console.error("Error updating fund distribution settings:", error);
@@ -903,13 +903,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/funds/:id/current-objective", async (req, res) => {
     try {
       const { id: fundId } = req.params;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
 
       const currentObjective = await storage.getCurrentFundObjective(fundId);
-      
+
       if (!currentObjective) {
         return res.status(404).json({ message: "Fund not found or no objective set" });
       }
@@ -926,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: fundId } = req.params;
       const { objectiveOptionId, changeReason } = req.body;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
@@ -942,7 +942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const result = await storage.setStandardObjective(validatedData);
-      
+
       res.status(201).json(result);
     } catch (error) {
       console.error("Error setting standard objective:", error);
@@ -958,7 +958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: fundId } = req.params;
       const { customObjective, customIcon, changeReason } = req.body;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }
@@ -975,7 +975,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const result = await storage.setCustomObjective(validatedData);
-      
+
       res.status(201).json(result);
     } catch (error) {
       console.error("Error setting custom objective:", error);
@@ -987,44 +987,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get objective history for a fund
-  app.get("/api/funds/:id/objective/history", async (req, res) => {
+  app.get("/api/funds/:fundId/objective/history", async (req, res) => {
     try {
-      const { id: fundId } = req.params;
-      
-      if (!fundId) {
-        return res.status(400).json({ message: "Fund ID is required" });
-      }
-
+      const { fundId } = req.params;
       const history = await storage.getFundObjectiveHistory(fundId);
       res.json(history);
     } catch (error) {
-      console.error("Error fetching objective history:", error);
-      res.status(500).json({ message: "Failed to fetch objective history" });
+      console.error('Error fetching fund objective history:', error);
+      res.status(500).json({ error: 'Failed to fetch fund objective history' });
     }
   });
 
-  // Get data history for a fund (name and image changes)
-  app.get("/api/funds/:id/data/history", async (req, res) => {
+  // Get fund data history
+  app.get("/api/funds/:fundId/data/history", async (req, res) => {
     try {
-      const { id: fundId } = req.params;
-      
-      if (!fundId) {
-        return res.status(400).json({ message: "Fund ID is required" });
-      }
-
-      // Verificar se o fundo existe
-      const fund = await storage.getFund(fundId);
-      if (!fund) {
-        return res.status(404).json({ message: "Fund not found" });
-      }
-
-      // DEPRECATED: Fund data history is now managed differently
-      // Return empty array for now - this endpoint should be updated or removed
-      const history: any[] = [];
+      const { fundId } = req.params;
+      const history = await storage.getFundDataHistory(fundId);
       res.json(history);
     } catch (error) {
-      console.error("Error fetching fund data history:", error);
-      res.status(500).json({ message: "Failed to fetch fund data history" });
+      console.error('Error fetching fund data history:', error);
+      res.status(500).json({ error: 'Failed to fetch fund data history' });
     }
   });
 
@@ -1033,7 +1015,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: fundId } = req.params;
       const { changeReason } = req.body;
-      
+
       if (!fundId) {
         return res.status(400).json({ message: "Fund ID is required" });
       }

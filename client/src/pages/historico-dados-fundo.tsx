@@ -28,6 +28,15 @@ function DadosFundoCard({ dados, isCurrent = false, isEditable = false, onEdit }
   isEditable?: boolean;
   onEdit?: () => void;
 }) {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   return (
     <div 
       className="rounded-3xl p-6 border transition-all duration-200 hover:scale-[1.01]"
@@ -48,11 +57,11 @@ function DadosFundoCard({ dados, isCurrent = false, isEditable = false, onEdit }
             }}
             data-testid={`img-fund-${dados.id}`}
           >
-            {dados.tipoImagem === 'emoji' ? (
-              <span className="text-3xl">{dados.imagem}</span>
+            {dados.imageType === 'emoji' ? (
+              <span className="text-3xl">{dados.imageValue}</span>
             ) : (
               <img 
-                src={dados.imagem} 
+                src={dados.imageValue} 
                 alt="Imagem do fundo"
                 className="w-full h-full rounded-2xl object-cover"
               />
@@ -67,7 +76,7 @@ function DadosFundoCard({ dados, isCurrent = false, isEditable = false, onEdit }
                 style={{ color: '#303030' }}
                 data-testid={`text-fund-name-${dados.id}`}
               >
-                {dados.nome}
+                {dados.name}
               </h4>
               {isCurrent && (
                 <span 
@@ -86,16 +95,16 @@ function DadosFundoCard({ dados, isCurrent = false, isEditable = false, onEdit }
                 style={{ color: '#303030', opacity: 0.7 }}
                 data-testid={`text-date-${dados.id}`}
               >
-                {isCurrent ? `Definido em ${dados.data}` : `${dados.data}${dados.dataFim ? ` - ${dados.dataFim}` : ''}`}
+                {formatDate(dados.createdAt)}
               </p>
             </div>
-            {dados.alteradoPor && (
+            {dados.changedByName && (
               <p 
                 className="text-xs truncate" 
                 style={{ color: '#303030', opacity: 0.6 }}
                 data-testid={`text-changed-by-${dados.id}`}
               >
-                Alterado por {dados.alteradoPor}
+                Alterado por {dados.changedByName}
               </p>
             )}
           </div>
@@ -140,8 +149,8 @@ export default function HistoricoDadosFundo() {
   });
 
   const nomeFundo = fund?.name || 'Fundo';
-  const dadosAtuais = dadosHistorico.find((dados: any) => dados.isCurrent);
-  const dadosAnteriores = dadosHistorico.filter((dados: any) => !dados.isCurrent);
+  const dadosAtuais = dadosHistorico.find((dados: any) => dados.isActive);
+  const dadosAnteriores = dadosHistorico.filter((dados: any) => !dados.isActive);
 
   const handleVoltar = () => {
     setLocation(`/fund/${fundId}/settings`);
