@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { Users, Cog, Percent, Target, ChevronRight, Settings, Info, ArrowLeft, TrendingUp } from "lucide-react";
-import { Fund } from "@shared/schema";
+import { Fund, FundFinancialSummary } from "@shared/schema";
 
 export default function FundSettings() {
   const [, params] = useRoute("/fund/:id/settings");
@@ -12,6 +12,11 @@ export default function FundSettings() {
 
   const { data: fund, isLoading } = useQuery<Fund>({
     queryKey: ['/api/funds', fundId],
+    enabled: !!fundId,
+  });
+
+  const { data: financialSummary, isLoading: isLoadingFinancial } = useQuery<FundFinancialSummary>({
+    queryKey: ['/api/funds', fundId, 'financial-summary'],
     enabled: !!fundId,
   });
 
@@ -25,6 +30,33 @@ export default function FundSettings() {
       month: 'long',
       year: 'numeric'
     }).format(dateObj);
+  };
+
+  const formatCurrency = (value: string | number) => {
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(numValue);
+  };
+
+  const calculateGrowth = () => {
+    if (!financialSummary) return { value: 0, text: "0%" };
+    
+    const contributions = parseFloat(financialSummary.totalContributions);
+    const capitalRequests = parseFloat(financialSummary.totalCapitalRequests); 
+    const retributions = parseFloat(financialSummary.totalRetributions);
+    
+    // Saldo atual = contribuições - concessões + retribuições
+    const currentBalance = contributions - capitalRequests + retributions;
+    
+    // Crescimento = (saldo atual - contribuições) / contribuições * 100
+    if (contributions === 0) return { value: 0, text: "0%" };
+    
+    const growth = ((currentBalance - contributions) / contributions) * 100;
+    const formattedGrowth = growth > 0 ? `+${growth.toFixed(1)}%` : `${growth.toFixed(1)}%`;
+    
+    return { value: growth, text: formattedGrowth };
   };
 
   if (isLoading) {
@@ -293,39 +325,56 @@ export default function FundSettings() {
               className="rounded-3xl p-6 border bg-creme border-dark-light"
               data-testid="summary-card"
             >
-              <div className="grid grid-cols-2 gap-6">
-                {/* Coluna Esquerda */}
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm mb-1 text-dark opacity-70">Contribuições</p>
-                    <p className="text-2xl font-bold text-dark">R$ 15.000</p>
-                  </div>
-                  <div>
-                    <p className="text-sm mb-1 text-dark opacity-70">Retribuições</p>
-                    <p className="text-2xl font-bold text-dark">R$ 3.200</p>
-                  </div>
+              {isLoadingFinancial ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-lg text-dark opacity-70">Carregando dados financeiros...</div>
                 </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Coluna Esquerda */}
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm mb-1 text-dark opacity-70">Contribuições</p>
+                      <p className="text-2xl font-bold text-dark" data-testid="total-contributions">
+                        {financialSummary ? formatCurrency(financialSummary.totalContributions) : "R$ 0,00"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm mb-1 text-dark opacity-70">Retribuições</p>
+                      <p className="text-2xl font-bold text-dark" data-testid="total-retributions">
+                        {financialSummary ? formatCurrency(financialSummary.totalRetributions) : "R$ 0,00"}
+                      </p>
+                    </div>
+                  </div>
 
-                {/* Coluna Direita */}
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm mb-1 text-dark opacity-70">Concessões</p>
-                    <p className="text-2xl font-bold text-dark">R$ 8.500</p>
-                  </div>
-                  <div>
-                    <p className="text-sm mb-1 text-dark opacity-70">Crescimento</p>
-                    <p 
-                      className="text-2xl font-bold" 
-                      style={{ 
-                        background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text'
-                      }}
-                    >+0%</p>
+                  {/* Coluna Direita */}
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm mb-1 text-dark opacity-70">Concessões</p>
+                      <p className="text-2xl font-bold text-dark" data-testid="total-capital-requests">
+                        {financialSummary ? formatCurrency(financialSummary.totalCapitalRequests) : "R$ 0,00"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm mb-1 text-dark opacity-70">Crescimento</p>
+                      <p 
+                        className="text-2xl font-bold" 
+                        style={{ 
+                          background: calculateGrowth().value >= 0 
+                            ? 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)'
+                            : 'linear-gradient(90deg, #ff6b6b, #ee5a6f, #dd4a73)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text'
+                        }}
+                        data-testid="growth-percentage"
+                      >
+                        {calculateGrowth().text}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
