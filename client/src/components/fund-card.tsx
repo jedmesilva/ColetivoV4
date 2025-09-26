@@ -44,7 +44,7 @@ export default function FundCard({ fund, balance, memberCount, onToggleBalance, 
       <div className="flex items-start mb-6">
         <div className="w-12 h-12 rounded-xl mr-4 flex items-center justify-center gradient-primary">
           <span className="text-2xl" data-testid={`fund-emoji-${fund.id}`}>
-            {fund.fundImageValue || "💰"}
+            {fund.imageValue || "💰"}
           </span>
         </div>
         <div className="flex-1">

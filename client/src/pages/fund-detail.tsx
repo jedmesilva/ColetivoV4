@@ -183,7 +183,7 @@ export default function FundDetail() {
                 style={{ backgroundColor: 'rgba(255, 253, 250, 0.9)' }}
                 data-testid="fund-emoji-large"
               >
-                <span className="text-4xl">{fund.fundImageValue}</span>
+                <span className="text-4xl">{fund.imageValue}</span>
               </div>
               
               {/* Nome e descrição do fundo */}
