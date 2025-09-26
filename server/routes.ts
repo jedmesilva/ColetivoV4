@@ -163,6 +163,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get fund financial summary (real data from Supabase)
+  app.get("/api/funds/:id/financial-summary", async (req, res) => {
+    try {
+      const { id: fundId } = req.params;
+
+      if (!fundId) {
+        return res.status(400).json({ message: "Fund ID is required" });
+      }
+
+      const summary = await storage.getFundFinancialSummary(fundId);
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching fund financial summary:", error);
+      res.status(500).json({ message: "Failed to fetch fund financial summary" });
+    }
+  });
+
   // Create new fund
   app.post("/api/funds", async (req, res) => {
     try {
