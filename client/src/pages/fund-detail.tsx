@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { Eye, ArrowLeft, ArrowUp, ArrowDown, Users, CreditCard, Heart, Home, User, MessageCircle, ChevronRight } from "lucide-react";
+import { Eye, ArrowLeft, ArrowUp, ArrowDown, Users, CreditCard, Heart, Home, User, MessageCircle, ArrowUpRight } from "lucide-react";
 import { Fund } from "@shared/schema";
 
 export default function FundDetail() {
@@ -295,7 +295,7 @@ export default function FundDetail() {
               >
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-4xl font-bold" style={{ color: '#303030' }}>{formatCurrency(totalContributions)}</h3>
-                  <ChevronRight className="w-6 h-6 transform rotate-[-45deg] flex-shrink-0 ml-4" style={{ color: '#303030', opacity: 0.4 }} />
+                  <ArrowUpRight className="w-6 h-6 flex-shrink-0 ml-4" style={{ color: '#303030', opacity: 0.4 }} />
                 </div>
                 <p className="text-base font-medium mb-3" style={{ color: '#303030', opacity: 0.7 }}>Contribuições no fundo</p>
                 <div className="flex items-center gap-4 pt-2 border-t" style={{ borderColor: 'rgba(48, 48, 48, 0.1)' }}>
@@ -312,7 +312,7 @@ export default function FundDetail() {
               >
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-4xl font-bold" style={{ color: '#303030' }}>{formatCurrency(totalRequests)}</h3>
-                  <ChevronRight className="w-6 h-6 transform rotate-[-45deg] flex-shrink-0 ml-4" style={{ color: '#303030', opacity: 0.4 }} />
+                  <ArrowUpRight className="w-6 h-6 flex-shrink-0 ml-4" style={{ color: '#303030', opacity: 0.4 }} />
                 </div>
                 <p className="text-base font-medium mb-3" style={{ color: '#303030', opacity: 0.7 }}>Solicitações do fundo</p>
                 <div className="flex items-center gap-4 pt-2 border-t" style={{ borderColor: 'rgba(48, 48, 48, 0.1)' }}>
@@ -328,7 +328,7 @@ export default function FundDetail() {
               >
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-4xl font-bold" style={{ color: '#303030' }}>{formatCurrency(totalRetributions)}</h3>
-                  <ChevronRight className="w-6 h-6 transform rotate-[-45deg] flex-shrink-0 ml-4" style={{ color: '#303030', opacity: 0.4 }} />
+                  <ArrowUpRight className="w-6 h-6 flex-shrink-0 ml-4" style={{ color: '#303030', opacity: 0.4 }} />
                 </div>
                 <p className="text-base font-medium mb-3" style={{ color: '#303030', opacity: 0.7 }}>Retribuições no fundo</p>
                 <div className="flex items-center gap-4 pt-2 border-t" style={{ borderColor: 'rgba(48, 48, 48, 0.1)' }}>
