@@ -1,4 +1,4 @@
-import { ArrowLeft, Settings, Search, Plus, Users, ArrowUp, Check, X, AlertCircle, ArrowUpRight, TrendingUp } from "lucide-react";
+import { ArrowLeft, Settings, Search, Plus, Users, Clock, Check, X, AlertCircle, ArrowUpRight, TrendingUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -72,11 +72,11 @@ export default function HistoricoContribuicoesFundoScreen() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
-        return <ArrowUp className="w-5 h-5" style={{ color: '#ffc22f' }} />;
+        return <Clock className="w-4 h-4" style={{ color: '#ffc22f' }} />;
       case 'completed':
-        return <Check className="w-5 h-5" style={{ color: '#4ade80' }} />;
+        return <Check className="w-4 h-4" style={{ color: '#4ade80' }} />;
       case 'cancelled':
-        return <X className="w-5 h-5" style={{ color: '#fd6b61' }} />;
+        return <X className="w-4 h-4" style={{ color: '#fd6b61' }} />;
       default:
         return null;
     }
@@ -209,7 +209,7 @@ export default function HistoricoContribuicoesFundoScreen() {
               </div>
               {estatisticas.pendentes > 0 && (
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm w-fit" style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}>
-                  <ArrowUp className="w-3.5 h-3.5" style={{ color: '#fffdfa' }} />
+                  <Clock className="w-3.5 h-3.5" style={{ color: '#fffdfa' }} />
                   <span className="text-sm" style={{ color: '#fffdfa' }} data-testid="badge-pendentes">
                     {estatisticas.pendentes} contribuições pendentes
                   </span>
@@ -352,7 +352,7 @@ export default function HistoricoContribuicoesFundoScreen() {
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         {getStatusIcon(contribuicao.status)}
-                        <span className="text-xs font-medium hidden sm:inline" style={{ color: getStatusColor(contribuicao.status) }}>
+                        <span className="text-xs font-medium" style={{ color: getStatusColor(contribuicao.status) }}>
                           {getStatusLabel(contribuicao.status)}
                         </span>
                       </div>
