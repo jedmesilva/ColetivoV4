@@ -187,42 +187,34 @@ export default function HistoricoContribuicoesFundoScreen() {
 
           <div className="h-24"></div>
 
-          <div className="px-6">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold mb-2" style={{ color: '#fffdfa' }}>Contribuições</h1>
-              <p className="text-sm opacity-90" style={{ color: '#fffdfa' }}>{fund?.name || 'Carregando...'}</p>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="rounded-2xl p-3 backdrop-blur-sm" style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}>
-                <p className="text-2xl font-bold" style={{ color: '#fffdfa' }} data-testid="stat-concluidas">
-                  {estatisticas.concluidas}
-                </p>
-                <p className="text-xs opacity-90" style={{ color: '#fffdfa' }}>CONCLUÍDAS</p>
-              </div>
-              
-              <div className="rounded-2xl p-3 backdrop-blur-sm" style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}>
-                <p className="text-2xl font-bold" style={{ color: '#fffdfa' }} data-testid="stat-pendentes">
-                  {estatisticas.pendentes}
-                </p>
-                <p className="text-xs opacity-90" style={{ color: '#fffdfa' }}>PENDENTES</p>
-              </div>
-              
-              <div className="rounded-2xl p-3 backdrop-blur-sm" style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}>
-                <p className="text-2xl font-bold" style={{ color: '#fffdfa' }} data-testid="stat-total">
-                  {estatisticas.totalContribuicoes}
-                </p>
-                <p className="text-xs opacity-90" style={{ color: '#fffdfa' }}>TOTAL</p>
-              </div>
+          <div className="px-6 mb-6">
+            <div className="mb-8 pb-6 border-b" style={{ borderColor: 'rgba(255, 253, 250, 0.2)' }}>
+              <h2 className="text-2xl font-bold mb-2" style={{ color: '#fffdfa' }}>Contribuições</h2>
+              <p className="text-sm opacity-70" style={{ color: '#fffdfa' }}>{fund?.name || 'Carregando...'}</p>
             </div>
 
-            <div className="rounded-2xl p-4 backdrop-blur-sm" style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium" style={{ color: '#fffdfa' }}>Total arrecadado</span>
-              </div>
-              <p className="text-2xl font-bold" style={{ color: '#fffdfa' }} data-testid="total-arrecadado">
+            <div className="mb-4">
+              <p className="text-xs uppercase tracking-wider opacity-60 mb-2" style={{ color: '#fffdfa' }}>Contribuições totais</p>
+              <h2 className="text-5xl font-bold mb-1" style={{ color: '#fffdfa' }} data-testid="total-contribuicoes">
                 {formatCurrency(estatisticas.valorTotalContribuido)}
-              </p>
+              </h2>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm w-fit" style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}>
+                <Check className="w-3.5 h-3.5" style={{ color: '#fffdfa' }} />
+                <span className="text-sm" style={{ color: '#fffdfa' }} data-testid="badge-concluidas">
+                  {estatisticas.concluidas} contribuições concluídas
+                </span>
+              </div>
+              {estatisticas.pendentes > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm w-fit" style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}>
+                  <ArrowUp className="w-3.5 h-3.5" style={{ color: '#fffdfa' }} />
+                  <span className="text-sm" style={{ color: '#fffdfa' }} data-testid="badge-pendentes">
+                    {estatisticas.pendentes} contribuições pendentes
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
