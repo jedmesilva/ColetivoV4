@@ -334,50 +334,42 @@ export default function HistoricoContribuicoesFundoScreen() {
                   <button
                     key={contribuicao.id}
                     onClick={() => handleVerDetalhes(contribuicao)}
-                    className="w-full rounded-3xl p-5 border transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] text-left"
+                    className="w-full rounded-2xl p-4 border transition-all duration-200 hover:shadow-sm active:scale-[0.99] text-left"
                     style={{ 
                       backgroundColor: '#fffdfa', 
-                      borderColor: 'rgba(48, 48, 48, 0.1)'
+                      borderColor: 'rgba(48, 48, 48, 0.08)'
                     }}
                     data-testid={`card-contribuicao-${contribuicao.id}`}
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 229, 189, 0.3)' }}>
-                          <TrendingUp className="w-6 h-6" style={{ color: '#303030' }} />
-                        </div>
-                        <div>
-                          <p className="text-3xl font-bold" style={{ color: '#303030' }}>
-                            {formatCurrency(contribuicao.amount || 0)}
-                          </p>
-                          <p className="text-sm mt-1" style={{ color: 'rgba(48, 48, 48, 0.6)' }}>
-                            {contribuicao.contributorName || 'Anônimo'}
-                          </p>
-                        </div>
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-2xl font-bold mb-0.5" style={{ color: '#303030' }}>
+                          {formatCurrency(contribuicao.amount || 0)}
+                        </p>
+                        <p className="text-xs truncate" style={{ color: 'rgba(48, 48, 48, 0.5)' }}>
+                          {contribuicao.contributorName || 'Anônimo'}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(contribuicao.status)}
-                          <span className="text-sm font-semibold" style={{ color: getStatusColor(contribuicao.status) }}>
-                            {getStatusLabel(contribuicao.status)}
-                          </span>
-                        </div>
-                        <ArrowUpRight className="w-5 h-5" style={{ color: 'rgba(48, 48, 48, 0.4)' }} />
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {getStatusIcon(contribuicao.status)}
+                        <span className="text-xs font-medium hidden sm:inline" style={{ color: getStatusColor(contribuicao.status) }}>
+                          {getStatusLabel(contribuicao.status)}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
+                    <div className="flex items-center justify-between gap-2 text-xs" style={{ color: 'rgba(48, 48, 48, 0.5)' }}>
+                      <span className="truncate">
                         {contribuicao.contributedAt ? formatDate(contribuicao.contributedAt) : 'Data não disponível'}
-                      </p>
-                      <p className="text-sm font-medium" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
+                      </span>
+                      <span className="flex-shrink-0">
                         {contribuicao.paymentMethod || 'Não especificado'}
-                      </p>
+                      </span>
                     </div>
 
                     {contribuicao.status === 'cancelled' && contribuicao.cancellationReason && (
-                      <div className="pt-3 mt-3 border-t" style={{ borderColor: 'rgba(48, 48, 48, 0.1)' }}>
-                        <p className="text-sm" style={{ color: '#fd6b61' }}>
+                      <div className="pt-2.5 mt-2.5 border-t" style={{ borderColor: 'rgba(48, 48, 48, 0.06)' }}>
+                        <p className="text-xs" style={{ color: '#fd6b61' }}>
                           Motivo: {contribuicao.cancellationReason}
                         </p>
                       </div>
