@@ -189,7 +189,7 @@ export default function FundDetail() {
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm w-fit" style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}>
                   <CreditCard className="w-3.5 h-3.5" style={{ color: '#fffdfa' }} />
                   <span className="text-sm" style={{ color: '#fffdfa' }} data-testid="pending-retributions-badge">
-                    {fundPendingRetributions.pendingCount} retribuição{fundPendingRetributions.pendingCount !== 1 ? 'ões' : ''} pendente{fundPendingRetributions.pendingCount !== 1 ? 's' : ''} no fundo
+                    {fundPendingRetributions.pendingCount} {fundPendingRetributions.pendingCount === 1 ? 'retribuição pendente' : 'retribuições pendentes'} no fundo
                   </span>
                 </div>
               )}
@@ -204,7 +204,7 @@ export default function FundDetail() {
                     </div>
                     <div className="flex-1">
                       <p className="font-bold text-sm mb-0.5" style={{ color: '#303030' }}>
-                        Você tem {fundPendingRetributions.pendingCount} retribuição{fundPendingRetributions.pendingCount !== 1 ? 'ões' : ''} pendente{fundPendingRetributions.pendingCount !== 1 ? 's' : ''}
+                        Você tem {fundPendingRetributions.pendingCount} {fundPendingRetributions.pendingCount === 1 ? 'retribuição pendente' : 'retribuições pendentes'}
                       </p>
                       <p className="text-xs" style={{ color: '#303030', opacity: 0.7 }}>Retribua para manter o fundo ativo</p>
                     </div>
