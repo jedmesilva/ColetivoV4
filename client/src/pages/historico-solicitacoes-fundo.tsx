@@ -132,20 +132,20 @@ export default function HistoricoSolicitacoesFundoScreen() {
       .reduce((sum, s) => sum + s.valor, 0)
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pendente':
-        return <Clock className="w-5 h-5" style={{ color: '#ffc22f' }} />;
+        return <Clock className="w-4 h-4" style={{ color: '#ffc22f' }} />;
       case 'aprovada':
-        return <Check className="w-5 h-5" style={{ color: '#4ade80' }} />;
+        return <Check className="w-4 h-4" style={{ color: '#4ade80' }} />;
       case 'rejeitada':
-        return <X className="w-5 h-5" style={{ color: '#fd6b61' }} />;
+        return <X className="w-4 h-4" style={{ color: '#fd6b61' }} />;
       default:
         return null;
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'pendente':
         return '#ffc22f';
@@ -158,7 +158,7 @@ export default function HistoricoSolicitacoesFundoScreen() {
     }
   };
 
-  const getStatusLabel = (status) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case 'pendente':
         return 'Pendente';
@@ -184,7 +184,7 @@ export default function HistoricoSolicitacoesFundoScreen() {
     setLocation('/request/amount');
   };
 
-  const handleVerDetalhes = (solicitacao) => {
+  const handleVerDetalhes = (solicitacao: any) => {
     console.log('Ver detalhes da solicitação:', solicitacao);
     // Navegar para tela de detalhes da solicitação
   };
@@ -360,7 +360,7 @@ export default function HistoricoSolicitacoesFundoScreen() {
         <div className="px-6">
           
           {/* Botão Nova Solicitação */}
-          <div className="mb-6">
+          <div className="mb-10">
             <button 
               onClick={handleNovaSolicitacao}
               className="w-full rounded-3xl p-4 text-white font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
@@ -374,44 +374,31 @@ export default function HistoricoSolicitacoesFundoScreen() {
             </button>
           </div>
 
-          {/* Campo de Busca */}
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2" style={{ color: 'rgba(48, 48, 48, 0.5)' }} />
-              <input
-                type="text"
-                value={termoBusca}
-                onChange={(e) => setTermoBusca(e.target.value)}
-                placeholder="Buscar solicitações..."
-                className="w-full pl-12 pr-4 py-3 rounded-2xl border outline-none transition-all duration-200 focus:border-opacity-80"
-                style={{ 
-                  backgroundColor: 'rgba(255, 229, 189, 0.1)', 
-                  borderColor: 'rgba(48, 48, 48, 0.1)',
-                  color: '#303030'
-                }}
-                data-testid="input-buscar-solicitacoes"
-              />
-            </div>
-          </div>
-
-        </div>
-
-        <div className="px-6">
-
           {/* Lista de Solicitações */}
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold" style={{ color: '#303030' }}>
-                Histórico de solicitações
-              </h3>
-              <span className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                {solicitacoesFiltradas.length} resultado(s)
-              </span>
+            <h3 className="text-xl font-bold mb-4" style={{ color: '#303030' }}>
+              Histórico de solicitações
+            </h3>
+
+            {/* Campo de Busca */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2" style={{ color: 'rgba(48, 48, 48, 0.5)' }} />
+                <input
+                  type="text"
+                  value={termoBusca}
+                  onChange={(e) => setTermoBusca(e.target.value)}
+                  placeholder="Buscar solicitações..."
+                  className="w-full pl-12 pr-4 py-3 rounded-2xl border outline-none transition-all duration-200 focus:border-opacity-80"
+                  style={{ 
+                    backgroundColor: 'rgba(255, 229, 189, 0.1)', 
+                    borderColor: 'rgba(48, 48, 48, 0.1)',
+                    color: '#303030'
+                  }}
+                  data-testid="input-buscar-solicitacoes"
+                />
+              </div>
             </div>
-            <div 
-              className="w-12 h-1 rounded-full mb-6"
-              style={{ background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)' }}
-            />
 
             {/* Filtros - Abaixo do título */}
             <div className="mb-6 -mx-6">
@@ -486,82 +473,49 @@ export default function HistoricoSolicitacoesFundoScreen() {
                   <button
                     key={solicitacao.id}
                     onClick={() => handleVerDetalhes(solicitacao)}
-                    className="w-full rounded-3xl p-5 border transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] text-left"
+                    className="w-full rounded-2xl p-4 border transition-all duration-200 hover:shadow-sm active:scale-[0.99] text-left"
                     style={{ 
                       backgroundColor: '#fffdfa', 
-                      borderColor: 'rgba(48, 48, 48, 0.1)'
+                      borderColor: 'rgba(48, 48, 48, 0.08)'
                     }}
                     data-testid={`card-solicitacao-${solicitacao.id}`}
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-12 h-12 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: 'rgba(255, 229, 189, 0.3)' }}
-                        >
-                          <Users className="w-6 h-6" style={{ color: '#303030' }} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-lg" style={{ color: '#303030' }}>
-                            {solicitacao.solicitante}
-                          </h4>
-                          <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                            {solicitacao.datasolicitacaoFormatada}
-                          </p>
-                        </div>
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-2xl font-bold mb-0.5" style={{ color: '#303030' }}>
+                          {solicitacao.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </p>
+                        <p className="text-xs truncate" style={{ color: 'rgba(48, 48, 48, 0.5)' }}>
+                          {solicitacao.solicitante}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(solicitacao.status)}
-                          <span 
-                            className="text-sm font-semibold"
-                            style={{ color: getStatusColor(solicitacao.status) }}
-                          >
-                            {getStatusLabel(solicitacao.status)}
-                          </span>
-                        </div>
-                        <ChevronRight className="w-5 h-5" style={{ color: 'rgba(48, 48, 48, 0.4)' }} />
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {getStatusIcon(solicitacao.status)}
+                        <span className="text-xs font-medium" style={{ color: getStatusColor(solicitacao.status) }}>
+                          {getStatusLabel(solicitacao.status)}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="mb-3">
-                      <p 
-                        className="text-sm mb-2" 
-                        style={{ color: 'rgba(48, 48, 48, 0.8)', lineHeight: '1.4' }}
-                      >
+                    <div className="mb-2">
+                      <p className="text-xs line-clamp-2" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
                         {solicitacao.motivo}
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-2xl font-bold" style={{ color: '#303030' }}>
-                          {solicitacao.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </p>
-                        <p className="text-xs" style={{ color: 'rgba(48, 48, 48, 0.6)' }}>
-                          Retribuição: {solicitacao.valorRetribuicao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </p>
-                      </div>
-                      
-                      <div className="text-right">
-                        <div 
-                          className="px-3 py-1 rounded-full"
-                          style={{ backgroundColor: 'rgba(255, 229, 189, 0.2)' }}
-                        >
-                          <span className="text-xs font-medium" style={{ color: '#303030' }}>
-                            {solicitacao.planoRetribuicao.parcelas}x {solicitacao.planoRetribuicao.intervalo}
-                          </span>
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-between gap-2 text-xs" style={{ color: 'rgba(48, 48, 48, 0.5)' }}>
+                      <span className="truncate">
+                        {solicitacao.datasolicitacaoFormatada}
+                      </span>
+                      <span className="flex-shrink-0">
+                        Retribuição: {solicitacao.valorRetribuicao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
                     </div>
 
                     {solicitacao.status === 'rejeitada' && solicitacao.motivoRejeicao && (
-                      <div 
-                        className="mt-3 p-3 rounded-xl"
-                        style={{ backgroundColor: 'rgba(253, 107, 97, 0.1)' }}
-                      >
-                        <p className="text-sm" style={{ color: '#fd6b61' }}>
-                          <strong>Motivo da rejeição:</strong> {solicitacao.motivoRejeicao}
+                      <div className="pt-2.5 mt-2.5 border-t" style={{ borderColor: 'rgba(48, 48, 48, 0.06)' }}>
+                        <p className="text-xs" style={{ color: '#fd6b61' }}>
+                          Motivo: {solicitacao.motivoRejeicao}
                         </p>
                       </div>
                     )}
