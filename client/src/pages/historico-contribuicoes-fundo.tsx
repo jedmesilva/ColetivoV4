@@ -238,13 +238,7 @@ export default function HistoricoContribuicoesFundoScreen() {
           </div>
 
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold" style={{ color: '#303030' }}>Histórico de contribuições</h3>
-              <span className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }} data-testid="results-count">
-                {contribuicoesFiltradas.length} resultado(s)
-              </span>
-            </div>
-            <div className="w-12 h-1 rounded-full mb-6" style={{ background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)' }} />
+            <h3 className="text-xl font-bold mb-4" style={{ color: '#303030' }}>Histórico de contribuições</h3>
 
             <div className="mb-6">
               <div className="relative">
