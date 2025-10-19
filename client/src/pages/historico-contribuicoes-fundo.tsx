@@ -237,25 +237,6 @@ export default function HistoricoContribuicoesFundoScreen() {
             </button>
           </div>
 
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2" style={{ color: 'rgba(48, 48, 48, 0.5)' }} />
-              <input
-                type="text"
-                value={termoBusca}
-                onChange={(e) => setTermoBusca(e.target.value)}
-                placeholder="Buscar contribuições..."
-                className="w-full pl-12 pr-4 py-3 rounded-2xl border outline-none transition-all duration-200 focus:border-opacity-80"
-                style={{ 
-                  backgroundColor: 'rgba(255, 229, 189, 0.1)', 
-                  borderColor: 'rgba(48, 48, 48, 0.1)',
-                  color: '#303030'
-                }}
-                data-testid="input-buscar-contribuicoes"
-              />
-            </div>
-          </div>
-
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold" style={{ color: '#303030' }}>Histórico de contribuições</h3>
@@ -264,6 +245,25 @@ export default function HistoricoContribuicoesFundoScreen() {
               </span>
             </div>
             <div className="w-12 h-1 rounded-full mb-6" style={{ background: 'linear-gradient(90deg, #ffc22f, #fa7653, #fd6b61)' }} />
+
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2" style={{ color: 'rgba(48, 48, 48, 0.5)' }} />
+                <input
+                  type="text"
+                  value={termoBusca}
+                  onChange={(e) => setTermoBusca(e.target.value)}
+                  placeholder="Buscar contribuições..."
+                  className="w-full pl-12 pr-4 py-3 rounded-2xl border outline-none transition-all duration-200 focus:border-opacity-80"
+                  style={{ 
+                    backgroundColor: 'rgba(255, 229, 189, 0.1)', 
+                    borderColor: 'rgba(48, 48, 48, 0.1)',
+                    color: '#303030'
+                  }}
+                  data-testid="input-buscar-contribuicoes"
+                />
+              </div>
+            </div>
 
             <div className="mb-6 -mx-6">
               <div className="flex gap-2 overflow-x-auto pb-2 px-6">
