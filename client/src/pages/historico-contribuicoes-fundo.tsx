@@ -223,7 +223,7 @@ export default function HistoricoContribuicoesFundoScreen() {
       <div className="rounded-t-3xl min-h-96 pt-8 pb-32" style={{ backgroundColor: '#fffdfa' }}>
         <div className="px-6">
           
-          <div className="mb-6">
+          <div className="mb-10">
             <button 
               onClick={handleNovaContribuicao}
               className="w-full rounded-3xl p-4 text-white font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
