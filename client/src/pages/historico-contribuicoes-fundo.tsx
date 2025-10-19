@@ -347,11 +347,11 @@ export default function HistoricoContribuicoesFundoScreen() {
                           <TrendingUp className="w-6 h-6" style={{ color: '#303030' }} />
                         </div>
                         <div>
-                          <h4 className="font-bold text-lg" style={{ color: '#303030' }}>
+                          <p className="text-3xl font-bold" style={{ color: '#303030' }}>
+                            {formatCurrency(contribuicao.amount || 0)}
+                          </p>
+                          <p className="text-sm mt-1" style={{ color: 'rgba(48, 48, 48, 0.6)' }}>
                             {contribuicao.contributorName || 'Anônimo'}
-                          </h4>
-                          <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                            {contribuicao.contributedAt ? formatDate(contribuicao.contributedAt) : 'Data não disponível'}
                           </p>
                         </div>
                       </div>
@@ -366,21 +366,17 @@ export default function HistoricoContribuicoesFundoScreen() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <p className="text-2xl font-bold" style={{ color: '#303030' }}>
-                          {formatCurrency(contribuicao.amount || 0)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
-                          {contribuicao.paymentMethod || 'Não especificado'}
-                        </p>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
+                        {contribuicao.contributedAt ? formatDate(contribuicao.contributedAt) : 'Data não disponível'}
+                      </p>
+                      <p className="text-sm font-medium" style={{ color: 'rgba(48, 48, 48, 0.7)' }}>
+                        {contribuicao.paymentMethod || 'Não especificado'}
+                      </p>
                     </div>
 
                     {contribuicao.status === 'cancelled' && contribuicao.cancellationReason && (
-                      <div className="pt-3 border-t" style={{ borderColor: 'rgba(48, 48, 48, 0.1)' }}>
+                      <div className="pt-3 mt-3 border-t" style={{ borderColor: 'rgba(48, 48, 48, 0.1)' }}>
                         <p className="text-sm" style={{ color: '#fd6b61' }}>
                           Motivo: {contribuicao.cancellationReason}
                         </p>
