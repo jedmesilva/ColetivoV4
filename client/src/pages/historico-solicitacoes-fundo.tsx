@@ -1,5 +1,5 @@
 import { ArrowLeft, Settings, Search, Plus, Users, Clock, Check, X, AlertCircle, ChevronRight, Filter } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { updateRequestCache } from "@/lib/request-cache";
 
@@ -7,10 +7,24 @@ export default function HistoricoSolicitacoesFundoScreen() {
   const [termoBusca, setTermoBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos'); // todos, pendentes, aprovadas, rejeitadas
   const [, setLocation] = useLocation();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [scrollOpacity, setScrollOpacity] = useState(0);
   
   // Extrair o ID do fundo da URL
   const currentPath = window.location.pathname;
   const fundId = currentPath.split('/')[2]; // /fund/:id/historico-solicitacoes
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 50);
+      const opacity = Math.min(scrollPosition / 100, 1);
+      setScrollOpacity(opacity);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Informações do fundo (viriam da tela anterior)
   const fundoSelecionado = {
@@ -191,165 +205,75 @@ export default function HistoricoSolicitacoesFundoScreen() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#fffdfa' }}>
-      {/* Header Section com Múltiplos Gradientes */}
-      <div className="relative overflow-hidden">
-        {/* Gradiente Base */}
-        <div 
-          className="absolute inset-0"
-          style={{ 
-            background: 'linear-gradient(135deg, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61)' 
-          }}
-        />
-        
-        {/* Gradiente Invertido - Diagonal Oposta */}
-        <div 
-          className="absolute inset-0 opacity-70"
-          style={{ 
-            background: 'linear-gradient(315deg, #fd6b61, #fa7653, #ffc22f, #ffe5bd, #fffdfa)' 
-          }}
-        />
-        
-        {/* Gradiente Radial do Centro */}
-        <div 
-          className="absolute inset-0 opacity-60"
-          style={{ 
-            background: 'radial-gradient(circle at center, #ffc22f, #fa7653, #fd6b61, transparent)' 
-          }}
-        />
-        
-        {/* Gradiente Horizontal Invertido */}
-        <div 
-          className="absolute inset-0 opacity-50"
-          style={{ 
-            background: 'linear-gradient(270deg, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61)' 
-          }}
-        />
-        
-        {/* Gradiente Vertical */}
-        <div 
-          className="absolute inset-0 opacity-40"
-          style={{ 
-            background: 'linear-gradient(180deg, #fd6b61, #fa7653, #ffc22f, #ffe5bd, #fffdfa)' 
-          }}
-        />
-        
-        {/* Gradiente Radial Superior Esquerdo */}
-        <div 
-          className="absolute inset-0 opacity-45"
-          style={{ 
-            background: 'radial-gradient(circle at top left, #ffe5bd, #ffc22f, #fa7653, transparent)' 
-          }}
-        />
-        
-        {/* Gradiente Radial Inferior Direito */}
-        <div 
-          className="absolute inset-0 opacity-35"
-          style={{ 
-            background: 'radial-gradient(circle at bottom right, #fd6b61, #fa7653, #ffc22f, transparent)' 
-          }}
-        />
-        
-        {/* Gradiente Diagonal 45 graus */}
-        <div 
-          className="absolute inset-0 opacity-30"
-          style={{ 
-            background: 'linear-gradient(45deg, #fa7653, #fd6b61, #ffc22f, #ffe5bd, #fffdfa)' 
-          }}
-        />
-        
-        {/* Gradiente Cônico */}
-        <div 
-          className="absolute inset-0 opacity-25"
-          style={{ 
-            background: 'conic-gradient(from 0deg at center, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61, #fffdfa)' 
-          }}
-        />
-        
-        {/* Camada de mistura para suavizar */}
-        <div 
-          className="absolute inset-0"
-          style={{ 
-            background: 'linear-gradient(135deg, rgba(255, 253, 250, 0.1), rgba(255, 229, 189, 0.1), rgba(255, 194, 47, 0.1), rgba(250, 118, 83, 0.1), rgba(253, 107, 97, 0.1))',
-            mixBlendMode: 'overlay'
-          }}
-        />
+      <div className="relative overflow-hidden pb-8">
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61)' }} />
+        <div className="absolute inset-0 opacity-70" style={{ background: 'linear-gradient(315deg, #fd6b61, #fa7653, #ffc22f, #ffe5bd, #fffdfa)' }} />
+        <div className="absolute inset-0 opacity-60" style={{ background: 'radial-gradient(circle at center, #ffc22f, #fa7653, #fd6b61, transparent)' }} />
+        <div className="absolute inset-0 opacity-50" style={{ background: 'linear-gradient(270deg, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61)' }} />
+        <div className="absolute inset-0 opacity-40" style={{ background: 'linear-gradient(180deg, #fd6b61, #fa7653, #ffc22f, #ffe5bd, #fffdfa)' }} />
+        <div className="absolute inset-0 opacity-45" style={{ background: 'radial-gradient(circle at top left, #ffe5bd, #ffc22f, #fa7653, transparent)' }} />
+        <div className="absolute inset-0 opacity-35" style={{ background: 'radial-gradient(circle at bottom right, #fd6b61, #fa7653, #ffc22f, transparent)' }} />
+        <div className="absolute inset-0 opacity-30" style={{ background: 'linear-gradient(45deg, #fa7653, #fd6b61, #ffc22f, #ffe5bd, #fffdfa)' }} />
+        <div className="absolute inset-0 opacity-25" style={{ background: 'conic-gradient(from 0deg at center, #fffdfa, #ffe5bd, #ffc22f, #fa7653, #fd6b61, #fffdfa)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(255, 253, 250, 0.1), rgba(255, 229, 189, 0.1), rgba(255, 194, 47, 0.1), rgba(250, 118, 83, 0.1), rgba(253, 107, 97, 0.1))', mixBlendMode: 'overlay' }} />
+        <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }} />
 
-        {/* Conteúdo do Header */}
         <div className="relative z-10">
-          {/* Navigation Header */}
-          <div className="flex justify-between items-center p-6 pt-12">
-            <button 
-              onClick={() => setLocation(`/fund/${fundId}`)}
-              className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95"
-              style={{ backgroundColor: 'rgba(255, 229, 189, 0.3)' }}
-              aria-label="Voltar"
-            >
-              <ArrowLeft className="w-6 h-6" style={{ color: '#fffdfa' }} />
-            </button>
-            
-            <button 
-              className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95"
-              style={{ backgroundColor: 'rgba(255, 229, 189, 0.3)' }}
-              aria-label="Configurações"
-            >
-              <Settings className="w-6 h-6" style={{ color: '#fffdfa' }} />
-            </button>
+          <div className="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style={{ backgroundColor: `rgba(255, 253, 250, ${scrollOpacity})`, backdropFilter: scrollOpacity > 0 ? 'blur(10px)' : 'none' }}>
+            <div className="flex items-center justify-between px-6 py-3">
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setLocation(`/fund/${fundId}`)}
+                  className="rounded-xl py-3 transition-all duration-200 hover:scale-105 active:scale-95"
+                  aria-label="Voltar"
+                  data-testid="button-back"
+                >
+                  <ArrowLeft className="w-6 h-6" style={{ color: isScrolled ? '#303030' : '#fffdfa' }} />
+                </button>
+                <div className="transition-all duration-300 overflow-hidden" style={{ opacity: scrollOpacity, maxWidth: scrollOpacity > 0 ? '300px' : '0px' }}>
+                  <h1 className="text-lg font-bold whitespace-nowrap" style={{ color: '#303030' }} data-testid="fund-name-header">Solicitações</h1>
+                </div>
+              </div>
+              <button 
+                className="rounded-xl p-3 transition-all duration-200 hover:scale-105 active:scale-95 opacity-0"
+                style={{ backgroundColor: 'rgba(255, 229, 189, 0.3)' }}
+                aria-label="Configurações"
+              >
+                <Settings className="w-6 h-6" style={{ color: isScrolled ? '#303030' : '#fffdfa' }} />
+              </button>
+            </div>
           </div>
 
-          {/* Info do Fundo e Título */}
-          <div className="px-6 pb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <div 
-                className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(255, 253, 250, 0.9)' }}
-              >
-                <span className="text-2xl">{fundoSelecionado.emoji}</span>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#fffdfa' }}>Solicitações</h1>
-                <p className="text-sm opacity-90" style={{ color: '#fffdfa' }}>
-                  {fundoSelecionado.nome}
-                </p>
-              </div>
+          <div className="h-24"></div>
+
+          <div className="px-6 mb-6">
+            <div className="mb-8 pb-6 border-b" style={{ borderColor: 'rgba(255, 253, 250, 0.2)' }}>
+              <h2 className="text-2xl font-bold mb-2" style={{ color: '#fffdfa' }}>Solicitações</h2>
+              <p className="text-sm opacity-70" style={{ color: '#fffdfa' }}>{fundoSelecionado.nome}</p>
             </div>
-            
-            {/* Estatísticas Rápidas */}
-            <div className="grid grid-cols-3 gap-3">
-              <div 
-                className="rounded-2xl p-3 backdrop-blur-sm"
-                style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}
-              >
-                <p className="text-2xl font-bold" style={{ color: '#fffdfa' }}>
-                  {estatisticas.pendentes}
-                </p>
-                <p className="text-xs opacity-90" style={{ color: '#fffdfa' }}>
-                  PENDENTES
-                </p>
+
+            <div className="mb-4">
+              <p className="text-xs uppercase tracking-wider opacity-60 mb-2" style={{ color: '#fffdfa' }}>Total de solicitações</p>
+              <h2 className="text-5xl font-bold mb-1" style={{ color: '#fffdfa' }} data-testid="total-solicitacoes">
+                {estatisticas.totalSolicitacoes}
+              </h2>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm w-fit" style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}>
+                <Check className="w-3.5 h-3.5" style={{ color: '#fffdfa' }} />
+                <span className="text-sm" style={{ color: '#fffdfa' }} data-testid="badge-aprovadas">
+                  {estatisticas.aprovadas} solicitações aprovadas
+                </span>
               </div>
-              
-              <div 
-                className="rounded-2xl p-3 backdrop-blur-sm"
-                style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}
-              >
-                <p className="text-2xl font-bold" style={{ color: '#fffdfa' }}>
-                  {estatisticas.aprovadas}
-                </p>
-                <p className="text-xs opacity-90" style={{ color: '#fffdfa' }}>
-                  APROVADAS
-                </p>
-              </div>
-              
-              <div 
-                className="rounded-2xl p-3 backdrop-blur-sm"
-                style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}
-              >
-                <p className="text-2xl font-bold" style={{ color: '#fffdfa' }}>
-                  {estatisticas.totalSolicitacoes}
-                </p>
-                <p className="text-xs opacity-90" style={{ color: '#fffdfa' }}>
-                  TOTAL
-                </p>
-              </div>
+              {estatisticas.pendentes > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm w-fit" style={{ backgroundColor: 'rgba(255, 253, 250, 0.2)' }}>
+                  <Clock className="w-3.5 h-3.5" style={{ color: '#fffdfa' }} />
+                  <span className="text-sm" style={{ color: '#fffdfa' }} data-testid="badge-pendentes">
+                    {estatisticas.pendentes} solicitações pendentes
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
